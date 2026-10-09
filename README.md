@@ -1,6 +1,13 @@
-# tweetpad ◆
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/lockup-dark.png">
+    <img src="docs/brand/lockup-light.png" alt="tweetpad" width="420">
+  </picture>
+</p>
 
-**Launch a token without leaving the tweet.**
+<p align="center"><b>Launch a token without leaving the tweet.</b></p>
+
+<p align="center"><a href="https://www.tweetpad.io">tweetpad.io</a></p>
 
 tweetpad is an X player card dressed as the 2012 bird app (or a pixel HUD, if you pick that skin). Expand the tweet, connect a Solana wallet, drop an image, pick a ticker,
 press **Launch**. The coin goes live on pump.fun, gets listed on tweetpad, and has its own chart, live trades and a
@@ -89,6 +96,7 @@ api/                   Vercel functions, one per route; _lib.js is shared and no
   chat · social · reactions · profile · rewards                  chat, feed, posts, likes/retweets, profiles, creator fees
 scripts/check.js       `npm run check`: syntax and wiring smoke test
 scripts/preview.html   source for preview.png (render command inside)
+scripts/lockup.html    source for the README header lockup (docs/brand/lockup-*.png)
 docs/CHECKLIST.md      what's next: critical fixes, quick wins, quality of life
 docs/brand/            large brand files: 1024px icon, token profile pictures
 ```

@@ -1,4 +1,4 @@
-TWEETPAD ($TP) - hash mark kit, option A
+tweetpad ($TP) - hash mark kit, option A
 icon/   chrome-ring glossy button, transparent PNG 16-1024px + favicon.ico
 glyph/  the slanted # alone on transparent (white, blue, ink)
 social/ 1000x1000 profile picture / token image on light and blue
