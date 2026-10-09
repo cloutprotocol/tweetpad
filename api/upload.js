@@ -14,6 +14,11 @@ function sniff(b) {
 
 module.exports = async (req, res) => {
   res.setHeader('cache-control', 'no-store');
+  // a sandboxed card frame has an opaque origin ("null"), which makes even our own page cross-origin
+  res.setHeader('access-control-allow-origin', '*');
+  res.setHeader('access-control-allow-methods', 'POST, OPTIONS');
+  res.setHeader('access-control-allow-headers', 'content-type, x-file-type');
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') {
     res.setHeader('allow', 'POST');
     return res.status(405).json({ error: 'POST the image bytes' });

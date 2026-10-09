@@ -260,7 +260,8 @@
 <div class="stage">
   <main>
     <section id="tab-wallets">
-      <form class="pane panel launch" id="launch" novalidate>
+      <!-- a div, not a form: X's card sandbox drops form submissions without firing submit -->
+      <div class="pane panel launch" id="launch">
         <div class="launch-head"><span>Launch a token</span><span class="tag dim">TEST · NOTHING DEPLOYS</span></div>
         <div id="launch-banner" hidden></div>
         <div class="launch-grid">
@@ -276,9 +277,9 @@
           </div>
         </div>
         <textarea id="tk-desc" rows="2" maxlength="500" placeholder="Description (optional)" aria-label="Description"></textarea>
-        <button class="btn primary launch-btn" id="launch-btn" type="submit">Connect wallet</button>
+        <button class="btn primary launch-btn" id="launch-btn" type="button">Connect wallet</button>
         <ul class="quests" id="launch-checks" hidden></ul>
-      </form>
+      </div>
     </section>
     <section id="debug" hidden>
       <div class="subnav" role="tablist">
@@ -884,6 +885,7 @@ function check(tone, text) {
 async function onLaunch(ev) {
   ev.preventDefault();
   if (launch.busy) return;
+  log('warn', 'test launch pressed');
   if (!state.active) return openMenu();
   if (launchProblem()) return renderLaunch();
   const wallet = state.active;
@@ -1066,7 +1068,8 @@ if (bc) bc.addEventListener('message', (ev) => onBridgeMessage('BroadcastChannel
 
 $('link-newtab').href = STANDALONE;
 
-$('launch').addEventListener('submit', onLaunch);
+$('launch-btn').addEventListener('click', onLaunch);
+for (const id of ['tk-name', 'tk-ticker']) $(id).addEventListener('keydown', (ev) => { if (ev.key === 'Enter') onLaunch(ev); });
 $('img').addEventListener('change', () => takeImage($('img').files[0], 'file picker'));
 $('drop').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); $('img').click(); } });
 for (const type of ['dragenter', 'dragover']) $('drop').addEventListener(type, (ev) => { ev.preventDefault(); $('drop').classList.add('over'); });
