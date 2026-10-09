@@ -52,8 +52,6 @@ html[data-skin="2012"] .wc-btn .caret { font: 10px/1 var(--px); opacity: .85; }
 html[data-skin="2012"] .tab-ico { display: block; flex: none; width: 15px; height: 15px; fill: currentColor; filter: drop-shadow(0 -1px 0 rgba(0, 0, 0, .3)); }
 html[data-skin="2012"] .ghost[aria-selected="true"] .tab-ico { fill: #9fdcff; filter: drop-shadow(0 0 3px rgba(120, 205, 255, .9)) drop-shadow(0 -1px 0 rgba(0, 0, 0, .3)); }
 html[data-skin="2012"] .views .count { font: bold 11px/1 var(--px); color: #fff; background: rgba(0, 0, 0, .2); padding: 2px 5px; border-radius: 8px; }
-html[data-skin="2012"] .gear { width: 14px; height: 14px; shape-rendering: auto; }
-html[data-skin="2012"] #btn-settings { padding: 5px 7px; }
 
 /* ---------- stage ---------- */
 html[data-skin="2012"] main { padding: 10px 10px 40px; scrollbar-color: #bbb transparent; }

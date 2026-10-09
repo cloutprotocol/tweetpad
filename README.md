@@ -29,7 +29,7 @@ shareable card that plays inside X again. No app to install and no tab to open.
 | **Tokens** | Every coin launched here, with market cap, 1h move and the last day drawn faintly behind each row. New / Hot / Mcap, 24 at a time. |
 | **Coin screen** | Candle chart, compact recent trades, live trades over a websocket, the creator (2012-style author card), copyable contract address, share card, and **posts**: tweet-sized comments (140 characters) signed in with the wallet. |
 | **Inventory** | The hotbar holds your coins, then the newest. `1`–`9` opens them. |
-| **More** | Profile, Games, Debug and About (version, network, contact: tweetpad@proton.me) in one list. |
+| **More** | Profile, Games, Debug, About (version, network, $TP contract, contact) and Settings (skins) in one list. |
 | **Profile** | Link your wallet to your X account with one tweet, see the coins you launched, claim creator rewards. |
 | **Settings** | Skins: **2012** (default: blue bar, white cards, dark tab bar) or **Tweetcraft** (the pixel HUD). Saved per browser. |
 | **Games** | Coming soon: a placeholder grid for now. |

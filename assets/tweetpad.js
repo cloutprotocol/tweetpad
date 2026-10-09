@@ -467,7 +467,7 @@ function renderMenu() {
 function renderTrigger() {
   const btn = $('wc-btn');
   const a = state.active;
-  btn.replaceChildren(...(a ? [walletIcon(a), h('span', { text: shortAddr(a.account.address) })] : [h('span', { text: 'Connect' })]),
+  btn.replaceChildren(...(a ? [walletIcon(a), h('span', { class: 'wc-addr', text: shortAddr(a.account.address) })] : [h('span', { text: 'Connect' })]),
     h('span', { class: 'caret', text: '▾' }));
   btn.classList.toggle('primary', !a);
 }
@@ -2108,7 +2108,7 @@ async function sendChat() {
 /* main views: 'wallets' (the launch form), 'tokens' (+ 'coin', 'user'), 'feed' (+ 'thread'), 'more' (profile, games, about, debug)
    and 'settings'; sign / env / report / fallbacks live inside the debug panel */
 const MAIN_VIEWS = ['wallets', 'tokens', 'feed', 'thread', 'coin', 'user', 'more', 'profile', 'games', 'about', 'settings'];
-const UNDER_MORE = ['more', 'profile', 'games', 'about'];   // the More button stays lit on these and on debug
+const UNDER_MORE = ['more', 'profile', 'games', 'about', 'settings'];   // the More button stays lit on these and on debug
 let debugTab = 'sign';
 let mainView = 'wallets';
 let settingsFrom = 'wallets';   // where Esc or × returns to from settings
@@ -2129,7 +2129,6 @@ function selectTab(name) {
   renderHud();
   $('debug').hidden = !debug;
   $('btn-more').setAttribute('aria-pressed', String(debug || UNDER_MORE.includes(name)));
-  $('btn-settings').setAttribute('aria-pressed', String(!debug && name === 'settings'));
   document.body.classList.toggle('debugging', debug);
   if (!debug) return;
   debugTab = name;
@@ -2153,7 +2152,6 @@ $('about-close').addEventListener('click', () => selectTab('more'));
 /* mailto may be blocked inside X's card sandbox, so the address is one click to copy as well */
 $('about-copy-email').addEventListener('click', () => copyText('tweetpad@proton.me', 'email'));
 const toggleSettings = () => selectTab(mainView === 'settings' && $('debug').hidden ? settingsFrom : 'settings');
-$('btn-settings').addEventListener('click', toggleSettings);
 $('settings-close').addEventListener('click', () => selectTab(settingsFrom));
 for (const b of document.querySelectorAll('.skin-opt')) b.addEventListener('click', () => setSkin(b.dataset.skin));
 $('lightbox-close').addEventListener('click', closeImage);
