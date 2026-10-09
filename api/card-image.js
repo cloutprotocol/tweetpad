@@ -1,8 +1,8 @@
 // The X card image for one coin: /api/card-image?mint=<mint>, a 1080×1080 PNG in the 2012 skin. X draws its play button
-// over the middle, so the middle stays clear: the coin up top, "Tap to trade" under the button, the numbers in a card
-// at the bottom. Rendered with @vercel/og (satori + resvg, its own font handling, so no system fonts are needed) and held
+// over the middle, so the coin sits above the middle and the numbers card below it; where there's no play button
+// (other sites, chats) the two read as one balanced poster. Rendered with @vercel/og (satori + resvg, its own font handling, so no system fonts are needed) and held
 // at the CDN for 5 minutes, so the market cap is fresh when a post is first shared without rendering per view.
-const { isPubkey, redis, marketData } = require('./_lib');
+const { isPubkey, redis, marketData, rateLimit } = require('./_lib');
 
 const SIZE = 1080;
 /* the app icon from the hash kit, fetched from our own assets once per instance and inlined */
@@ -52,6 +52,12 @@ const img = (src, style) => ({ type: 'img', props: { src, style } });
 
 module.exports = async (req, res) => {
   const mint = String((req.query && req.query.mint) || '');
+  /* one URL per coin: anything else redirects to it, so random query strings can't skip the CDN cache */
+  if (Object.keys(req.query || {}).some(k => k !== 'mint')) {
+    res.setHeader('cache-control', 'public, s-maxage=3600');
+    return res.redirect(301, '/api/card-image?mint=' + encodeURIComponent(mint));
+  }
+  if (!await rateLimit(req, res, 'cardimg', 200, 600)) return;
   const origin = (req.headers['x-forwarded-proto'] || 'https').split(',')[0] + '://' + (req.headers['x-forwarded-host'] || req.headers.host || 'www.tweetpad.io');
   let launch = null;
   if (isPubkey(mint)) {
@@ -75,7 +81,7 @@ module.exports = async (req, res) => {
   const tree = el('div', { width: SIZE, height: SIZE, position: 'relative', flexDirection: 'column', alignItems: 'center', fontFamily: sans,
       backgroundImage: 'radial-gradient(circle at 50% 50%, #ffffff 0px, #f3f6f8 260px, #dfe4e8 760px)' },
     /* top: the coin */
-    el('div', { position: 'absolute', top: 96, left: 0, right: 0, flexDirection: 'column', alignItems: 'center' },
+    el('div', { position: 'absolute', top: 130, left: 0, right: 0, flexDirection: 'column', alignItems: 'center' },
       el('div', { alignItems: 'center' },
         picture ? img(picture, { width: 168, height: 168, borderRadius: 30, objectFit: 'cover', boxShadow: '0 6px 16px rgba(0,0,0,.25)' })
           : el('div', { width: 168, height: 168, borderRadius: 30, backgroundColor: '#2b86cc', color: '#fff', fontSize: 90, fontWeight: 700,
@@ -83,12 +89,8 @@ module.exports = async (req, res) => {
         el('div', { flexDirection: 'column', marginLeft: 36, maxWidth: 640 },
           el('div', { fontSize: 104, fontWeight: 700, color: '#2f2f2f', letterSpacing: -2, lineHeight: 1 }, '$' + launch.symbol),
           el('div', { fontSize: 44, color: '#777', marginTop: 10, lineHeight: 1.1 }, launch.name.length > 24 ? launch.name.slice(0, 23) + '…' : launch.name)))),
-    /* middle: where X's play button lands, and the hint under it */
-    el('div', { position: 'absolute', left: SIZE / 2 - 115, top: SIZE / 2 - 115, width: 230, height: 230, borderRadius: 115,
-      border: '3px dashed rgba(43,134,204,.35)' }),
-    el('div', { position: 'absolute', top: 680, left: 0, right: 0, justifyContent: 'center', fontSize: 40, fontWeight: 700, color: '#2b86cc' }, 'Tap to trade'),
     /* bottom: the numbers, as a 2012 tweet card */
-    el('div', { position: 'absolute', left: 120, right: 120, bottom: 100, alignItems: 'center', padding: '26px 34px', backgroundColor: '#fff',
+    el('div', { position: 'absolute', left: 120, right: 120, top: 760, alignItems: 'center', padding: '26px 34px', backgroundColor: '#fff',
         border: '2px solid #c8c8c8', borderRadius: 14, boxShadow: '0 4px 10px rgba(0,0,0,.12)' },
       el('div', { flexDirection: 'column', flexGrow: 1 },
         el('div', { alignItems: 'baseline' },

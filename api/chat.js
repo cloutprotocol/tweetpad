@@ -91,7 +91,9 @@ async function send(b, res) {
   const json = JSON.stringify(message);
   await redis(['LPUSH', 'chat:' + room, json], ['LTRIM', 'chat:' + room, 0, KEEP - 1],
     /* timeline posts and replies live on by id, and on their author's profile */
-    ...(room === 'feed' || replyTo ? [['SET', 'msg:' + id, json], ['ZADD', 'user:posts:' + wallet, message.t, 'p:' + id]] : []));
+    ...(room === 'feed' || replyTo ? [['SET', 'msg:' + id, json], ['ZADD', 'user:posts:' + wallet, message.t, 'p:' + id]] : []),
+    /* a reply count of its own: the room list is trimmed to the latest 200 */
+    ...(replyTo ? [['INCR', 'replies:' + replyTo.id]] : []));
   return res.status(200).json({ ok: true, message });
 }
 

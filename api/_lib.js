@@ -165,8 +165,13 @@ async function marketData(mints) {
       dex: p.dexId, pair: p.pairAddress,
     };
   }
-  const caps = Object.entries(market).filter(([, v]) => v.mcap).flatMap(([k, v]) => [k, String(v.mcap)]);
-  if (caps.length) await redis(['HSET', 'mcaps', ...caps]).catch(() => {});   // a bonus: never fail market data over it
+  /* only coins launched here are kept, so the hash can't be grown with arbitrary mints */
+  try {
+    const known = Object.keys(market).filter(k => market[k].mcap);
+    const [listed] = known.length ? await redis(['HMGET', 'launchidx', ...known]) : [[]];
+    const caps = known.filter((k, i) => listed[i]).flatMap(k => [k, String(market[k].mcap)]);
+    if (caps.length) await redis(['HSET', 'mcaps', ...caps]);
+  } catch { /* a bonus: never fail market data over it */ }
   return market;
 }
 

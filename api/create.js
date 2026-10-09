@@ -70,6 +70,8 @@ module.exports = async (req, res) => {
   if (!Number.isFinite(devBuy) || devBuy < 0 || devBuy > MAX_DEV_BUY) return fail(res, 400, 'dev buy must be between 0 and ' + MAX_DEV_BUY + ' SOL');
   if (quote.mint && devBuy > 0) return fail(res, 400, 'dev buy is not available yet for coins paired with $' + quote.symbol);
   const thumb = cleanThumb(b.thumb);
+  /* the image is shown everywhere the coin is (lists, cards, feed): only a short IPFS link, nothing else */
+  const imageUrl = typeof image === 'string' && /^https:\/\/[A-Za-z0-9.-]{1,64}\/ipfs\/[A-Za-z0-9]{46,100}$/.test(image) ? image : '';
 
   let tx;
   try {
@@ -87,9 +89,11 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const pending = { mint, creator: publicKey, name, symbol, uri, image: typeof image === 'string' ? image : '', thumb,
+    const pending = { mint, creator: publicKey, name, symbol, uri, image: imageUrl, thumb,
       devBuy, quote: quote.mint ? { mint: quote.mint, symbol: quote.symbol } : null, at: Date.now() };
-    await redis(['SET', 'pending:' + mint, JSON.stringify(pending), 'EX', PENDING_TTL]);
+    /* NX: the first build for a mint holds it, so nobody can swap in their own metadata before it's listed */
+    const [set] = await redis(['SET', 'pending:' + mint, JSON.stringify(pending), 'NX', 'EX', PENDING_TTL]);
+    if (set !== 'OK') return fail(res, 409, 'this mint is already being launched; start over with a new one');
   } catch (err) {
     return fail(res, err.status || 502, err.message);
   }

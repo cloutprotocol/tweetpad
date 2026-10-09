@@ -811,7 +811,9 @@ async function loadCurve() {
 function estimateBuy(sol) {
   const c = curve.data;
   if (!c || !(sol > 0)) return null;
-  const input = (BigInt(Math.floor(sol * 1e9)) - 1n) * 10000n / BigInt(c.feeBps + 10000);
+  const lamports = BigInt(Math.floor(sol * 1e9));
+  if (lamports < 1n) return null;
+  const input = (lamports - 1n) * 10000n / BigInt(c.feeBps + 10000);
   let tokens = input * BigInt(c.virtualTokens) / (BigInt(c.virtualSol) + input);
   if (tokens > BigInt(c.realTokens)) tokens = BigInt(c.realTokens);
   return { tokens: Number(tokens) / 10 ** c.decimals, pct: Number(tokens * 1000000n / BigInt(c.supply)) / 1e4, feePct: c.feeBps / 100 };
@@ -1199,7 +1201,8 @@ async function react2(action, m) {
     }
     social.stats[m.id] = out;
     if (action === 'retweet' && on) setVerdict('ok', 'Retweeted!', 'It’s on your profile now');
-    delete timelines[wallet.account.address];
+    timelines[wallet.account.address] = null;
+    loadTimeline(wallet.account.address, true);
   } catch (err) {
     social.stats[m.id] = s;
     const msg = errText(err).replace(/^Error /, '');
@@ -1281,9 +1284,9 @@ async function sendReply() {
 
 /* ---------- a profile's tweets: their posts, replies and retweets ---------- */
 const timelines = {};   // wallet → { posts, error } (dropped after your own like / retweet so it refetches)
-async function loadTimeline(wallet) {
+async function loadTimeline(wallet, fresh) {
   try {
-    const res = await fetch('/api/social?user=' + wallet);
+    const res = await fetch('/api/social?user=' + wallet + (fresh ? '&fresh=1' : ''));
     const out = await res.json();
     if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
     timelines[wallet] = { posts: out.posts, error: null };

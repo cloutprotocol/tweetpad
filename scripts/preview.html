@@ -2,8 +2,8 @@
 <!-- Source for preview.png, the X card image. Render at 1080×1080 from the repo root:
      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --window-size=1080,1080 \
        --virtual-time-budget=4000 --screenshot=preview.png scripts/preview.html
-     X draws its play button over the middle of this image, so the middle stays clear: the logo sits above it, a soft
-     spotlight frames it, "Tap to launch" sits right under it, and the pitch card fills the bottom. -->
+     X draws its play button over the middle of this image, so the logo sits above the middle and the pitch card below it;
+     elsewhere (no play button) the two read as one balanced poster. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -14,18 +14,13 @@
   body { position: relative; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;
          background: radial-gradient(circle at 50% 50%, #ffffff 0 150px, #f3f6f8 260px, #dfe4e8 760px); }
   /* top: the lockup, app icon + wordmark on one line */
-  .lockup { position: absolute; top: 120px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 30px; }
+  .lockup { position: absolute; top: 150px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 30px; }
   /* the app icon from the hash kit: a glossy # button with its own chrome ring */
   .icon { width: 168px; height: 168px; flex: none; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .22)); }
   h1 { margin: 0; font: 600 150px/1 "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif; letter-spacing: -.03em; color: #2f2f2f;
        text-shadow: 0 3px 0 #fff; }
-  /* middle: a ring where X's play button lands, and the hint under it */
-  .ring { position: absolute; left: 50%; top: 50%; width: 230px; height: 230px; margin: -115px 0 0 -115px; border-radius: 50%;
-          border: 3px dashed rgba(43, 134, 204, .35); }
-  .hint { position: absolute; top: 680px; left: 0; right: 0; text-align: center; font: bold 40px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
-          color: #2b86cc; text-shadow: 0 2px 0 #fff; }
   /* bottom: the pitch, as a 2012 tweet card */
-  .card { position: absolute; left: 140px; right: 140px; bottom: 110px; display: flex; align-items: center; gap: 28px; padding: 28px 34px 28px 28px;
+  .card { position: absolute; left: 140px; right: 140px; top: 760px; display: flex; align-items: center; gap: 28px; padding: 28px 34px 28px 28px;
           background: #fff; border: 2px solid #c8c8c8; border-radius: 14px; box-shadow: 0 4px 10px rgba(0, 0, 0, .12); }
   .card img { width: 108px; height: 108px; flex: none; border-radius: 12px; object-fit: cover; box-shadow: 0 2px 4px rgba(0, 0, 0, .25); }
   .card b { display: block; font: bold 48px/1.1 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #333; }
@@ -35,11 +30,9 @@
 </head>
 <body>
   <div class="lockup"><img class="icon" src="../assets/brand/tweetpad-hash-512.png" alt=""><h1>tweetpad</h1></div>
-  <div class="ring"></div>
-  <div class="hint">Tap to launch</div>
   <div class="card">
     <img src="../assets/agent-doge.jpg" alt="">
-    <div><b>Launchpad inside a tweet</b><span><em>pump.fun</em> · zero pad fee</span></div>
+    <div><b>Launchpad inside a tweet</b><span><em>tweetpad.io</em> · zero pad fee</span></div>
   </div>
 </body>
 </html>

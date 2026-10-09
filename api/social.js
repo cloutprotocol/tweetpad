@@ -10,13 +10,13 @@ const MAX_IDS = 60, TIMELINE = 50;
 const validId = (id) => /^\d{1,12}$/.test(String(id));
 
 async function stats(ids, wallet) {
-  const cmds = ids.flatMap(id => [['SCARD', 'likes:' + id], ['SCARD', 'rts:' + id], ['LLEN', 'chat:reply:' + id],
+  const cmds = ids.flatMap(id => [['SCARD', 'likes:' + id], ['SCARD', 'rts:' + id], ['GET', 'replies:' + id],
     ...(wallet ? [['SISMEMBER', 'likes:' + id, wallet], ['SISMEMBER', 'rts:' + id, wallet]] : [])]);
   const out = ids.length ? await redis(...cmds) : [];
   const per = wallet ? 5 : 3, result = {};
   ids.forEach((id, i) => {
     const r = out.slice(i * per, i * per + per);
-    result[id] = { likes: r[0] || 0, retweets: r[1] || 0, replies: r[2] || 0, liked: !!r[3], retweeted: !!r[4] };
+    result[id] = { likes: r[0] || 0, retweets: r[1] || 0, replies: Number(r[2]) || 0, liked: !!r[3], retweeted: !!r[4] };
   });
   return result;
 }
@@ -54,7 +54,9 @@ module.exports = async (req, res) => {
   try {
     if (req.method === 'GET') {
       const q = req.query || {};
-      res.setHeader('cache-control', 'public, s-maxage=3, stale-while-revalidate=10');
+      if (!await rateLimit(req, res, 'social-read', 300, 600)) return;
+      /* fresh=1: your own timeline right after you retweet, past the CDN */
+      res.setHeader('cache-control', q.fresh ? 'no-store' : 'public, s-maxage=3, stale-while-revalidate=10');
       if (q.user) {
         if (!isPubkey(String(q.user))) return fail(res, 400, 'invalid wallet');
         return res.status(200).json({ posts: await timeline(String(q.user)) });
