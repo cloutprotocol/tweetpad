@@ -303,16 +303,10 @@ html[data-skin="2012"] .link-pre { align-self: stretch; display: grid; place-ite
   text-shadow: 0 1px 0 #fff; background: linear-gradient(#fafafa, #eaeaea); border-right: 1px solid #ccc; }
 html[data-skin="2012"] .launch .link-field input { border: 0; box-shadow: none; background: transparent; border-radius: 0; }
 
-/* ---------- about: the old app-info screen, a glossy icon over the name and version ---------- */
+/* ---------- about: the old app-info screen, the app icon over the name and version ---------- */
 html[data-skin="2012"] .about-hero { padding: 10px 0 6px; gap: 3px; }
-html[data-skin="2012"] .about-badge { width: 56px; height: 56px; margin-bottom: 8px; transform: none; border-radius: 12px;
-  background: linear-gradient(#63b8ee, #2b86cc);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 2px 4px rgba(0, 0, 0, .3); position: relative; overflow: hidden; }
-/* a white bird on the icon, then the glassy top half every icon had back then */
-html[data-skin="2012"] .about-badge::before { content: ""; position: absolute; inset: 6px; background: #fff;
-  -webkit-mask: url(twitter-2012-bird.svg) center / contain no-repeat; mask: url(twitter-2012-bird.svg) center / contain no-repeat; }
-html[data-skin="2012"] .about-badge::after { content: ""; position: absolute; left: -20%; right: -20%; top: -60%; height: 100%; border-radius: 50%;
-  background: linear-gradient(rgba(255, 255, 255, .45), rgba(255, 255, 255, .1)); }
+html[data-skin="2012"] .about-badge { width: 76px; height: 76px; margin-bottom: 8px; transform: none; border-radius: 50%; box-shadow: none;
+  background: url(brand/tweetpad-hash-256.png) center / contain no-repeat; }
 html[data-skin="2012"] .about-name { font: 600 24px/1 "Fredoka", "Varela Round", "Arial Rounded MT Bold", var(--px); letter-spacing: -.02em;
   text-transform: lowercase; color: #333; }
 html[data-skin="2012"] .about-ver { font: 12px/1.3 var(--px); color: #999; }
@@ -416,6 +410,68 @@ html[data-skin="2012"] .creator-stat { padding: 0 10px; border-left: 1px solid #
 html[data-skin="2012"] .creator-stat b { font: bold 15px/1.1 var(--px); color: #333; }
 html[data-skin="2012"] .creator-stat small { font: 10px/1 var(--px); color: #999; letter-spacing: .03em; }
 
+/* sharing: a light well with the link in a code chip, Copy, and the blue Post on X */
+html[data-skin="2012"] .share-box { padding: 9px 10px; background: #f5f8fa; border: 1px solid #e1e8ed; border-radius: 5px; }
+html[data-skin="2012"] .share-title { font: bold 13px/1.2 var(--px); color: #333; }
+html[data-skin="2012"] .share-url { padding: 6px 8px; font: 12px/1.2 Menlo, Monaco, monospace; color: var(--blue); background: #fff; border: 1px solid #cfe3f1; border-radius: 4px; }
+html[data-skin="2012"] .open-coin { font: bold 12px/1 var(--px); }
+html[data-skin="2012"] li.with-share { border-top: 1px solid #e8e8e8; }
+html[data-skin="2012"] .token-list > li.with-share:first-child { border-top: 0; }
+html[data-skin="2012"] .share-mini { margin-right: 6px; padding: 4px 8px; font: bold 11px/1 var(--px); color: #555; text-shadow: 0 1px 0 #fff;
+  background: linear-gradient(#fff, #e6e6e6); border: 1px solid #bbb; border-radius: 4px; }
+html[data-skin="2012"] .share-mini:hover { color: #333; border-color: #999; }
+
+/* feed: the old Home timeline, a "What's happening?" box over tweets */
+html[data-skin="2012"] .feed { padding-bottom: 0; gap: 0; }
+html[data-skin="2012"] .feed-composer { margin: 0 -10px; padding: 10px; gap: 6px; background: #f5f8fa; border-bottom: 1px solid #e8e8e8; }
+html[data-skin="2012"] .feed-list { margin: 0 -10px; }
+html[data-skin="2012"] .feed-list > li.note { padding: 14px 10px; text-align: center; font-size: 12px; }
+html[data-skin="2012"] .tag-coin { padding: 5px 9px; color: var(--blue); font: bold 11px/1 var(--px); text-shadow: 0 1px 0 #fff;
+  background: linear-gradient(#fff, #ededed); border: 1px solid #ccc; border-radius: 12px; }
+html[data-skin="2012"] .tag-coin:hover { border-color: #56b4ef; }
+html[data-skin="2012"] .attach-chip { padding: 3px 6px 3px 3px; color: #333; font: bold 12px/1 var(--px); background: #fff; border: 1px solid #cfe3f1; border-radius: 12px; }
+html[data-skin="2012"] .attach-img { border-radius: 50%; }
+html[data-skin="2012"] .attach-x { color: #aaa; font: 15px/1 var(--px); }
+html[data-skin="2012"] .post-name { font: bold 13px/1.2 var(--px); color: #333; }
+html[data-skin="2012"] .post-name:hover, html[data-skin="2012"] .post.mine .post-name { color: var(--blue); }
+html[data-skin="2012"] .cashtag, html[data-skin="2012"] .post-text .hashtag, html[data-skin="2012"] .post-text .mention { color: var(--blue); }
+html[data-skin="2012"] .post-coin { margin-top: 8px; padding: 8px; color: #333; background: #fff; border: 1px solid #e1e8ed; border-radius: 5px; }
+html[data-skin="2012"] .post-coin:hover { background: #f5f8fa; border-color: #cfe3f1; }
+html[data-skin="2012"] .post-coin-img { width: 36px; height: 36px; border: 0; border-radius: 5px; }
+html[data-skin="2012"] .post-coin-main b { font: bold 13px/1.2 var(--px); }
+html[data-skin="2012"] .post-coin-main small { font: 12px/1.2 var(--px); color: #999; }
+html[data-skin="2012"] .post-coin-mcap { font: bold 12px/1 var(--px); color: #333; }
+
+/* tweets: the 2012 action row (green retweet, gold favorite star), and the detail view */
+html[data-skin="2012"] .post.tweet:hover { background: #f5f8fa; }
+html[data-skin="2012"] .rt-label { margin-left: 46px; font: 11px/1.2 var(--px); color: #999; }
+html[data-skin="2012"] .reply-label { font: 12px/1.3 var(--px); color: #999; }
+html[data-skin="2012"] .tw-act { color: #b3b3b3; font: bold 11px/1 var(--px); border-radius: 4px; }
+html[data-skin="2012"] .tw-act:hover:not([disabled]) { color: var(--blue); background: #eef5fa; }
+html[data-skin="2012"] .tw-act.rt[aria-pressed="true"] { color: #609928; }
+html[data-skin="2012"] .tw-act.like[aria-pressed="true"] { color: #e5a00d; }
+html[data-skin="2012"] .thread { padding-bottom: 0; gap: 0; }
+html[data-skin="2012"] #thread-post { padding-bottom: 4px; }
+html[data-skin="2012"] .posts-list.big { margin: 0 -10px; }
+html[data-skin="2012"] .posts-list.big .post { cursor: default; background: none; }
+html[data-skin="2012"] .posts-list.big .post-ava { width: 48px; height: 48px; }
+html[data-skin="2012"] .posts-list.big .post-text { font: 18px/1.35 Georgia, "Times New Roman", serif; }
+html[data-skin="2012"] .tweet-stamp { margin: 0 0 8px; font: 12px/1 var(--px); color: #999; }
+html[data-skin="2012"] .tweet-counts { padding: 8px 0; gap: 16px; font: 11px/1 var(--px); letter-spacing: .03em; color: #999; border-top: 1px solid #e8e8e8; }
+html[data-skin="2012"] .tweet-counts b { font: bold 13px/1 var(--px); color: #333; }
+html[data-skin="2012"] .tweet-acts.big { margin: 0 -10px; padding: 6px 10px 8px; gap: 10px; background: none; border: 0; }
+/* the detail view's labeled actions, blue like the old "Reply  Retweet  Favorite" links */
+html[data-skin="2012"] .tweet-acts.big .tw-act { color: var(--blue); font: 12px/1 var(--px); }
+html[data-skin="2012"] .tweet-acts.big .tw-act:hover { background: none; text-decoration: underline; }
+html[data-skin="2012"] .tweet-acts.big .tw-act.rt[aria-pressed="true"] { color: #609928; }
+html[data-skin="2012"] .tweet-acts.big .tw-act.like[aria-pressed="true"] { color: #e5a00d; }
+html[data-skin="2012"] .reply-composer { margin: 0 -10px; padding: 10px; gap: 6px; background: #f5f8fa; border-bottom: 1px solid #e8e8e8; }
+html[data-skin="2012"] .replies-head { margin: 0 -10px; }
+html[data-skin="2012"] #thread-replies { margin: 0 -10px; }
+html[data-skin="2012"] #thread-replies > li.note { padding: 14px 10px; text-align: center; font-size: 12px; }
+html[data-skin="2012"] .posts-list.timeline { margin: 0 -10px; border-top: 1px solid #e8e8e8; }
+html[data-skin="2012"] .posts-list.timeline > li.note { padding: 12px 10px; text-align: center; font-size: 12px; }
+
 /* ---------- welcome post: an old-style tweet above the launch form ---------- */
 html[data-skin="2012"] .welcome { display: flex; gap: 10px; margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #c8c8c8;
   border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
@@ -465,6 +521,7 @@ html[data-skin="2012"] .soon small { font: 12px/1.35 var(--px); color: #777; pad
 /* card-sized widths: Launch and Tokens show just their icons, like the old tab bar glyphs */
 @media (max-width: 480px) {
   html[data-skin="2012"] .views .lbl { display: none; }
+  html[data-skin="2012"] #btn-more .lbl { display: inline; }   /* More has no icon, so it keeps its word */
   html[data-skin="2012"] .views .ghost { padding: 5px 9px; }
   html[data-skin="2012"] .tab-ico { width: 17px; height: 17px; }
 }

@@ -1,0 +1,14 @@
+{
+  "name": "tweetpad",
+  "short_name": "tweetpad",
+  "description": "Launch a token without leaving the tweet.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f8fa",
+  "theme_color": "#1da1f2",
+  "icons": [
+    { "src": "/assets/brand/tweetpad-hash-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/assets/brand/tweetpad-hash-256.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "/assets/brand/tweetpad-hash-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

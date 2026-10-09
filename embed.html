@@ -5,7 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>tweetpad</title>
-<link rel="icon" type="image/svg+xml" href="assets/twitter-2012-bird.svg">
+<link rel="icon" href="assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/tweetpad-hash-32.png">
+<link rel="apple-touch-icon" href="assets/brand/tweetpad-hash-180.png">
+<!-- wallets show these when asking to connect: the app's name, and its icon at a size that stays sharp -->
+<link rel="icon" type="image/png" sizes="512x512" href="assets/brand/tweetpad-hash-512.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="application-name" content="tweetpad">
+<meta name="apple-mobile-web-app-title" content="tweetpad">
+<meta name="theme-color" content="#1da1f2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
@@ -20,6 +28,7 @@
   <nav class="views" role="tablist" aria-label="Views">
     <button class="ghost" role="tab" aria-selected="true" data-view="wallets" title="Launch a token (L)"><kbd>L</kbd><svg class="tab-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .8c2.7 1.7 3.9 4.6 3.5 7.8l1.9 2.4v3l-2.9-1.5h-5L3.6 14v-3l1.9-2.4C5.1 5.4 6.3 2.5 8 .8zm0 4.1a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM6.6 13.2h2.8L8 15.6z" fill-rule="evenodd"/></svg><span class="lbl">Launch</span></button>
     <button class="ghost" role="tab" aria-selected="false" data-view="tokens" title="Tokens launched here (T)"><kbd>T</kbd><svg class="tab-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" fill-rule="evenodd"/><path d="M7.3 3.6h1.4v1c.9.1 1.7.5 2.1 1.1l-1 .9c-.4-.4-.9-.7-1.6-.7-.6 0-1 .3-1 .7 0 .5.5.6 1.4.9 1.3.3 2.4.8 2.4 2.1 0 1-.8 1.8-2.3 2v1H7.3v-1c-1-.1-1.9-.6-2.4-1.3l1-.9c.5.5 1.1.9 1.9.9.7 0 1.1-.3 1.1-.7 0-.5-.5-.7-1.5-.9-1.2-.3-2.3-.7-2.3-2 0-.9.8-1.7 2.2-1.9z"/></svg><span class="lbl">Tokens</span><span class="count" id="token-count"></span></button>
+    <button class="ghost" role="tab" aria-selected="false" data-view="feed" title="Feed: what's happening on tweetpad (F)"><kbd>F</kbd><svg class="tab-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 1h2l-.6 3.5h3L11 1h2l-.6 3.5H15v2h-2.95l-.5 3H14v2h-2.8L10.6 15h-2l.6-3.5h-3L5.6 15h-2l.6-3.5H1v-2h3.55l.5-3H2v-2h3.4zm1.05 5.5-.5 3h3l.5-3z" fill-rule="evenodd"/></svg><span class="lbl">Feed</span></button>
   </nav>
   <button class="ghost" id="btn-settings" aria-pressed="false" aria-label="Settings" title="Settings (,)"><kbd>,</kbd><svg class="gear" viewBox="0 0 8 8" aria-hidden="true"><path d="M3 0h2v1h1v1h1v1h1v2H7v1H6v1H5v1H3V7H2V6H1V5H0V3h1V2h1V1h1zm0 3v2h2V3z" fill="currentColor" fill-rule="evenodd"/></svg></button>
   <button class="ghost" id="btn-more" aria-pressed="false" title="More: profile, games, debug (M)"><kbd>M</kbd><span class="lbl">More</span></button>
@@ -61,8 +70,8 @@
           </div>
         </div>
         <div class="desc-wrap">
-          <textarea id="tk-desc" rows="2" maxlength="120" placeholder="Description (optional)" aria-label="Description">launched on tweetpad.io</textarea>
-          <span class="desc-left" id="desc-left" aria-hidden="true">120</span>
+          <textarea id="tk-desc" rows="2" maxlength="140" placeholder="Description (optional)" aria-label="Description">launched on tweetpad.io</textarea>
+          <span class="desc-left" id="desc-left" aria-hidden="true">140</span>
         </div>
         <details class="socials" id="socials">
           <summary>Social links <span class="dim">(optional)</span><span class="socials-count" id="socials-count"></span></summary>
@@ -86,6 +95,7 @@
         <button class="btn primary launch-btn" id="launch-btn" type="button">Connect wallet</button>
         <p class="note" id="launch-note">Launches on pump.fun · 0 pad fee · network fees apply</p>
         <ul class="quests" id="launch-checks" hidden></ul>
+        <div id="launch-share" hidden></div>
       </div>
     </section>
     <section id="tab-tokens" hidden>
@@ -102,6 +112,7 @@
         <div class="coin-head" id="coin-head"></div>
         <canvas id="coin-chart" aria-label="Price chart"></canvas>
         <div class="coin-links" id="coin-links"></div>
+        <div id="coin-share"></div>
         <div class="creator" id="coin-creator" hidden></div>
         <ul class="trades" id="coin-trades"></ul>
         <button class="linkish trades-more" id="trades-more" type="button" hidden></button>
@@ -109,8 +120,8 @@
         <div class="posts">
           <div class="posts-head"><span>Posts</span><span class="posts-count" id="posts-count"></span></div>
           <div class="composer">
-            <textarea id="post-input" rows="2" maxlength="120" aria-label="Write a post about this coin"></textarea>
-            <div class="composer-foot"><span class="post-left" id="post-left">120</span><button class="btn sm primary" id="post-send" type="button">Post</button></div>
+            <textarea id="post-input" rows="2" maxlength="140" aria-label="Write a post about this coin"></textarea>
+            <div class="composer-foot"><span class="post-left" id="post-left">140</span><button class="btn sm primary" id="post-send" type="button">Post</button></div>
           </div>
           <ul class="posts-list" id="coin-posts"></ul>
         </div>
@@ -118,6 +129,35 @@
     </section>
     <section id="tab-profile" hidden></section>
     <section id="tab-user" hidden></section>
+    <section id="tab-feed" hidden>
+      <div class="pane panel feed">
+        <div class="launch-head"><span>Feed</span><span class="sort"><button id="feed-refresh" title="Refresh">↻</button></span></div>
+        <!-- the pad-wide timeline: 140 characters, optionally with one tweetpad coin embedded -->
+        <div class="composer feed-composer">
+          <textarea id="feed-input" rows="2" maxlength="140" placeholder="What’s happening?" aria-label="What's happening?"></textarea>
+          <div id="feed-attach" hidden></div>
+          <div class="composer-foot">
+            <button class="tag-coin" id="feed-tag" type="button" aria-haspopup="dialog" aria-controls="pairs" title="Embed one of the coins launched on tweetpad">$ Tag a coin</button>
+            <span class="spacer"></span>
+            <span class="post-left" id="feed-left">140</span><button class="btn sm primary" id="feed-send" type="button">Tweet</button>
+          </div>
+        </div>
+        <ul class="posts-list feed-list" id="feed-list"></ul>
+      </div>
+    </section>
+    <section id="tab-thread" hidden>
+      <!-- one tweet, as the 2012 detail view: the tweet big, its numbers, a reply box, then the replies -->
+      <div class="pane panel thread">
+        <div class="launch-head"><span>Tweet</span><button class="menu-x" id="thread-close" aria-label="Back" title="Back (Esc)">×</button></div>
+        <div id="thread-post"></div>
+        <div class="composer reply-composer">
+          <textarea id="reply-input" rows="2" maxlength="140" aria-label="Reply"></textarea>
+          <div class="composer-foot"><span class="spacer"></span><span class="post-left" id="reply-left">140</span><button class="btn sm primary" id="reply-send" type="button">Reply</button></div>
+        </div>
+        <div class="posts-head replies-head"><span>Replies</span><span class="posts-count" id="replies-count"></span></div>
+        <ul class="posts-list" id="thread-replies"></ul>
+      </div>
+    </section>
     <section id="tab-more" hidden>
       <div class="pane panel more-pane">
         <div class="launch-head"><span>More</span></div>
@@ -156,6 +196,7 @@
           <small>Launch a token without leaving the tweet.</small>
         </div>
         <table class="about-table">
+          <tr><td>$TP contract</td><td id="about-ca"></td></tr>
           <tr><td>Skin</td><td id="about-skin"></td></tr>
           <tr><td>Network</td><td id="about-net"></td></tr>
           <tr><td>Launches on</td><td>pump.fun</td></tr>
@@ -232,7 +273,7 @@
     <input id="pairs-search" class="pairs-search" placeholder="Search name, $ticker or contract" autocomplete="off" spellcheck="false" aria-label="Search coins to pair with">
     <ul class="pairs-grid" id="pairs-grid" role="listbox" aria-label="Pairs"></ul>
     <div class="status" id="pairs-status"></div>
-    <p class="note fine">SOL or any tweetpad coin.</p>
+    <p class="note fine" id="pairs-note">SOL or any tweetpad coin.</p>
   </div>
 </div>
 <div class="lightbox" id="verify" role="dialog" aria-modal="true" aria-labelledby="verify-title" hidden>

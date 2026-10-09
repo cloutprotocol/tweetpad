@@ -21,7 +21,7 @@ async function viaPinata(jwt, meta, blob, filename) {
   const image = await pin(jwt, blob, filename);
   const metadata = {
     name: meta.name, symbol: meta.symbol, description: meta.description, image, showName: true,
-    createdOn: 'https://twitterpad.vercel.app',
+    createdOn: 'https://www.tweetpad.io',
     ...(meta.twitter && { twitter: meta.twitter }), ...(meta.telegram && { telegram: meta.telegram }), ...(meta.website && { website: meta.website }),
   };
   const uri = await pin(jwt, new Blob([JSON.stringify(metadata)], { type: 'application/json' }), meta.symbol.toLowerCase() + '.json');
@@ -48,7 +48,7 @@ function cleanMeta(raw) {
   const link = (v) => { try { const u = new URL(String(v || '').trim()); return u.protocol === 'https:' ? u.href : ''; } catch { return ''; } };
   if (!name || name.length > 32) return { error: 'name must be 1–32 characters' };
   if (!/^[A-Z0-9]{2,10}$/.test(symbol)) return { error: 'ticker must be 2–10 letters or numbers' };
-  if (description.length > 120) return { error: 'description is over 120 characters' };
+  if (description.length > 140) return { error: 'description is over 140 characters' };
   return { name, symbol, description, twitter: link(m.twitter), telegram: link(m.telegram), website: link(m.website) };
 }
 

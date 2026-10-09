@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>tweetpad card preview</title>
+<link rel="icon" href="assets/brand/favicon.ico" sizes="any">
+<style>
+  /* how our X cards look in a post, built from the same twitter:* tags X reads (the landing page and /c/<mint>) */
+  :root { --bg: #f5f8fa; --card: #fff; --line: #e1e8ed; --ink: #14171a; --dim: #657786; --blue: #1da1f2; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15202b; --card: #192734; --line: #38444d; --ink: #e7e9ea; --dim: #8b98a5; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .lead { margin: 0 0 20px; color: var(--dim); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .post { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px 10px; }
+  .who { display: flex; align-items: center; gap: 10px; }
+  .who img { width: 40px; height: 40px; border-radius: 50%; }
+  .who b { display: block; font-size: 15px; } .who span { color: var(--dim); font-size: 14px; }
+  .text { margin: 8px 0 10px; color: var(--blue); word-break: break-all; }
+  /* the card: a square poster with X's play button over the middle, then the title block */
+  .card { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: block; color: inherit; text-decoration: none; }
+  .poster { position: relative; aspect-ratio: 1 / 1; background: #ccd6dd center / cover no-repeat; }
+  .play { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%;
+          background: rgba(15, 20, 25, .75); border: 3px solid #fff; display: grid; place-items: center; }
+  .play::after { content: ""; margin-left: 6px; border-left: 20px solid #fff; border-top: 12px solid transparent; border-bottom: 12px solid transparent; }
+  .meta { padding: 10px 12px; border-top: 1px solid var(--line); }
+  .meta b { display: block; } .meta span { display: block; color: var(--dim); font-size: 14px; }
+  .meta small { color: var(--dim); font-size: 13px; }
+  details { margin-top: 8px; font-size: 12px; color: var(--dim); }
+  details code { display: block; margin-top: 4px; word-break: break-all; color: var(--ink); }
+  .links { margin-top: 6px; font-size: 13px; } .links a { color: var(--blue); margin-right: 12px; }
+  .note { color: var(--dim); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Card preview</h1>
+  <p class="lead">What a post on X shows before someone presses play, built from each page's live <code>twitter:*</code> tags. X caches cards, so a change can take a while to reach posts that already shared a link.</p>
+  <div class="grid" id="grid"><p class="note">Loading cards…</p></div>
+</main>
+<script>
+  const grid = document.getElementById('grid');
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  /* the tags X reads, from a page as it is served */
+  async function tags(path) {
+    const doc = new DOMParser().parseFromString(await (await fetch(path)).text(), 'text/html');
+    const get = (n) => (doc.querySelector(`meta[name="${n}"], meta[property="${n}"]`) || {}).content || '';
+    return { path, title: get('twitter:title') || doc.title, description: get('twitter:description'), image: get('twitter:image'), player: get('twitter:player') };
+  }
+  /* images and players point at the live domain; here they're shown from this server so local changes show up too */
+  const local = (url) => { try { const u = new URL(url); return u.pathname + u.search; } catch { return url; } };
+  function post(t) {
+    return `<article class="post">
+      <div class="who"><img src="assets/brand/tweetpad-hash-180.png" alt=""><div><b>you</b><span>@you · now</span></div></div>
+      <div class="text">${esc(location.host + (t.path === '/' ? '' : t.path))}</div>
+      <a class="card" href="${esc(local(t.player))}" target="_blank" rel="noopener" title="Open the player this card plays">
+        <div class="poster" style="background-image:url('${esc(local(t.image))}')"><span class="play" aria-hidden="true"></span></div>
+        <div class="meta"><small>${esc(location.host)}</small><b>${esc(t.title)}</b><span>${esc(t.description)}</span></div>
+      </a>
+      <div class="links"><a href="${esc(local(t.player))}" target="_blank" rel="noopener">Open player</a><a href="${esc(local(t.image))}" target="_blank" rel="noopener">Image</a></div>
+      <details><summary>Tags</summary><code>title: ${esc(t.title)}</code><code>description: ${esc(t.description)}</code><code>image: ${esc(t.image)}</code><code>player: ${esc(t.player)}</code></details>
+    </article>`;
+  }
+  (async () => {
+    try {
+      const out = await (await fetch('/api/launches?q=')).json();
+      const pages = ['/', ...(out.launches || []).slice(0, 12).map((l) => '/c/' + l.mint)];
+      const cards = await Promise.all(pages.map((p) => tags(p).catch(() => null)));
+      grid.innerHTML = cards.filter(Boolean).map(post).join('') || '<p class="note">No cards found.</p>';
+    } catch (err) { grid.innerHTML = '<p class="note">Could not load cards: ' + esc(err.message) + '</p>'; }
+  })();
+</script>
+</body>
+</html>

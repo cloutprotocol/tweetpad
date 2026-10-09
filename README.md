@@ -16,10 +16,11 @@ shareable card that plays inside X again. No app to install and no tab to open.
 
 | | |
 | --- | --- |
-| **Launch** | Image (pick, drop or paste), name, ticker, a description of up to 120 characters, optional X / Telegram / website links, and a dev buy with a live estimate of the tokens it gets. One wallet approval. Live on pump.fun in seconds. |
+| **Launch** | Image (pick, drop or paste), name, ticker, a description of up to 140 characters, optional X / Telegram / website links, and a dev buy with a live estimate of the tokens it gets. One wallet approval. Live on pump.fun in seconds. |
 | **Pairing** | "Pair with" on the form: SOL (default) or any coin launched on tweetpad, picked from a grid you can search by name, ticker or contract. The server checks pump.fun accepts it before building (`create_v2`). `QUOTE_MINT` sets the default pair. |
+| **Feed** | A pad-wide timeline: "What's happening?" in 140 characters, with one tweetpad coin embedded as a card; $TICKERs link to their coins. Likes, retweets (they land on the retweeter's profile) and replies, with a 2012-style tweet view. |
 | **Tokens** | Every coin launched here, with market cap, 1h move and the last day drawn faintly behind each row. New / Hot / Mcap, 24 at a time. |
-| **Coin screen** | Candle chart, compact recent trades, live trades over a websocket, the creator (2012-style author card), copyable contract address, share card, and **posts**: tweet-sized comments (120 characters) signed in with the wallet. |
+| **Coin screen** | Candle chart, compact recent trades, live trades over a websocket, the creator (2012-style author card), copyable contract address, share card, and **posts**: tweet-sized comments (140 characters) signed in with the wallet. |
 | **Inventory** | The hotbar holds your coins, then the newest. `1`–`9` opens them. |
 | **More** | Profile, Games, Debug and About (version, network, contact: tweetpad@proton.me) in one list. |
 | **Profile** | Link your wallet to your X account with one tweet, see the coins you launched, claim creator rewards. |
@@ -27,7 +28,7 @@ shareable card that plays inside X again. No app to install and no tab to open.
 | **Games** | Coming soon: a placeholder grid for now. |
 | **Debug** | The original wallet-in-an-iframe probe: sign tests, environment, report, popup bridge. |
 
-Keys: `C` wallet · `L` launch · `T` tokens · `M` more · `P` profile · `G` games · `A` about · `,` settings · `D` debug · `1`–`9` inventory · `H` chat · `Esc` back.
+Keys: `C` wallet · `L` launch · `T` tokens · `F` feed · `M` more · `P` profile · `G` games · `A` about · `,` settings · `D` debug · `1`–`9` inventory · `H` chat · `Esc` back.
 
 ## How it works
 
@@ -79,7 +80,7 @@ assets/tweetpad.css   layout and the Tweetcraft skin (pixel HUD)
 assets/skin-2012.css  the default 2012 skin, layered over tweetpad.css
 assets/tweetpad.js    the card app (plain JS, no build step)
 api/                  Vercel functions, one per route; _lib.js is shared and not a route
-  ipfs · create · launches · market · chart · image · card · profile · rewards · upload · reactions
+  ipfs · create · launches · market · chart · image · card · card-image · profile · rewards · upload · reactions · chat · social
 scripts/check.js      `npm run check`: syntax and wiring smoke test
 scripts/preview.html  source for preview.png, the X card image (render command inside)
 docs/CHECKLIST.md     what's next: critical fixes, quick wins, quality of life

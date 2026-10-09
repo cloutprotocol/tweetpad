@@ -170,6 +170,18 @@ async function marketData(mints) {
   return market;
 }
 
+/* a feed post or reply by id (msg:<id>). Posts made before posts were kept by id are found in the feed list once,
+   then stored by id and put on their author's timeline, so they can be liked, retweeted and replied to too. */
+async function loadPost(id) {
+  const [raw] = await redis(['GET', 'msg:' + id]);
+  if (raw) return JSON.parse(raw);
+  const [rows] = await redis(['LRANGE', 'chat:feed', 0, -1]);
+  const hit = rows.map(r => JSON.parse(r)).find(m => String(m.id) === String(id));
+  if (!hit) return null;
+  await redis(['SET', 'msg:' + id, JSON.stringify(hit)], ['ZADD', 'user:posts:' + hit.wallet, hit.t, 'p:' + id]);
+  return hit;
+}
+
 let conn = null;
 function connection() {
   const { Connection } = require('@solana/web3.js');
@@ -206,5 +218,5 @@ function fail(res, status, error) {
 
 module.exports = {
   PUMP_PROGRAM, MAX_IMAGE_BYTES, cors, sniffImage, readBody, readJson, sha256,
-  b58encode, b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, cleanThumb, rateLimit, fail,
+  b58encode, b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, fail,
 };
