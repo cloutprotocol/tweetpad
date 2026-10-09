@@ -10,7 +10,7 @@ Answers one question before you build the launchpad: **can a Solana wallet conne
 
 ## Deploy
 
-1. In `index.html`, the card URLs point at `twitterpad.vercel.app`; change them if you deploy elsewhere, and replace `@yourhandle`.
+1. In `index.html`, the card URLs point at `twitterpad.vercel.app`, and `twitter:site` is `@Prawnsfamily`; change them if you deploy elsewhere.
 2. Upload the three files to the root of any HTTPS static host.
 3. Make sure the host does **not** send `X-Frame-Options` for `embed.html`. To restrict framing to X instead of leaving it open, send:
 
