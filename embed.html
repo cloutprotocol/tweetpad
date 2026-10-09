@@ -60,6 +60,8 @@
           <span class="net-switch in-head" role="radiogroup" aria-label="Launch network">
             <button type="button" role="radio" data-net="solana" aria-checked="true" aria-label="Solana" title="Launch on Solana (pump.fun)"><span class="net-logo sol" aria-hidden="true"></span></button>
             <button type="button" role="radio" data-net="robinhood" aria-checked="false" aria-label="Robinhood Chain" title="Launch on Robinhood Chain"><span class="net-logo rh" aria-hidden="true"></span></button>
+            <button type="button" role="radio" data-net="bnb" aria-checked="false" aria-label="BNB Chain" title="Launch on BNB Chain"><span class="net-logo bnb" aria-hidden="true"></span></button>
+            <button type="button" role="radio" data-net="base" aria-checked="false" aria-label="Base" title="Launch on Base"><span class="net-logo base" aria-hidden="true"></span></button>
           </span>
           <button class="pair-pick" id="pair-pick" type="button" aria-haspopup="dialog" aria-controls="pairs"></button></div>
         <div class="evm-wallet" id="evm-wallet" hidden></div>
@@ -88,7 +90,7 @@
             <label class="link-field"><span class="link-pre" aria-hidden="true">WEB</span><input id="tk-web" maxlength="200" placeholder="yoursite.com" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Website"></label>
           </div>
         </details>
-        <!-- Robinhood only: every coin has a flat 1% trading fee; the creator splits their side with holders -->
+        <!-- EVM chains only: every coin has a flat 1% trading fee; the creator splits their side with holders -->
         <div class="fee-box" id="fee-box" hidden>
           <div class="devbuy-head"><span class="field-label">Creator fees</span><span class="devbuy-hint">1% of every trade, for the coin's life</span></div>
           <div class="fee-split">
@@ -127,6 +129,8 @@
           <button type="button" role="radio" data-chain="all" aria-checked="true">All <span class="n" id="cf-all"></span></button>
           <button type="button" role="radio" data-chain="solana" aria-checked="false" title="Solana"><span class="net-logo sol" aria-hidden="true"></span> <span class="n" id="cf-solana"></span></button>
           <button type="button" role="radio" data-chain="robinhood" aria-checked="false" title="Robinhood Chain"><span class="net-logo rh" aria-hidden="true"></span> <span class="n" id="cf-robinhood"></span></button>
+          <button type="button" role="radio" data-chain="bnb" aria-checked="false" title="BNB Chain"><span class="net-logo bnb" aria-hidden="true"></span> <span class="n" id="cf-bnb"></span></button>
+          <button type="button" role="radio" data-chain="base" aria-checked="false" title="Base"><span class="net-logo base" aria-hidden="true"></span> <span class="n" id="cf-base"></span></button>
         </div>
         <ul class="token-list" id="token-list"></ul>
       </div>
@@ -329,10 +333,12 @@
     <button class="slot chat-slot" id="btn-chat" title="Chat (Enter)" aria-label="Open chat">
       <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M1 1h6v4H4L2 7V5H1z" fill="currentColor"/></svg></button>
     <div id="hotbar" role="toolbar" aria-label="Your coins (keys 1–9)"></div>
-    <!-- the chain switch, opposite chat: Solana (pump.fun) or Robinhood Chain (Launch Party's solo launcher), logos only -->
+    <!-- the chain switch, opposite chat: Solana (pump.fun), or Robinhood Chain, BNB Chain or Base (Launch Party's solo launcher), logos only -->
     <span class="net-switch" role="radiogroup" aria-label="Network">
       <button type="button" role="radio" data-net="solana" aria-checked="true" aria-label="Solana" title="Launch on Solana (pump.fun)"><span class="net-logo sol" aria-hidden="true"></span></button>
       <button type="button" role="radio" data-net="robinhood" aria-checked="false" aria-label="Robinhood Chain" title="Launch on Robinhood Chain"><span class="net-logo rh" aria-hidden="true"></span></button>
+      <button type="button" role="radio" data-net="bnb" aria-checked="false" aria-label="BNB Chain" title="Launch on BNB Chain"><span class="net-logo bnb" aria-hidden="true"></span></button>
+      <button type="button" role="radio" data-net="base" aria-checked="false" aria-label="Base" title="Launch on Base"><span class="net-logo base" aria-hidden="true"></span></button>
     </span>
 
   </div>

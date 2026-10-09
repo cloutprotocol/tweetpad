@@ -1,17 +1,30 @@
-// Robinhood Chain (EVM) launches through Launch Party's live solo launcher. Files starting with "_" are not routes.
+// EVM launches (Robinhood Chain, BNB Chain, Base) through Launch Party's live solo launcher: the same factory contract on
+// each chain, with its own gateway, hook and Uniswap v4 deployment (NETS below). Files starting with "_" are not routes.
 // A solo launch goes through the launch GATEWAY (the factory refuses direct calls with OnlyGateway): createIn(module, request,
 // asset) with kind 1 (solo), the factory's RoomTerms + price guard ABI-encoded in `config`, and the launch settings in
-// `extensions`. Native ETH is asset 0x0.
-// FEES: every tweetpad launch has a flat 1% trading fee (feeEndBps 100). Launch Party's hook takes 10% of it off the top for
+// `extensions`. The chain's native coin (ETH, or BNB on BNB Chain) is asset 0x0.
+// FEES (every chain alike): every tweetpad launch has a flat 1% trading fee (feeEndBps 100). Launch Party's hook takes 10% of it off the top for
 // its platform wallet; the creator splits the rest between themselves and the coin's holders (holdersBps). Fees collect in
 // the hook per pool (feesOwed) until anyone calls sweep(pool), which pays all three legs at once: that is the creator's
-// "claim". Holders' ETH streams into the coin, where each holder claims it.
+// "claim". Holders' share streams into the coin in the native coin, where each holder claims it.
 const { createPublicClient, http, encodeAbiParameters, decodeAbiParameters, encodeFunctionData, decodeFunctionData, parseAbi, parseEventLogs, isAddress, getAddress } = require('viem');
 
-const CHAIN_ID = 4663;
-const RPC = process.env.ROBINHOOD_RPC_URL || 'https://rpc.mainnet.chain.robinhood.com';
-const FACTORY = '0xDec25F5E4AaB73Ebc64601A0885E01Ae1203fc29';
-const EXPLORER = 'https://robinhoodchain.blockscout.com';
+/* the chains, from Launch Party's chain registry (src/config/networks.json), each checked live on chain 2026-10-09:
+   factory code, gateway, solo fee 0.0005 of the native coin, native launches enabled */
+const NETS = {
+  robinhood: { id: 4663, name: 'Robinhood Chain', symbol: 'ETH', rpc: process.env.ROBINHOOD_RPC_URL || 'https://rpc.mainnet.chain.robinhood.com',
+    factory: '0xDec25F5E4AaB73Ebc64601A0885E01Ae1203fc29', hook: '0x8E75298A4fD5dccFFf16A7404d4A1acc2CcAA8CC', explorer: 'https://robinhoodchain.blockscout.com',
+    router: '0x8876789976decbfcbbbe364623c63652db8c0904', quoter: '0xe202BB8dd524eE9C5E679e5B5809f7A373a982Ef' },
+  bnb: { id: 56, name: 'BNB Chain', symbol: 'BNB', rpc: process.env.BNB_RPC_URL || 'https://bsc-rpc.publicnode.com',
+    factory: '0x708166A3862798F03C6280a332c04bd21AE4c704', hook: '0x2748A21A12D52FE820fC0d84F92304ec96C968Cc', explorer: 'https://bscscan.com',
+    router: '0xDc264714F68d84CF29BC605589405E78bDBE7C9f', quoter: '0x9F75dD27D6664c475B90e105573E550ff69437B0' },
+  base: { id: 8453, name: 'Base', symbol: 'ETH', rpc: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+    factory: '0xE7d290A376784e458413fD8D7453DE4Ea31D6Afc', hook: '0xd37AEdbBF32d203c72309a6c96A265fc04FA68CC', explorer: 'https://basescan.org',
+    router: '0x6fF5693b99212Da76ad316178A184AB56D299b43', quoter: '0x0d5e0F971ED27FBfF6c2837bf31316121532048D' },
+};
+const PERMIT2 = '0x000000000022D473030F116dDEE9F6B43aC78BA3';   // the same address on every chain
+const isNet = (chain) => Object.prototype.hasOwnProperty.call(NETS, chain);
+const net = (chain) => { if (!isNet(chain)) throw Object.assign(new Error('unknown chain'), { status: 400 }); return NETS[chain]; };
 const NATIVE = '0x0000000000000000000000000000000000000000';
 const DEADLINE_SECONDS = 600n;
 
@@ -35,7 +48,6 @@ const FACTORY_ABI = parseAbi([
   'event SoloLaunched(address indexed coin, address indexed creator, address escrow, uint256 raised)',
 ]);
 const ERC20_ABI = parseAbi(['function name() view returns (string)', 'function symbol() view returns (string)']);
-const HOOK = '0x8E75298A4fD5dccFFf16A7404d4A1acc2CcAA8CC';
 const HOOK_ABI = parseAbi([
   'function feesOwed(bytes32) view returns (uint256)',
   'function owed(address, address) view returns (uint256)',
@@ -49,21 +61,21 @@ const FEE_BPS = 100;          // 1%, flat for the coin's life
 const PLATFORM_BPS = 1000;    // Launch Party's cut of every fee
 const BPS = 10000;
 
-let client = null;
-const rpc = () => client || (client = createPublicClient({ transport: http(RPC, { timeout: 15000 }) }));
+const clients = {};
+const rpc = (chain) => clients[chain] || (clients[chain] = createPublicClient({ transport: http(net(chain).rpc, { timeout: 15000 }) }));
 
-/* the factory's live settings: fee, opening valuation, gateway and module. Read once a minute per instance. */
-let ctx = null;
-async function launchContext() {
+/* a chain's factory settings: fee, opening valuation, gateway and module. Read once a minute per instance. */
+const ctxs = {};
+async function launchContext(chain) {
+  const n = net(chain), ctx = ctxs[chain];
   if (ctx && Date.now() - ctx.at < 60000) return ctx;
-  const read = (functionName, args) => rpc().readContract({ address: FACTORY, abi: FACTORY_ABI, functionName, args });
+  const read = (functionName, args) => rpc(chain).readContract({ address: n.factory, abi: FACTORY_ABI, functionName, args });
   const [fee, noTax, gateway, moduleId, settings, eth] = await Promise.all([
     read('soloLaunchFee'), read('supportsNoTax'), read('gateway'), read('moduleId'), read('launchConfiguration'), read('paymentAssets', [NATIVE]),
   ]);
-  if (!noTax) throw Object.assign(new Error('Robinhood launches without a trading fee are not available right now'), { status: 503 });
-  if (!eth.enabled) throw Object.assign(new Error('ETH launches are not enabled on the Robinhood factory'), { status: 503 });
-  ctx = { at: Date.now(), fee, gateway, moduleId, supply: settings[0], revision: settings[2], openingFdv: eth.soloOpeningFdv };
-  return ctx;
+  if (!noTax) throw Object.assign(new Error(n.name + ' launches are not available right now'), { status: 503 });
+  if (!eth.enabled) throw Object.assign(new Error(n.symbol + ' launches are not enabled on ' + n.name), { status: 503 });
+  return (ctxs[chain] = { at: Date.now(), fee, gateway, moduleId, supply: settings[0], revision: settings[2], openingFdv: eth.soloOpeningFdv });
 }
 
 /* the factory's terms struct for a solo launch; the room-shaped fields are ignored on chain but must be legal */
@@ -81,61 +93,65 @@ function gatewayCall(c, t, minimum, deadline) {
 }
 
 /* a ready-to-sign launch: simulated as the launcher's own wallet, with the dev buy guarded at 99% of what it would get now */
-async function buildLaunch({ wallet, name, symbol, uri, socials, devBuy, holdersBps = 0 }) {
-  const c = await launchContext();
-  const block = await rpc().getBlock();
+async function buildLaunch({ chain, wallet, name, symbol, uri, socials, devBuy, holdersBps = 0 }) {
+  const n = net(chain), c = await launchContext(chain), r = rpc(chain);
+  const block = await r.getBlock();
   const deadline = block.timestamp + DEADLINE_SECONDS;
   const t = terms({ name, symbol, uri, socials, devBuy, holdersBps });
   let minimum = 0n, expected = 0n;
   if (devBuy > 0n) {
     /* first ask what the buy gets, with a balance conjured for the dry run; then commit to 99% of it */
     const probe = gatewayCall(c, t, 1n, deadline);
-    const { result } = await rpc().simulateContract({ ...probe, account: wallet, stateOverride: [{ address: wallet, balance: probe.value + 10n ** 18n }] });
+    const { result } = await r.simulateContract({ ...probe, account: wallet, stateOverride: [{ address: wallet, balance: probe.value + 10n ** 18n }] });
     expected = result[1];
     minimum = expected * 99n / 100n || 1n;
   }
   const call = gatewayCall(c, t, minimum, deadline);
-  /* Robinhood's eth_call doesn't check the sender's balance, so check it here: the launch value plus room for gas */
+  /* Robinhood's eth_call doesn't check the sender's balance, so check it here (on every chain): the launch value plus room for gas */
   const [balance, gas, gasPrice] = await Promise.all([
-    rpc().getBalance({ address: wallet }),
-    rpc().estimateContractGas({ ...call, account: wallet, stateOverride: [{ address: wallet, balance: call.value + 10n ** 18n }] }).catch(() => 3000000n),
-    rpc().getGasPrice(),
+    r.getBalance({ address: wallet }),
+    r.estimateContractGas({ ...call, account: wallet, stateOverride: [{ address: wallet, balance: call.value + 10n ** 18n }] }).catch(() => 3000000n),
+    r.getGasPrice(),
   ]);
   const gasCost = gas * gasPrice * 2n;
   if (balance < call.value + gasCost) {
-    throw Object.assign(new Error('not enough ETH on Robinhood Chain: this launch needs about ' + (Number(call.value + gasCost) / 1e18).toFixed(4) + ' ETH' + (devBuy > 0n ? ' with the dev buy' : '') + ', including gas'), { status: 400 });
+    throw Object.assign(new Error('not enough ' + n.symbol + ' on ' + n.name + ': this launch needs about ' + (Number(call.value + gasCost) / 1e18).toFixed(4) + ' ' + n.symbol + (devBuy > 0n ? ' with the dev buy' : '') + ', including gas'), { status: 400 });
   }
   /* the real wallet: anything else that would fail on chain stops here instead of in the wallet */
-  try { await rpc().simulateContract({ ...call, account: wallet }); }
+  try { await r.simulateContract({ ...call, account: wallet }); }
   catch (err) { throw Object.assign(new Error('the launch would fail on chain: ' + String(err.shortMessage || err.message || '').slice(0, 160)), { status: 400 }); }
-  return { to: call.address, data: encodeFunctionData(call), value: call.value, gas: gas * 12n / 10n, chainId: CHAIN_ID, fee: c.fee, expected, minimum, supply: c.supply, deadline };
+  return { to: call.address, data: encodeFunctionData(call), value: call.value, gas: gas * 12n / 10n, chainId: n.id, fee: c.fee, expected, minimum, supply: c.supply, deadline };
 }
 
 /* a launch that happened: sent to the gateway, succeeded, and the factory logged the coin and its creator */
-async function verifyLaunch(hash) {
-  const receipt = await rpc().waitForTransactionReceipt({ hash, timeout: 30000 }).catch(() => null);
+async function verifyLaunch(chain, hash) {
+  const n = net(chain), r = rpc(chain);
+  const receipt = await r.waitForTransactionReceipt({ hash, timeout: 30000 }).catch(() => null);
   if (!receipt) throw Object.assign(new Error('transaction not found yet; try again in a moment'), { status: 404 });
   if (receipt.status !== 'success') throw Object.assign(new Error('the launch transaction failed on chain'), { status: 400 });
-  const c = await launchContext();
-  if (!receipt.to || getAddress(receipt.to) !== getAddress(c.gateway)) throw Object.assign(new Error('not a launch through the Robinhood launch gateway'), { status: 400 });
-  const [log] = parseEventLogs({ abi: FACTORY_ABI, eventName: 'SoloLaunched', logs: receipt.logs.filter(l => getAddress(l.address) === FACTORY) });
+  const c = await launchContext(chain);
+  if (!receipt.to || getAddress(receipt.to) !== getAddress(c.gateway)) throw Object.assign(new Error('not a launch through the ' + n.name + ' launch gateway'), { status: 400 });
+  const [log] = parseEventLogs({ abi: FACTORY_ABI, eventName: 'SoloLaunched', logs: receipt.logs.filter(l => getAddress(l.address) === getAddress(n.factory)) });
   if (!log) throw Object.assign(new Error('no launch found in that transaction'), { status: 400 });
-  const tx = await rpc().getTransaction({ hash });
+  const tx = await r.getTransaction({ hash });
   const { args } = decodeFunctionData({ abi: GATEWAY_ABI, data: tx.input });
   const [t] = decodeAbiParameters([TERMS, { type: 'uint256' }, { type: 'uint256' }], args[1].config);
-  const block = await rpc().getBlock({ blockNumber: receipt.blockNumber });
+  const block = await r.getBlock({ blockNumber: receipt.blockNumber });
   /* the pool the hook registered for this coin: where its fees collect */
-  const [reg] = parseEventLogs({ abi: HOOK_ABI, eventName: 'PoolRegistered', logs: receipt.logs.filter(l => getAddress(l.address) === HOOK) });
+  const [reg] = parseEventLogs({ abi: HOOK_ABI, eventName: 'PoolRegistered', logs: receipt.logs.filter(l => getAddress(l.address) === getAddress(n.hook)) });
   return { coin: getAddress(log.args.coin), creator: getAddress(log.args.creator), name: t.name, symbol: t.symbol, uri: t.uri,
     devBuy: Number(t.seatPrice) / 1e18, time: Number(block.timestamp) * 1000, poolId: reg ? reg.args.poolId : null,
     feeBps: Number(t.feeEndBps), holdersBps: Number(t.dividendBps) };
 }
 
 /* a creator's fees across their coins: what each pool holds for them now, plus anything a failed payout still owes */
-async function creatorFees(wallet, coins) {
+async function creatorFees(chain, wallet, coins) {
+  const n = net(chain), r = rpc(chain);
   const pools = coins.filter(c => c.poolId && c.feeBps);
-  const owedPools = pools.length ? await rpc().multicall({ contracts: pools.map(c => ({ address: HOOK, abi: HOOK_ABI, functionName: 'feesOwed', args: [c.poolId] })), allowFailure: true }) : [];
-  const owed = await rpc().readContract({ address: HOOK, abi: HOOK_ABI, functionName: 'owed', args: [wallet, NATIVE] }).catch(() => 0n);
+  /* one read per pool rather than multicall: not every chain here has Multicall3 registered in viem's chain list */
+  const owedPools = await Promise.all(pools.map(c => r.readContract({ address: n.hook, abi: HOOK_ABI, functionName: 'feesOwed', args: [c.poolId] })
+    .then(result => ({ status: 'success', result }), () => ({ status: 'failure' }))));
+  const owed = await r.readContract({ address: n.hook, abi: HOOK_ABI, functionName: 'owed', args: [wallet, NATIVE] }).catch(() => 0n);
   let total = owed;
   const perCoin = pools.map((c, i) => {
     const pending = owedPools[i] && owedPools[i].status === 'success' ? owedPools[i].result : 0n;
@@ -146,14 +162,15 @@ async function creatorFees(wallet, coins) {
   return { total, owed, perCoin };
 }
 /* the claim: one sweep per coin that holds fees (all three legs pay out), then any stuck payout */
-function claimCalls(wallet, fees) {
+function claimCalls(chain, wallet, fees) {
+  const HOOK = net(chain).hook;
   const calls = fees.perCoin.filter(c => c.pending > 0n).map(c => ({ to: HOOK, data: encodeFunctionData({ abi: HOOK_ABI, functionName: 'sweep', args: [c.poolId] }), label: '$' + c.symbol }));
   if (fees.owed > 0n) calls.push({ to: HOOK, data: encodeFunctionData({ abi: HOOK_ABI, functionName: 'claimOwed', args: [wallet, NATIVE] }), label: 'held payout' });
   return calls;
 }
 /* a holder's ETH rewards in one coin, and the call that claims them */
-async function holderRewards(coin, wallet) {
-  const earned = await rpc().readContract({ address: coin, abi: COIN_REWARDS_ABI, functionName: 'earned', args: [wallet] }).catch(() => 0n);
+async function holderRewards(chain, coin, wallet) {
+  const earned = await rpc(chain).readContract({ address: coin, abi: COIN_REWARDS_ABI, functionName: 'earned', args: [wallet] }).catch(() => 0n);
   return { earned, claim: { to: coin, data: encodeFunctionData({ abi: COIN_REWARDS_ABI, functionName: 'claim', args: [] }) } };
 }
 
@@ -164,7 +181,6 @@ const isEvmAddress = (s) => typeof s === 'string' && isAddress(s, { strict: fals
    sorts first, ETH is currency0 and a buy is zeroForOne. The 1% fee is the hook's, taken inside the swap; there is no other.
    A buy sends ETH as the call's value. A sell needs the coin approved to Permit2 and Permit2 to the router (exactly the amount
    sold, for an hour); the calls listed are only the ones still missing, and the wallet sends them in order. */
-const V4 = { router: '0x8876789976decbfcbbbe364623c63652db8c0904', quoter: '0xe202BB8dd524eE9C5E679e5B5809f7A373a982Ef', permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3' };
 const POOL_KEY = { type: 'tuple', components: [
   { name: 'currency0', type: 'address' }, { name: 'currency1', type: 'address' }, { name: 'fee', type: 'uint24' }, { name: 'tickSpacing', type: 'int24' }, { name: 'hooks', type: 'address' },
 ] };
@@ -181,19 +197,19 @@ const PERMIT2_ABI = parseAbi([
   'function allowance(address user, address token, address spender) view returns (uint160 amount, uint48 expiration, uint48 nonce)',
   'function approve(address token, address spender, uint160 amount, uint48 expiration)',
 ]);
-const poolKeyOf = (coin) => ({ currency0: NATIVE, currency1: getAddress(coin), fee: 0, tickSpacing: 60, hooks: HOOK });
+const poolKeyOf = (chain, coin) => ({ currency0: NATIVE, currency1: getAddress(coin), fee: 0, tickSpacing: 60, hooks: net(chain).hook });
 
-/* what amountIn (wei of ETH to buy, or of the coin to sell) gets right now, the hook's fee included */
-async function quoteTrade(coin, side, amountIn) {
-  const { result } = await rpc().simulateContract({ address: V4.quoter, abi: QUOTER_ABI, functionName: 'quoteExactInputSingle',
-    args: [{ poolKey: poolKeyOf(coin), zeroForOne: side === 'buy', exactAmount: amountIn, hookData: '0x' }] });
+/* what amountIn (wei of the native coin to buy, or of the coin to sell) gets right now, the hook's fee included */
+async function quoteTrade(chain, coin, side, amountIn) {
+  const { result } = await rpc(chain).simulateContract({ address: net(chain).quoter, abi: QUOTER_ABI, functionName: 'quoteExactInputSingle',
+    args: [{ poolKey: poolKeyOf(chain, coin), zeroForOne: side === 'buy', exactAmount: amountIn, hookData: '0x' }] });
   return result[0];
 }
 
 /* Universal Router: one V4_SWAP command (0x10) with SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL. The deployed router predates
    the removal of sqrtPriceLimitX96 from ExactInputSingleParams, so it stays in (0 = no limit; minOut is the bound). */
-function swapCall(coin, side, amountIn, minOut, deadline) {
-  const key = poolKeyOf(coin), zeroForOne = side === 'buy';
+function swapCall(chain, coin, side, amountIn, minOut, deadline) {
+  const key = poolKeyOf(chain, coin), zeroForOne = side === 'buy';
   const [tokIn, tokOut] = zeroForOne ? [key.currency0, key.currency1] : [key.currency1, key.currency0];
   const swap = encodeAbiParameters([{ type: 'tuple', components: [
     { name: 'poolKey', ...POOL_KEY }, { name: 'zeroForOne', type: 'bool' }, { name: 'amountIn', type: 'uint128' }, { name: 'amountOutMinimum', type: 'uint128' },
@@ -202,34 +218,34 @@ function swapCall(coin, side, amountIn, minOut, deadline) {
   const pair = [{ type: 'address' }, { type: 'uint256' }];
   const input = encodeAbiParameters([{ type: 'bytes' }, { type: 'bytes[]' }],
     ['0x060c0f', [swap, encodeAbiParameters(pair, [tokIn, amountIn]), encodeAbiParameters(pair, [tokOut, minOut])]]);
-  return { to: V4.router, data: encodeFunctionData({ abi: TRADE_ABI, functionName: 'execute', args: ['0x10', [input], deadline] }),
+  return { to: net(chain).router, data: encodeFunctionData({ abi: TRADE_ABI, functionName: 'execute', args: ['0x10', [input], deadline] }),
     value: zeroForOne ? amountIn : 0n };
 }
 
 /* the calls for one trade, in order, after checking the wallet has what it spends; slippageBps bounds the minimum received */
-async function buildTrade({ wallet, coin, side, amountIn, slippageBps }) {
-  const c = rpc();
+async function buildTrade({ chain, wallet, coin, side, amountIn, slippageBps }) {
+  const n = net(chain), c = rpc(chain), router = n.router;
   coin = getAddress(coin);
   const [expected, have] = await Promise.all([
-    quoteTrade(coin, side, amountIn).catch(() => { throw Object.assign(new Error('this coin has no pool to trade in yet'), { status: 400 }); }),
+    quoteTrade(chain, coin, side, amountIn).catch(() => { throw Object.assign(new Error('this coin has no pool to trade in yet'), { status: 400 }); }),
     side === 'buy' ? c.getBalance({ address: wallet }) : c.readContract({ address: coin, abi: TRADE_ABI, functionName: 'balanceOf', args: [wallet] }),
   ]);
-  if (have < amountIn) throw Object.assign(new Error(side === 'buy' ? 'not enough ETH in this wallet' : 'you hold less than that'), { status: 400 });
+  if (have < amountIn) throw Object.assign(new Error(side === 'buy' ? 'not enough ' + n.symbol + ' in this wallet' : 'you hold less than that'), { status: 400 });
   if (expected === 0n) throw Object.assign(new Error('too small to trade'), { status: 400 });
   const minimum = expected * BigInt(10000 - slippageBps) / 10000n;
   const now = BigInt(Math.floor(Date.now() / 1000));
   const calls = [];
   if (side === 'sell') {
     const [toPermit2, [allowed, expiration]] = await Promise.all([
-      c.readContract({ address: coin, abi: TRADE_ABI, functionName: 'allowance', args: [wallet, V4.permit2] }),
-      c.readContract({ address: V4.permit2, abi: PERMIT2_ABI, functionName: 'allowance', args: [wallet, coin, V4.router] }),
+      c.readContract({ address: coin, abi: TRADE_ABI, functionName: 'allowance', args: [wallet, PERMIT2] }),
+      c.readContract({ address: PERMIT2, abi: PERMIT2_ABI, functionName: 'allowance', args: [wallet, coin, router] }),
     ]);
-    if (toPermit2 < amountIn) calls.push({ label: 'allow Permit2', to: coin, data: encodeFunctionData({ abi: TRADE_ABI, functionName: 'approve', args: [V4.permit2, amountIn] }), value: 0n });
+    if (toPermit2 < amountIn) calls.push({ label: 'allow Permit2', to: coin, data: encodeFunctionData({ abi: TRADE_ABI, functionName: 'approve', args: [PERMIT2, amountIn] }), value: 0n });
     if (allowed < amountIn || BigInt(expiration) <= now + 60n) {
-      calls.push({ label: 'allow the router', to: V4.permit2, data: encodeFunctionData({ abi: PERMIT2_ABI, functionName: 'approve', args: [coin, V4.router, amountIn, Number(now + 3600n)] }), value: 0n });
+      calls.push({ label: 'allow the router', to: PERMIT2, data: encodeFunctionData({ abi: PERMIT2_ABI, functionName: 'approve', args: [coin, router, amountIn, Number(now + 3600n)] }), value: 0n });
     }
   }
-  const swap = swapCall(coin, side, amountIn, minimum, now + DEADLINE_SECONDS);
+  const swap = swapCall(chain, coin, side, amountIn, minimum, now + DEADLINE_SECONDS);
   /* a buy (or a sell with nothing left to approve) is dry-run first, so a swap that would revert never reaches the wallet */
   if (!calls.length) {
     try { await c.call({ account: wallet, to: swap.to, data: swap.data, value: swap.value }); }
@@ -239,5 +255,5 @@ async function buildTrade({ wallet, coin, side, amountIn, slippageBps }) {
   return { calls, expected, minimum };
 }
 
-module.exports = { CHAIN_ID, RPC, FACTORY, HOOK, EXPLORER, FEE_BPS, PLATFORM_BPS, launchContext, buildLaunch, verifyLaunch, creatorFees, claimCalls, holderRewards,
+module.exports = { NETS, isNet, FEE_BPS, PLATFORM_BPS, launchContext, buildLaunch, verifyLaunch, creatorFees, claimCalls, holderRewards,
   quoteTrade, buildTrade, isEvmAddress, getAddress };

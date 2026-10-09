@@ -67,10 +67,21 @@ function b58decode(str) {
   return Uint8Array.from(bytes.reverse());
 }
 const isPubkey = (s) => typeof s === 'string' && s.length >= 32 && s.length <= 44 && (b58decode(s) || []).length === 32;
-/* coins live on two chains: a Solana mint, or a Robinhood Chain (EVM) token address */
+/* coins live on four chains: a Solana mint, or an EVM token address on Robinhood Chain, BNB Chain or Base. An EVM address
+   doesn't say which chain it is on, so that comes from the coin's launch record (launchidx); older records are Robinhood's. */
 const isEvmAddress = (s) => typeof s === 'string' && /^0x[0-9a-fA-F]{40}$/.test(s);
 const isCoinId = (s) => isPubkey(s) || isEvmAddress(s);
-const chainOf = (coin) => (isEvmAddress(coin) ? 'robinhood' : 'solana');
+const EVM_CHAINS = ['robinhood', 'bnb', 'base'];
+const DEX_SLUG = { solana: 'solana', robinhood: 'robinhood', bnb: 'bsc', base: 'base' };   // DexScreener and GeckoTerminal network ids
+async function chainsOf(coins) {
+  const out = {}, evm = coins.filter(isEvmAddress);
+  for (const c of coins) out[c] = isEvmAddress(c) ? 'robinhood' : 'solana';
+  if (evm.length) {
+    const [rows] = await redis(['HMGET', 'launchidx', ...evm]).catch(() => [[]]);
+    evm.forEach((c, i) => { const chain = rows && rows[i] && JSON.parse(rows[i]).chain; if (EVM_CHAINS.includes(chain)) out[c] = chain; });
+  }
+  return out;
+}
 
 /* signer keys of a serialized (legacy or v0) transaction; key counts here stay under 128, so compact-u16 is one byte */
 function signerKeys(tx) {
@@ -145,17 +156,16 @@ async function pairQuote(mint) {
 /* DexScreener market data for up to 30 mints (the most liquid pair per coin). Each market cap seen is also kept in
    Redis (hash mcaps), so the pair picker and the hotbar can rank every coin by market cap without a call per coin. */
 async function marketData(mints) {
-  /* one DexScreener call per chain; EVM addresses may come back in another letter case, so they match case-insensitively */
+  /* one DexScreener call per chain, in parallel; EVM addresses may come back in another letter case, so they match case-insensitively */
   const byKey = new Map(mints.map(m => [isEvmAddress(m) ? m.toLowerCase() : m, m]));
-  const groups = { solana: mints.filter(m => !isEvmAddress(m)), robinhood: mints.filter(isEvmAddress) };
-  const pairs = [];
-  for (const [chain, list] of Object.entries(groups)) {
-    if (!list.length) continue;
-    const r = await fetch('https://api.dexscreener.com/tokens/v1/' + chain + '/' + list.join(','), { signal: AbortSignal.timeout(8000) });
+  const chains = await chainsOf(mints), groups = {};
+  for (const m of mints) (groups[chains[m]] = groups[chains[m]] || []).push(m);
+  const pairs = (await Promise.all(Object.entries(groups).map(async ([chain, list]) => {
+    const r = await fetch('https://api.dexscreener.com/tokens/v1/' + DEX_SLUG[chain] + '/' + list.join(','), { signal: AbortSignal.timeout(8000) });
     if (!r.ok) throw new Error('DexScreener ' + r.status);
     const out = await r.json();
-    if (Array.isArray(out)) pairs.push(...out);
-  }
+    return Array.isArray(out) ? out : [];
+  }))).flat();
   const market = {};
   /* a coin can have several pairs (curve, then PumpSwap after migration): keep the most liquid one */
   for (const p of pairs) {
@@ -236,5 +246,5 @@ function fail(res, status, error) {
 
 module.exports = {
   PUMP_PROGRAM, MAX_IMAGE_BYTES, cors, sniffImage, readBody, readJson, sha256,
-  b58decode, isPubkey, isEvmAddress, isCoinId, chainOf, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, fail,
+  b58decode, isPubkey, isEvmAddress, isCoinId, EVM_CHAINS, DEX_SLUG, chainsOf, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, fail,
 };

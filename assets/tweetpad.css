@@ -721,6 +721,8 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .net-logo { width: 15px; height: 15px; background: currentColor; -webkit-mask: center / contain no-repeat; mask: center / contain no-repeat; }
 .net-logo.sol { -webkit-mask-image: url(solana.svg); mask-image: url(solana.svg); }
 .net-logo.rh { -webkit-mask-image: url(robinhood.png); mask-image: url(robinhood.png); }
+.net-logo.bnb { -webkit-mask-image: url(bnb.svg); mask-image: url(bnb.svg); }
+.net-logo.base { -webkit-mask-image: url(base.svg); mask-image: url(base.svg); }
 .evm-wallet { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 14px/1.2 var(--mono); color: var(--dim); }
 .evm-wallet[hidden] { display: none; }
 .evm-wallet b { color: var(--text); font: 600 12px/1 var(--px); }
@@ -761,6 +763,9 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 /* Solana keeps its own gradient mark: a mono one reads as a plain "≡" */
 .chain-badge.sol .net-logo { background: url(solana.svg) center / contain no-repeat; -webkit-mask: none; mask: none; }
 .chain-badge.rh { background: #ccff00; color: #000; }
+.chain-badge.bnb { background: #f0b90b; color: #1e2026; }
+.chain-badge.base { background: #0000ff; color: #fff; }
+.chain-badge.base .net-logo { width: 46%; height: 46%; }
 .chain-badge .net-logo { width: 62%; height: 62%; }
 .coin-img-btn .chain-badge { right: auto; left: -4px; }   /* the zoom + sits bottom-right on the coin page */
 .chain-name { display: inline-flex; align-items: center; gap: 4px; }
