@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wallet Embed Probe</title>
+
+<!-- Replace @yourhandle with your X handle. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@yourhandle">
+<meta name="twitter:title" content="Wallet Embed Probe">
+<meta name="twitter:description" content="Tests whether a Solana wallet can connect and sign from inside a post.">
+<meta name="twitter:player" content="https://twitterpad.vercel.app/embed.html">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://twitterpad.vercel.app/preview.png">
+<meta name="twitter:image:alt" content="Wallet Embed Probe">
+<meta property="og:title" content="Wallet Embed Probe">
+<meta property="og:description" content="Tests whether a Solana wallet can connect and sign from inside a post.">
+<meta property="og:image" content="https://twitterpad.vercel.app/preview.png">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<style>
+  body { margin: 0; min-height: 100vh; background: #0b1210; color: #f2f6f4; font: 18px/1.2 "VT323", ui-monospace, monospace;
+         display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
+  .wrap { width: 100%; max-width: 480px; }
+  p { color: #a6bcbf; margin: 0 0 12px; }
+  a { color: #6fe7d8; }
+  iframe { width: 100%; aspect-ratio: 1 / 1; border: 2px solid #071013; border-radius: 16px; display: block;
+           box-shadow: 0 0 0 1px rgba(140, 200, 210, .25), 0 12px 40px rgba(0, 0, 0, .5); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <p>Control case: the probe in a <strong>same-origin</strong> iframe. <a href="embed.html">Open it top-level</a> for the baseline.</p>
+    <iframe src="embed.html" title="Wallet Embed Probe" allow="clipboard-write"></iframe>
+  </div>
+</body>
+</html>
