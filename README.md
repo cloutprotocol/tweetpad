@@ -74,16 +74,23 @@ Both halves are required, so nobody can claim someone else's wallet or handle.
 ## Layout
 
 ```
-index.html            landing page, carries the X card tags
-embed.html            the card: markup only
-assets/tweetpad.css   layout and the Tweetcraft skin (pixel HUD)
-assets/skin-2012.css  the default 2012 skin, layered over tweetpad.css
-assets/tweetpad.js    the card app (plain JS, no build step)
-api/                  Vercel functions, one per route; _lib.js is shared and not a route
-  ipfs · create · launches · market · chart · image · card · card-image · profile · rewards · upload · reactions · chat · social
-scripts/check.js      `npm run check`: syntax and wiring smoke test
-scripts/preview.html  source for preview.png, the X card image (render command inside)
-docs/CHECKLIST.md     what's next: critical fixes, quick wins, quality of life
+index.html             landing page, carries the X card tags
+embed.html             the card app: markup only
+preview.html           /preview: how each card looks in a post, from the live twitter:* tags
+preview.png            the main X card image (source: scripts/preview.html)
+site.webmanifest       app name and icons (wallet connect prompts, home screens)
+assets/tweetpad.js     the card app (plain JS, no build step)
+assets/tweetpad.css    layout and the Tweetcraft skin (pixel HUD)
+assets/skin-2012.css   the default 2012 skin, layered over tweetpad.css
+assets/brand/          app icon kit: favicons, # icon sizes, # glyphs
+api/                   Vercel functions, one per route; _lib.js is shared and not a route
+  ipfs · create · launches · market · chart · image · upload     launching, the token list, prices and charts
+  card · card-image                                              share pages and their per-coin card images
+  chat · social · reactions · profile · rewards                  chat, feed, posts, likes/retweets, profiles, creator fees
+scripts/check.js       `npm run check`: syntax and wiring smoke test
+scripts/preview.html   source for preview.png (render command inside)
+docs/CHECKLIST.md      what's next: critical fixes, quick wins, quality of life
+docs/brand/            large brand files: 1024px icon, token profile pictures
 ```
 
 ## Run it

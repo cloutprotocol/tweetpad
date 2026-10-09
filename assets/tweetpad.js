@@ -1143,7 +1143,7 @@ function postItem(m, opts = {}) {
         h('span', { class: 'post-time', text: ago(m.t) })),
       m.replyTo ? h('div', { class: 'reply-label' }, 'in reply to ',
         h('button', { class: 'cashtag', onclick: () => openUser(m.replyTo.wallet) }, who(m.replyTo.wallet, m.replyTo.handle))) : null,
-      h('p', { class: 'post-text' }, ...cashtags(m.text)),
+      h('p', { class: 'post-text' }, ...richText(m.text)),
       c ? h('button', { class: 'post-coin', title: 'Open $' + c.symbol, onclick: () => openCoin(c.mint) },
         coinImg(c, 'post-coin-img'),
         h('span', { class: 'post-coin-main' }, h('b', { text: '$' + c.symbol }), h('small', { text: c.name })),
@@ -1165,9 +1165,9 @@ function actionRow(m, big) {
   return h('div', { class: 'tweet-acts' + (big ? ' big' : '') },
     h('button', { class: 'tw-act reply', title: 'Reply', 'aria-label': 'Reply', onclick: () => openThread(m, true) }, replyIcon(), h('span', { text: big ? 'Reply' : countText(s.replies) })),
     h('button', { class: 'tw-act rt', title: m.wallet === me ? 'You can’t retweet your own tweet' : s.retweeted ? 'Undo retweet' : 'Retweet',
-      'aria-label': 'Retweet', 'aria-pressed': String(s.retweeted), disabled: m.wallet === me, onclick: () => react2('retweet', m) },
+      'aria-label': 'Retweet', 'aria-pressed': String(s.retweeted), disabled: m.wallet === me, onclick: () => reactTweet('retweet', m) },
       retweetIcon(), h('span', { text: big ? (s.retweeted ? 'Retweeted' : 'Retweet') : countText(s.retweets) })),
-    h('button', { class: 'tw-act like', title: s.liked ? 'Unlike' : 'Like', 'aria-label': 'Like', 'aria-pressed': String(s.liked), onclick: () => react2('like', m) },
+    h('button', { class: 'tw-act like', title: s.liked ? 'Unlike' : 'Like', 'aria-label': 'Like', 'aria-pressed': String(s.liked), onclick: () => reactTweet('like', m) },
       likeIcon(), h('span', { text: big ? (s.liked ? 'Liked' : 'Like') : countText(s.likes) })));
 }
 async function loadStats(list) {
@@ -1184,7 +1184,7 @@ async function loadStats(list) {
 }
 const rerenderTweets = () => { if (!$('tab-feed').hidden) renderFeed(); if (!$('tab-thread').hidden) renderThread(); if (!$('tab-user').hidden) renderUser(); };
 /* like / retweet: flip it now, then take the server's numbers; the first one signs the free chat session */
-async function react2(action, m) {
+async function reactTweet(action, m) {
   const wallet = state.active;
   if (!wallet) return openMenu();
   const s = { ...statOf(m) };
@@ -1306,7 +1306,7 @@ function tweetsSection(wallet, ownerName) {
       : [h('li', { class: 'note' }, !tl ? 'Loading…' : tl.error ? 'Could not load: ' + tl.error : 'No tweets yet.')]))];
 }
 /* in a post, $TICKER links to that coin (if launched here); #hashtags and @mentions are blue, as on the old site */
-function cashtags(text) {
+function richText(text) {
   return text.split(/([$#@][A-Za-z_][A-Za-z0-9_]{0,29})\b/).map((part, i) => {
     if (!(i % 2)) return part;
     if (part[0] === '$' && /^\$[A-Za-z][A-Za-z0-9]{1,9}$/.test(part)) return h('button', { class: 'cashtag', onclick: () => openCashtag(part.slice(1)) }, part);
@@ -2090,7 +2090,8 @@ async function sendChat() {
 }
 
 /* ---------- wiring ---------- */
-/* main views: 'wallets' (the launch form), 'tokens', 'coin', 'more' (profile, games, debug) and 'settings'; sign / env / report / fallbacks live inside the debug panel */
+/* main views: 'wallets' (the launch form), 'tokens' (+ 'coin', 'user'), 'feed' (+ 'thread'), 'more' (profile, games, about, debug)
+   and 'settings'; sign / env / report / fallbacks live inside the debug panel */
 const MAIN_VIEWS = ['wallets', 'tokens', 'feed', 'thread', 'coin', 'user', 'more', 'profile', 'games', 'about', 'settings'];
 const UNDER_MORE = ['more', 'profile', 'games', 'about'];   // the More button stays lit on these and on debug
 let debugTab = 'sign';
@@ -2241,7 +2242,7 @@ async function loadReacts() {
   } catch { /* counts stay where they are */ }
   renderReacts();
 }
-async function react(action) {
+async function reactWelcome(action) {
   const on = action === 'share' ? true : !reacts.mine[action];
   if (action === 'share') {
     window.open('https://x.com/intent/post?text=' + encodeURIComponent('Launching coins without leaving the post on tweetpad. Such launch. Very wow.') +
@@ -2259,7 +2260,7 @@ async function react(action) {
   catch (err) { log('warn', action + ' not counted: ' + errText(err)); }
   renderReacts();
 }
-for (const b of document.querySelectorAll('.tweet-act')) b.addEventListener('click', () => react(b.dataset.act));
+for (const b of document.querySelectorAll('.tweet-act')) b.addEventListener('click', () => reactWelcome(b.dataset.act));
 renderReacts();
 loadReacts();
 /* blocky ground texture, painted once and tiled behind the HUD */

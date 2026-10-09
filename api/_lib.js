@@ -223,5 +223,5 @@ function fail(res, status, error) {
 
 module.exports = {
   PUMP_PROGRAM, MAX_IMAGE_BYTES, cors, sniffImage, readBody, readJson, sha256,
-  b58encode, b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, fail,
+  b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, fail,
 };

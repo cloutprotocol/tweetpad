@@ -221,8 +221,8 @@ html[data-skin="2012"] .coin-name b { font: bold 17px/1.1 var(--px); color: #333
 html[data-skin="2012"] .coin-name span { font: 14px/1.1 var(--px); color: #999; }
 html[data-skin="2012"] #coin-chart { height: 140px; background: #fff; border: 1px solid #e3e3e3; border-radius: 4px; image-rendering: auto; }
 html[data-skin="2012"] .trades { font-size: 12px; }
-html[data-skin="2012"] .trades li { padding: 6px 2px; border-top: 1px solid #eee; }
-html[data-skin="2012"] .trades .kind { font: bold 11px/1 var(--px); letter-spacing: .03em; }
+html[data-skin="2012"] .trades li { padding: 4px 2px; font-size: 11px; border-top: 1px solid #eee; }
+html[data-skin="2012"] .trades .kind { font: bold 10px/1 var(--px); letter-spacing: .03em; }
 html[data-skin="2012"] .trades .who { color: #999; }
 html[data-skin="2012"] .trades .who:hover { color: var(--blue); }
 
@@ -326,7 +326,7 @@ html[data-skin="2012"] .about-foot { font-size: 11px; color: #aaa; text-shadow: 
 
 /* crafting: the pair picker is a select-style field, and the picker an icon grid like the old Discover screen */
 html[data-skin="2012"] .pairs-card { background: #fff; }
-html[data-skin="2012"] .pair-label { font: bold 12px/1 var(--px); letter-spacing: 0; text-transform: none; color: #666; }
+html[data-skin="2012"] .field-label { font: bold 12px/1 var(--px); letter-spacing: 0; text-transform: none; color: #666; }
 html[data-skin="2012"] .pair-pick { padding: 6px 8px; color: #333; background: linear-gradient(#fff, #f0f0f0); border: 1px solid #ccc; border-radius: 4px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, .06); }
 html[data-skin="2012"] .pair-pick:hover, html[data-skin="2012"] .pair-pick:focus-visible { border-color: #56b4ef; box-shadow: 0 0 5px rgba(82, 168, 236, .5); }
@@ -373,9 +373,6 @@ html[data-skin="2012"] .devbuy-est small { font-size: 11px; color: #aaa; }
 html[data-skin="2012"] .desc-left { font: 11px/1 var(--px); color: #aaa; }
 html[data-skin="2012"] .desc-left.warn, html[data-skin="2012"] .post-left.warn { color: #d0343a; }
 
-/* compact trades */
-html[data-skin="2012"] .trades li { padding: 4px 2px; font-size: 11px; }
-html[data-skin="2012"] .trades .kind { font-size: 10px; }
 html[data-skin="2012"] .trades-more { font: bold 11px/1 var(--px); }
 
 /* posts: a "What's happening?" box and a little timeline */

@@ -82,7 +82,7 @@ section[hidden], .hud[hidden] { display: none; }
 /* chat-style feed, overlaid on the bottom of the stage; lines fade like in-game chat */
 #feed-lines { position: absolute; left: 8px; right: 8px; bottom: 4px; z-index: 4; list-style: none; margin: 0; padding: 0; pointer-events: none; }
 #feed-lines[hidden], .debugging #feed-lines, .debugging .toast { display: none; }
-#feed-lines li { font: 15px/1.05 var(--mono); padding: 1px 6px; background: rgba(0, 0, 0, .5); width: fit-content; max-width: 100%;
+#feed-lines li { display: flex; align-items: center; gap: 5px; font: 15px/1.05 var(--mono); padding: 1px 6px; background: rgba(0, 0, 0, .5); width: fit-content; max-width: 100%;
                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: line-in .2s steps(3) both;
                  transition: opacity .6s steps(4); }
 #feed-lines li.old { opacity: 0; }
@@ -220,9 +220,6 @@ textarea { width: 100%; height: calc(100vh - 190px); min-height: 120px; color: v
 .launch .quests li.bad .check { border-color: var(--bad); }
 .launch .more { margin: 0; justify-content: flex-start; }
 
-.row2 { display: flex; gap: 6px; }
-.row2 > * { min-width: 0; }
-#tk-ticker { flex: 1.3; }
 .devbuy { flex: 1; display: flex; align-items: center; background: rgba(5, 12, 14, .75); border: 2px solid var(--panel-lo);
           box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .4); }
 .devbuy:focus-within { border-color: var(--accent); }
@@ -236,8 +233,10 @@ textarea { width: 100%; height: calc(100vh - 190px); min-height: 120px; color: v
 #tab-tokens:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; align-items: center; }
 .tokens { padding: 10px; border-top: 2px solid var(--gold); }
 .token-list { list-style: none; margin: 6px 0 0; padding: 0; }
-.tok { display: flex; align-items: center; gap: 9px; padding: 6px 4px; color: var(--text); text-decoration: none;
-       border-top: 1px dashed var(--line); }
+.tok { position: relative; isolation: isolate; display: flex; align-items: center; gap: 9px; width: 100%; padding: 6px 4px; appearance: none;
+       cursor: pointer; text-align: left; color: var(--text); font: inherit; text-decoration: none; text-shadow: var(--shadow);
+       background: none; border: 0; border-top: 1px dashed var(--line); }
+.tok > :not(.spark) { position: relative; }
 .tok:hover { background: rgba(60, 110, 120, .35); }
 .tok img, .tok .ph { width: 30px; height: 30px; flex: none; object-fit: cover; border: 1px solid #000; image-rendering: auto; background: var(--panel-lo); }
 .tok-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -253,9 +252,6 @@ textarea { width: 100%; height: calc(100vh - 190px); min-height: 120px; color: v
                text-transform: uppercase; background: transparent; border: 1px solid var(--line); text-shadow: var(--shadow); }
 .sort button:hover { color: var(--text); }
 .sort button[aria-pressed="true"] { color: #04200e; background: var(--accent); border-color: var(--accent); text-shadow: none; }
-.devbuy[hidden] { display: none; }
-.tok { width: 100%; appearance: none; background: none; border: 0; border-top: 1px dashed var(--line); cursor: pointer;
-       text-align: left; font: inherit; text-shadow: var(--shadow); }
 .more-row { text-align: center; padding: 8px 0 2px; }
 /* coin screen */
 #tab-coin:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; align-items: center; }
@@ -294,9 +290,9 @@ button.chiplink { appearance: none; cursor: pointer; text-shadow: var(--shadow);
 .live.on { color: var(--ok); border-color: rgba(125, 255, 154, .5); animation: blink 1.6s steps(2) infinite; }
 @keyframes blink { 50% { opacity: .55; } }
 .trades { list-style: none; margin: 0; padding: 0; font: 15px/1 var(--mono); }
-.trades li { display: grid; grid-template-columns: 40px 1fr 1fr 34px; gap: 6px; align-items: center; padding: 4px 2px; border-top: 1px dashed var(--line); }
+.trades li { display: grid; grid-template-columns: 34px 1fr 1fr 30px; gap: 4px; align-items: center; padding: 2px; font-size: 14px; border-top: 1px dashed var(--line); }
 .trades li.note { display: block; text-align: center; padding: 10px 0; }
-.trades .kind { font: 15px/1 var(--mono); letter-spacing: .06em; }
+.trades .kind { font: 13px/1 var(--mono); letter-spacing: .06em; }
 .trades li.buy .kind, .trades li.buy .amt { color: var(--ok); }
 .trades li.sell .kind, .trades li.sell .amt { color: var(--bad); }
 .trades .who { color: var(--dim); text-decoration: none; }
@@ -382,7 +378,6 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
 /* ---------- live chat: lines float over the stage like in-game chat; Enter opens the full scrollback ---------- */
-#feed-lines li { display: flex; align-items: center; gap: 5px; width: fit-content; max-width: 100%; }
 #feed-lines li > span { overflow: hidden; text-overflow: ellipsis; }
 #feed-lines li b { flex: none; font: 15px/1 var(--mono); color: var(--gold); }
 #feed-lines li b.verified { color: var(--accent); }
@@ -506,8 +501,7 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 .about-contact a.about-link-sub:hover { text-decoration: underline; }
 
 /* ---------- crafting: what the new coin pairs with, and the picker grid ---------- */
-.pair-row { display: flex; align-items: center; gap: 8px; }
-.pair-label { flex: none; font: 15px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--dim); }
+.field-label { flex: none; font: 15px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--dim); }
 .pair-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; padding: 4px 7px; appearance: none; cursor: pointer; text-align: left;
              color: var(--text); text-shadow: var(--shadow); background: rgba(5, 12, 14, .75); border: 2px solid var(--panel-lo);
              box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .4); }
@@ -568,8 +562,6 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 .desc-left.warn, .post-left.warn { color: var(--warn); }
 
 /* ---------- coin page: compact trades ---------- */
-.trades li { grid-template-columns: 34px 1fr 1fr 30px; gap: 4px; padding: 2px 2px; font-size: 14px; }
-.trades .kind { font-size: 13px; }
 .trades-more { align-self: center; font: 14px/1 var(--mono); }
 .trades-more[hidden] { display: none; }
 
@@ -586,7 +578,7 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 .post-left { font: 14px/1 var(--mono); color: var(--dim); }
 .posts-list { list-style: none; margin: 0; padding: 0; }
 .posts-list > li.note { margin: 4px 0 0; text-align: center; }
-.post { display: flex; gap: 8px; padding: 6px 2px; border-top: 1px dashed var(--line); }
+.post { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 2px; border-top: 1px dashed var(--line); }
 .post-ava { width: 28px; height: 28px; }
 .post-body { flex: 1; min-width: 0; }
 .post-head { display: flex; align-items: center; gap: 4px; }
@@ -597,8 +589,6 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 
 /* ---------- token list: wider, with each coin's day drawn behind its row ---------- */
 #tab-tokens .pane { max-width: 363px; }   /* the original 330px, 10% wider */
-.tok { position: relative; isolation: isolate; }
-.tok > :not(.spark) { position: relative; }
 .spark { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
 .spark-line { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
 .spark.up .spark-line { stroke: rgba(125, 255, 154, .4); } .spark.down .spark-line { stroke: rgba(255, 107, 107, .4); }
@@ -682,8 +672,6 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .post.tweet:hover { background: rgba(60, 110, 120, .18); }
 .rt-label { flex-basis: 100%; display: flex; align-items: center; gap: 4px; margin: -2px 0 2px 36px; font: 13px/1 var(--mono); color: var(--dim); }
 .rt-label svg { width: 11px; height: 11px; fill: currentColor; }
-.post { flex-wrap: wrap; }
-.post > .post-body { flex: 1; }
 .reply-label { font: 13px/1.2 var(--mono); color: var(--dim); }
 .tweet-acts { display: flex; gap: 4px; margin: 5px 0 -3px -4px; }
 .tw-act { display: inline-flex; align-items: center; gap: 4px; min-width: 48px; padding: 3px 4px; appearance: none; cursor: pointer;
