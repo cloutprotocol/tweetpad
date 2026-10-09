@@ -22,4 +22,8 @@ const js = readFileSync(join(root, 'assets/tweetpad.js'), 'utf8');
 const missing = [...new Set([...js.matchAll(/\$\('([\w-]+)'\)/g)].map(m => m[1]))].filter(id => !ids.has(id));
 if (missing.length) { failed++; console.log('FAIL tweetpad.js looks up ids that embed.html lacks: ' + missing.join(', ')); }
 else console.log('ok   every $(id) in tweetpad.js exists in embed.html');
+const pkgVersion = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+const appVersion = (js.match(/const VERSION = '([^']+)'/) || [])[1];
+if (appVersion === pkgVersion) console.log('ok   tweetpad.js VERSION matches package.json (' + pkgVersion + ')');
+else { failed++; console.log('FAIL tweetpad.js VERSION is ' + appVersion + ' but package.json says ' + pkgVersion); }
 process.exit(failed ? 1 : 0);

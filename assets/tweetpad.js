@@ -1,6 +1,9 @@
-/* Tweetpad: the X card app (embed.html). Plain browser JS, no build step. */
+/* tweetpad: the X card app (embed.html). Plain browser JS, no build step. */
 (() => {
 'use strict';
+
+/* keep in step with package.json; `npm run check` fails when they drift */
+const VERSION = '0.1.0';
 
 /* ---------- config (query params: ?cluster=devnet  ?rpc=https://…  ?mode=popup) ---------- */
 const qs = new URLSearchParams(location.search);
@@ -562,22 +565,48 @@ async function makeThumb(url) {
 function resetLaunch() {
   if (launch.url) URL.revokeObjectURL(launch.url);
   Object.assign(launch, { file: null, bytes: null, url: null, sha: null, dims: null, done: false, result: null, checks: [] });
-  for (const id of ['tk-name', 'tk-ticker', 'tk-desc', 'tk-buy']) $(id).value = '';
+  for (const id of ['tk-name', 'tk-ticker', 'tk-buy', ...LINK_IDS]) $(id).value = '';
+  $('tk-desc').value = DEFAULT_DESC;
+  $('socials').open = false;
   $('img').value = '';
   $('img-preview').hidden = true;
   $('drop-hint').hidden = false;
   $('drop').classList.remove('has');
+  renderDescLeft();
   imgMeta('PNG, JPG, GIF or WebP · up to 4 MB · drop or paste');
   renderLaunch();
 }
 
 const devBuy = () => Number($('tk-buy').value || 0);
+const DEFAULT_DESC = 'launched on tweetpad.io';   // prefilled in the form (embed.html); creators can edit or clear it
+/* social links: people type handles or bare domains, pump.fun wants full https URLs; '' when empty, null when it can't be read */
+const LINK_IDS = ['tk-x', 'tk-tg', 'tk-web'];
+function toUrl(raw, hosts, base) {
+  const v = raw.trim();
+  if (!v) return '';
+  if (base && /^@?[A-Za-z0-9_]{2,32}$/.test(v)) return base + v.replace(/^@/, '');
+  try {
+    const u = new URL(/^https?:\/\//i.test(v) ? v : 'https://' + v);
+    if (!u.hostname.includes('.') || (hosts && !hosts.includes(u.hostname.replace(/^www\./, '')))) return null;
+    u.protocol = 'https:';
+    return u.href;
+  } catch { return null; }
+}
+const socialLinks = () => ({
+  twitter: toUrl($('tk-x').value, ['x.com', 'twitter.com'], 'https://x.com/'),
+  telegram: toUrl($('tk-tg').value, ['t.me', 'telegram.me'], 'https://t.me/'),
+  website: toUrl($('tk-web').value),
+});
 function launchProblem() {
   if (CLUSTER !== 'mainnet') return 'pump.fun is mainnet only';
   if (!launch.file) return 'Add an image';
   if (!$('tk-name').value.trim()) return 'Add a name';
   if (!/^[A-Z0-9]{2,10}$/.test($('tk-ticker').value.trim())) return 'Ticker: 2–10 letters or numbers';
-  if (!pad.quote && !(devBuy() >= 0 && devBuy() <= MAX_DEV_BUY)) return 'Dev buy: 0–' + MAX_DEV_BUY + ' SOL';
+  if (!currentPair() && !(devBuy() >= 0 && devBuy() <= MAX_DEV_BUY)) return 'Dev buy: 0–' + MAX_DEV_BUY + ' SOL';
+  const links = socialLinks();
+  if (links.twitter === null) return 'X link: @handle or an x.com link';
+  if (links.telegram === null) return 'Telegram: @group or a t.me link';
+  if (links.website === null) return 'Website: check the address';
   return null;
 }
 function renderLaunch() {
@@ -585,14 +614,19 @@ function renderLaunch() {
   const active = state.active;
   const problem = launchProblem();
   const btn = $('launch-btn');
+  const filled = LINK_IDS.filter(id => $(id).value.trim()).length;
+  $('socials-count').textContent = filled ? String(filled) : '';
+  if (/^(X link|Telegram|Website):/.test(problem || '')) $('socials').open = true;
   btn.disabled = launch.busy;
   btn.textContent = launch.busy ? 'Launching…'
     : launch.done ? 'Launch another'
     : !active ? (list.length || !settled ? 'Connect wallet' : 'Get a wallet')
-    : problem || 'Launch $' + $('tk-ticker').value.trim() + (!pad.quote && devBuy() > 0 ? ' · buy ' + devBuy() + ' SOL' : '');
+    : problem || 'Launch $' + $('tk-ticker').value.trim() + (!currentPair() && devBuy() > 0 ? ' · buy ' + devBuy() + ' SOL' : '');
   /* coins paired with the platform token: show the pairing, hide the SOL dev buy (it would need a SOL → quote swap) */
-  $('launch-pair').textContent = pad.quote ? 'PAIRED WITH $' + pad.quote.symbol : 'SOL PAIR · 0 PAD FEE';
-  $('tk-buy').closest('.devbuy').hidden = !!pad.quote;
+  const pair = currentPair();
+  renderDevBuy(pair);
+  renderPairPick();
+  if (posts.mint) renderPosts();   // the composer follows the wallet too
   btn.classList.toggle('primary', !active || !problem || launch.done);
   $('launch-note').hidden = launch.checks.length > 0;
   const banner = $('launch-banner');
@@ -668,7 +702,8 @@ async function onLaunch(ev) {
   const feature = wallet.kind === 'standard' && wallet.ref.features['solana:signTransaction'];
   Object.assign(launch, { busy: true, done: false, result: null, checks: [] });
   if (!feature) { launch.busy = false; return check('bad', wallet.name + ' cannot sign transactions here. Use Phantom, Solflare or Backpack.'); }
-  const meta = { name: $('tk-name').value.trim(), symbol: $('tk-ticker').value.trim(), description: $('tk-desc').value.trim() };
+  const pair = currentPair();
+  const meta = { name: $('tk-name').value.trim(), symbol: $('tk-ticker').value.trim(), description: $('tk-desc').value.trim(), ...socialLinks() };
   let signature = null;
   try {
     /* 1. image + metadata to IPFS (through our function: Pinata needs a secret) */
@@ -683,8 +718,8 @@ async function onLaunch(ev) {
     const mintKeys = await newKeypair();
     const mint = b58encode(mintKeys.publicKey);
     const built = await api('/api/create', { json: { publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image,
-      thumb: launch.thumb, devBuy: pad.quote ? 0 : devBuy() } });
-    check('ok', 'Transaction built · mint ' + shortAddr(mint) + (pad.quote ? ' · paired with $' + pad.quote.symbol : ''));
+      thumb: launch.thumb, devBuy: pair ? 0 : devBuy(), quote: pair ? pair.mint : 'sol' } });
+    check('ok', 'Transaction built · mint ' + shortAddr(mint) + (pair ? ' · paired with $' + pair.symbol : ''));
 
     /* 3. wallet signs first (it may add instructions), then the mint signs whatever the wallet returned */
     check('warn', 'Approve in ' + wallet.name + '…');
@@ -749,7 +784,138 @@ async function onDryRun() {
 
 /* ---------- tokens launched through the pad ---------- */
 const tokens = { list: [], next: null, total: 0, loaded: false, loading: false, error: null, market: {}, sort: 'new' };
-const pad = { quote: null };   // what new coins are paired with, from /api/launches
+const pad = { quote: null };   // the server's default pair (QUOTE_MINT), from /api/launches
+
+/* ---------- dev buy: presets, and a live estimate from a fresh curve's reserves and fee (api/launches?curve=new) ---------- */
+const curve = { data: null };
+async function loadCurve() {
+  try {
+    const res = await fetch('/api/launches?curve=new');
+    if (res.ok) { curve.data = await res.json(); renderLaunch(); }
+  } catch { /* no estimate, the buy still works */ }
+}
+/* the SDK's getBuyTokenAmountFromSolAmount for a new curve: fee off the top, then constant product, capped at the real reserves */
+function estimateBuy(sol) {
+  const c = curve.data;
+  if (!c || !(sol > 0)) return null;
+  const input = (BigInt(Math.floor(sol * 1e9)) - 1n) * 10000n / BigInt(c.feeBps + 10000);
+  let tokens = input * BigInt(c.virtualTokens) / (BigInt(c.virtualSol) + input);
+  if (tokens > BigInt(c.realTokens)) tokens = BigInt(c.realTokens);
+  return { tokens: Number(tokens) / 10 ** c.decimals, pct: Number(tokens * 1000000n / BigInt(c.supply)) / 1e4, feePct: c.feeBps / 100 };
+}
+const fmtAmount = (n) => (n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : Math.round(n).toString());
+function renderDevBuy(pair) {
+  const box = $('devbuy-box'), est = $('devbuy-est'), sol = devBuy();
+  box.classList.toggle('off', !!pair);
+  $('tk-buy').disabled = !!pair || launch.busy;
+  for (const b of box.querySelectorAll('[data-buy]')) {
+    b.disabled = !!pair || launch.busy;
+    b.setAttribute('aria-pressed', String(!pair && Number(b.dataset.buy) === sol && ($('tk-buy').value !== '' || sol === 0)));
+  }
+  const ticker = $('tk-ticker').value.trim();
+  est.className = 'devbuy-est';
+  if (pair) { est.textContent = 'Dev buy works on SOL pairs only for now.'; return; }
+  if (!(sol >= 0 && sol <= MAX_DEV_BUY)) { est.className += ' bad'; est.textContent = 'Between 0 and ' + MAX_DEV_BUY + ' SOL.'; return; }
+  if (!sol) { est.textContent = 'No dev buy: you launch holding none of your coin.'; return; }
+  const e = estimateBuy(sol);
+  if (!e) { est.textContent = 'Buying ' + sol + ' SOL of ' + (ticker ? '$' + ticker : 'your coin') + ' at launch.'; return; }
+  est.className += ' ok';
+  est.replaceChildren('You get ≈ ', h('b', { text: fmtAmount(e.tokens) + ' ' + (ticker ? '$' + ticker : 'tokens') }),
+    ' · ' + e.pct.toFixed(2) + '% of supply', h('small', { text: ' incl. ' + e.feePct + '% fee, before slippage' }));
+}
+
+/* ---------- crafting: pair the new coin with SOL or any coin launched here; the server checks pump.fun admits it ---------- */
+const pairs = { list: [], total: 0, q: '', loading: false, error: null, checking: null, bad: {}, seq: 0, cache: new Map() };
+/* undefined until someone picks, so a QUOTE_MINT default still applies; null = SOL */
+const currentPair = () => (launch.pair !== undefined ? launch.pair : pad.quote);
+const solIcon = (cls) => h('span', { class: 'sol-ico ' + (cls || ''), role: 'img', 'aria-label': 'Solana' });
+function renderPairPick() {
+  const pair = currentPair();
+  const known = pair && (tokens.list.find(l => l.mint === pair.mint) || pair);
+  /* compact, in the form's header: "Pair [logo] SOL ▾" */
+  $('pair-pick').replaceChildren(h('small', { text: 'Pair' }), pair ? coinImg(known, 'pair-img') : solIcon('pair-img'),
+    h('b', { text: pair ? '$' + pair.symbol : 'SOL' }), h('span', { class: 'caret', text: '▾' }));
+  $('pair-pick').title = 'Paired with ' + (pair ? '$' + pair.symbol + ' (' + (known.name || 'tweetpad coin') + ')' : 'SOL') + ' · click to change';
+  $('pair-pick').disabled = launch.busy;
+}
+function openPairs() {
+  if (launch.busy) return;
+  $('pairs').hidden = false;
+  $('pairs-status').textContent = '';
+  $('pairs-search').value = pairs.q;
+  $('pairs-search').focus();
+  loadPairs();
+}
+function closePairs() {
+  if ($('pairs').hidden) return false;
+  $('pairs').hidden = true;
+  $('pair-pick').focus();
+  return true;
+}
+/* empty search = the newest coins; a contract address is a direct lookup on the server */
+async function loadPairs() {
+  const seq = ++pairs.seq;
+  const key = pairs.q.trim().toLowerCase();
+  /* the same search again within a minute is answered from memory */
+  const hit = pairs.cache.get(key);
+  if (hit && Date.now() - hit.at < 60000) { Object.assign(pairs, { list: hit.list, total: hit.total, error: null, loading: false }); return renderPairs(); }
+  pairs.loading = true; renderPairs();
+  try {
+    const res = await fetch('/api/launches?q=' + encodeURIComponent(pairs.q.trim()));
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    pairs.cache.set(key, { list: out.launches, total: out.total || out.launches.length, at: Date.now() });
+    if (pairs.cache.size > 50) pairs.cache.delete(pairs.cache.keys().next().value);
+    if (seq !== pairs.seq) return;
+    Object.assign(pairs, { list: out.launches, total: out.total || out.launches.length, error: null });
+  } catch (err) {
+    if (seq === pairs.seq) pairs.error = errText(err);
+  } finally {
+    if (seq === pairs.seq) { pairs.loading = false; renderPairs(); }
+  }
+}
+function renderPairs() {
+  const pair = currentPair();
+  const q = pairs.q.trim().toLowerCase().replace(/^\$/, '');
+  /* compact tiles: image, ticker, one line of detail; the full name rides in the tooltip */
+  const tile = (pressed, img, title, tip, detail, onclick, bad) => h('li', {},
+    h('button', { class: 'pair-tile' + (bad ? ' bad' : ''), role: 'option', 'aria-selected': String(pressed), title: bad || tip,
+                  disabled: pairs.checking != null, onclick }, img, h('b', { text: title }), detail));
+  const tiles = [];
+  if (!q || 'sol solana'.includes(q)) tiles.push(tile(!pair, solIcon('pair-tile-img'), 'SOL', 'SOL · the default pair', h('small', { text: 'Default' }), () => pickPair(null)));
+  for (const l of pairs.list) {
+    const detail = pairs.checking === l.mint ? h('small', { text: 'Checking…' })
+      : pairs.bad[l.mint] ? h('small', { class: 'no', text: 'Can’t pair' })
+      : l.quote ? h('small', { text: '⇄ $' + l.quote.symbol }) : h('small', { class: mcapOf(l) ? 'pair-mcap' : '', text: mcapOf(l) ? fmtUsd(mcapOf(l)) : ago(l.time) });
+    tiles.push(tile(!!pair && pair.mint === l.mint, coinImg(l, 'pair-tile-img'), '$' + l.symbol, l.name + ' · $' + l.symbol, detail, () => pickPair(l), pairs.bad[l.mint]));
+  }
+  $('pairs-grid').replaceChildren(...tiles);
+  const status = $('pairs-status');
+  status.className = 'status' + (pairs.error ? ' bad' : '');
+  status.textContent = pairs.error ? 'Search failed: ' + pairs.error : pairs.loading ? 'Loading…'
+    : tiles.length ? (pairs.total > pairs.list.length ? 'Showing ' + pairs.list.length + ' of ' + pairs.total + '. Search to narrow it down.' : '')
+    : 'No tweetpad coin matches “' + pairs.q.trim() + '”.';
+}
+async function pickPair(l) {
+  if (!l) { launch.pair = null; closePairs(); return renderLaunch(); }
+  pairs.checking = l.mint; renderPairs();
+  try {
+    const res = await fetch('/api/launches?pair=' + l.mint);
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    launch.pair = { mint: l.mint, symbol: l.symbol, name: l.name, image: l.image, thumb: l.thumb };
+    delete pairs.bad[l.mint];
+    log('ok', 'new coin will pair with $' + l.symbol);
+    closePairs();
+    renderLaunch();
+  } catch (err) {
+    pairs.bad[l.mint] = errText(err).replace(/^Error:? /, '');
+    $('pairs-status').className = 'status bad';
+  } finally {
+    pairs.checking = null;
+    if (!$('pairs').hidden) { renderPairs(); if (pairs.bad[l.mint]) { $('pairs-status').className = 'status bad'; $('pairs-status').textContent = pairs.bad[l.mint]; } }
+  }
+}
 const fmtUsd = (n) => n == null ? '—' : '$' + (n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n >= 1 ? Math.round(n) : n.toFixed(2));
 const fmtPct = (n) => (n >= 0 ? '▲' : '▼') + Math.abs(n).toFixed(1) + '%';
 /* market caps come from /api/market in batches of 30; sorted so identical sets hit the same CDN cache entry */
@@ -806,8 +972,10 @@ function renderTokens() {
   const by = { mcap: (l) => mk(l).mcap || 0, hot: (l) => mk(l).volume1h || 0 }[tokens.sort];
   const sorted = by ? [...tokens.list].sort((a, b) => by(b) - by(a)) : tokens.list;
   for (const b of document.querySelectorAll('.sort [data-sort]')) b.setAttribute('aria-pressed', String(b.dataset.sort === tokens.sort));
+  for (const l of sorted) if (mk(l).pair) queueSpark(l.mint, mk(l).pair);
   const rows = sorted.map(l => h('li', {},
     h('button', { class: 'tok', title: 'Open $' + l.symbol, onclick: () => openCoin(l.mint) },
+      sparkline(sparks.data[l.mint]),
       coinImg(l),
       h('span', { class: 'tok-main' }, h('b', { text: l.name }),
         h('span', { class: 'tok-sub' }, '$' + l.symbol + ' · ' + ago(l.time),
@@ -821,13 +989,61 @@ function renderTokens() {
     text: tokens.error ? 'Could not load: ' + tokens.error : tokens.loading ? 'Loading…' : 'Nothing launched yet. Be the first.' })]));
 }
 
+/* ---------- row charts: the last day's prices drawn faintly behind each token row ---------- */
+const sparks = { data: {}, queued: new Set(), running: 0 };
+const SPARK_PARALLEL = 3;   // GeckoTerminal rate-limits per IP; the server caches each coin for 5 minutes
+function queueSpark(mint, pool) {
+  if (mint in sparks.data || sparks.queued.has(mint)) return;
+  sparks.queued.add(mint);
+  pumpSparks(pool && [mint, pool]);
+}
+const sparkQueue = [];
+async function pumpSparks(job) {
+  if (job) sparkQueue.push(job);
+  while (sparks.running < SPARK_PARALLEL && sparkQueue.length) {
+    const [mint, pool] = sparkQueue.shift();
+    sparks.running++;
+    fetch('/api/chart?spark=1&pool=' + pool).then(r => (r.ok ? r.json() : null)).catch(() => null).then(out => {
+      if (out) sparks.data[mint] = out.points && out.points.length > 1 ? out.points : null;
+      /* upstream busy (rate limit): forget the attempt so the next render a minute on tries again */
+      else setTimeout(() => sparks.queued.delete(mint), 60000);
+      sparks.running--;
+      renderTokens();   // even while hidden: the list must be current when someone opens it
+      pumpSparks();
+    });
+  }
+}
+/* an SVG polyline stretched to the row: green when the day is up, red when down */
+function sparkline(points) {
+  if (!points) return null;
+  const NS = 'http://www.w3.org/2000/svg';
+  const lo = Math.min(...points), hi = Math.max(...points), span = hi - lo || hi || 1;
+  const xy = points.map((p, i) => [(i / (points.length - 1)) * 100, 28 - ((p - lo) / span) * 24]);
+  const line = xy.map(([x, y], i) => (i ? 'L' : 'M') + x.toFixed(2) + ' ' + y.toFixed(2)).join(' ');
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'spark ' + (points[points.length - 1] >= points[0] ? 'up' : 'down'));
+  svg.setAttribute('viewBox', '0 0 100 30');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  const area = document.createElementNS(NS, 'path');
+  area.setAttribute('class', 'spark-area');
+  area.setAttribute('d', line + ' L100 30 L0 30 Z');
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('class', 'spark-line');
+  path.setAttribute('d', line);
+  path.setAttribute('vector-effect', 'non-scaling-stroke');
+  svg.append(area, path);
+  return svg;
+}
+
 /* ---------- coin screen: chart, trades, live feed ---------- */
 const coin = { mint: null, launch: null, tf: '5m', candles: [], trades: [], ws: null, live: false, loading: false, error: null };
 const solUsd = (m) => (m && m.price && m.priceNative ? m.price / m.priceNative : null);
 async function openCoin(mint) {
   closeLive();
   let launch = tokens.list.find(l => l.mint === mint);
-  Object.assign(coin, { mint, launch, candles: [], trades: [], error: null });
+  Object.assign(coin, { mint, launch, candles: [], trades: [], error: null, allTrades: false, creatorCoins: null });
+  Object.assign(posts, { mint, list: [], error: null, loaded: false });
   selectTab('coin');
   renderCoin();
   if (!launch) {
@@ -839,10 +1055,87 @@ async function openCoin(mint) {
     } catch (err) { coin.error = errText(err); return renderCoin(); }
   }
   renderCoin();
-  loadProfiles([launch.creator]).then(renderCoinHead);
+  loadProfiles([launch.creator]).then(() => { renderCoinHead(); renderCreator(); });
+  loadCreatorCoins(launch.creator);
   if (!tokens.market[mint]) await loadMarket([mint]);
   loadChart();
   openLive();
+  loadPosts();
+}
+
+/* ---------- posts: a coin page's comments, tweet-sized, in the chat backend's post:<mint> room ---------- */
+const POST_LEN = 120;
+const posts = { mint: null, list: [], loaded: false, error: null, sending: false, timer: null };
+async function loadPosts() {
+  clearTimeout(posts.timer);
+  const mint = posts.mint;
+  if (!mint) return;
+  try {
+    const res = await fetch('/api/chat?room=post:' + mint);
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    if (posts.mint !== mint) return;
+    Object.assign(posts, { list: out.messages.reverse(), loaded: true, error: null });
+    loadProfiles([...new Set(posts.list.map(m => m.wallet))]).then(renderPosts);
+  } catch (err) {
+    if (posts.mint === mint) posts.error = errText(err);
+  }
+  renderPosts();
+  /* refresh while the coin stays open */
+  if (posts.mint === mint && !$('tab-coin').hidden) posts.timer = setTimeout(loadPosts, 15000);
+}
+function renderPosts() {
+  const l = coin.launch;
+  const input = $('post-input');
+  input.placeholder = !state.active ? 'Connect a wallet to post' : 'What’s happening with ' + (l ? '$' + l.symbol : 'this coin') + '?';
+  const left = POST_LEN - input.value.length;
+  $('post-left').textContent = left;
+  $('post-left').className = 'post-left' + (left <= 10 ? ' warn' : '');
+  $('post-send').disabled = posts.sending || (!!state.active && !input.value.trim());
+  $('post-send').textContent = !state.active ? 'Connect' : posts.sending ? 'Posting…' : 'Post';
+  $('posts-count').textContent = posts.list.length ? String(posts.list.length) : '';
+  const me = state.active && state.active.account && state.active.account.address;
+  const rows = posts.list.map(m => {
+    const p = profiles[m.wallet];
+    return h('li', { class: 'post' + (m.wallet === me ? ' mine' : '') },
+      avatarOf(p || (m.avatar ? { avatar: m.avatar } : null), m.wallet, 'post-ava'),
+      h('div', { class: 'post-body' },
+        h('div', { class: 'post-head' },
+          h('b', { text: m.handle ? '@' + m.handle : shortAddr(m.wallet) }),
+          m.handle ? h('span', { class: 'check-badge', 'aria-label': 'verified', text: '✓' }) : null,
+          h('span', { class: 'post-time', text: ago(m.t) })),
+        h('p', { class: 'post-text', text: m.text })));
+  });
+  $('coin-posts').replaceChildren(...(rows.length ? rows : [h('li', { class: 'note' },
+    posts.error ? 'Posts are offline: ' + posts.error : posts.loaded ? 'No posts yet. Be the first.' : 'Loading posts…')]));
+}
+async function sendPost() {
+  const wallet = state.active;
+  if (!wallet) return openMenu();
+  const text = $('post-input').value.trim();
+  if (!text || posts.sending || !posts.mint) return;
+  posts.sending = true; renderPosts();
+  const room = 'post:' + posts.mint;
+  try {
+    let token = await chatSession(wallet);
+    let out;
+    try { out = await api('/api/chat', { json: { action: 'send', token, room, text } }); }
+    catch (err) {
+      if (!/session expired/.test(err.message)) throw err;
+      delete chat.tokens[wallet.account.address];
+      token = await chatSession(wallet);
+      out = await api('/api/chat', { json: { action: 'send', token, room, text } });
+    }
+    posts.list = [out.message, ...posts.list.filter(m => m.id !== out.message.id)];
+    $('post-input').value = '';
+    setVerdict('ok', 'Posted!', '$' + (coin.launch ? coin.launch.symbol : 'coin'));
+  } catch (err) {
+    const msg = errText(err).replace(/^Error /, '');
+    setVerdict('bad', 'Post failed', /rejected|declined|denied|cancel/i.test(msg) ? 'Sign-in cancelled' : msg);
+  } finally {
+    posts.sending = false;
+    renderPosts();
+  }
 }
 async function loadChart() {
   const m = tokens.market[coin.mint];
@@ -856,7 +1149,10 @@ async function loadChart() {
     const live = coin.trades.filter(t => t.live && !out.trades.some(x => x.tx === t.tx));
     Object.assign(coin, { candles: out.candles, trades: [...live, ...out.trades].slice(0, 40), error: null });
   } catch (err) {
-    coin.error = errText(err);
+    /* GeckoTerminal rate-limits per IP: say so plainly and try again shortly, for as long as this coin stays open */
+    const busy = /429/.test(errText(err));
+    coin.error = busy ? 'Chart data is busy, retrying…' : errText(err);
+    if (busy) { const mint = coin.mint; setTimeout(() => { if (coin.mint === mint && !$('tab-coin').hidden) loadChart(); }, 15000); }
   } finally {
     coin.loading = false;
     renderCoinBody();
@@ -923,7 +1219,7 @@ function closeImage() {
   if (back) back.focus();
   return true;
 }
-function renderCoin() { renderCoinHead(); renderCoinBody(); }
+function renderCoin() { renderCoinHead(); renderCreator(); renderCoinBody(); }
 function renderCoinHead() {
   const l = coin.launch;
   const m = tokens.market[coin.mint] || {};
@@ -945,20 +1241,95 @@ function renderCoinHead() {
   $('coin-links').replaceChildren(...(!l ? [] : [
     h('span', { class: 'live' + (coin.live ? ' on' : ''), title: coin.live ? 'Live trades connected' : 'Live trades offline' }, coin.live ? 'LIVE' : 'OFFLINE'),
     h('a', { class: 'chiplink', href: 'https://pump.fun/coin/' + coin.mint, target: '_blank', rel: 'noopener' }, 'Trade on pump.fun ↗'),
-    h('a', { class: 'chiplink', href: 'https://x.com/intent/post?text=' + encodeURIComponent('$' + l.symbol + ' launched on Tweetpad') + '&url=' + encodeURIComponent(shareUrl),
+    h('a', { class: 'chiplink', href: 'https://x.com/intent/post?text=' + encodeURIComponent('$' + l.symbol + ' launched on tweetpad') + '&url=' + encodeURIComponent(shareUrl),
       target: '_blank', rel: 'noopener' }, 'Share ↗'),
     h('button', { class: 'chiplink', onclick: async () => {
       try { await navigator.clipboard.writeText(shareUrl); log('ok', 'coin link copied'); } catch { log('warn', 'clipboard blocked: ' + shareUrl); }
     } }, 'Copy link'),
   ]));
 }
+/* ---------- who launched it, as the old tweet view showed its author ---------- */
+async function loadCreatorCoins(wallet) {
+  try {
+    const res = await fetch('/api/launches?creator=' + wallet);
+    const out = await res.json();
+    if (res.ok && coin.launch && coin.launch.creator === wallet) { coin.creatorCoins = out.launches.length; renderCreator(); }
+  } catch { /* the count is a bonus */ }
+}
+function renderCreator() {
+  const l = coin.launch, box = $('coin-creator');
+  box.hidden = !l;
+  if (!l) return;
+  const w = l.creator, p = profiles[w];
+  const n = coin.creatorCoins;
+  box.replaceChildren(
+    h('div', { class: 'creator-label', text: 'Launched by' }),
+    h('div', { class: 'creator-row' },
+      /* the creator opens their tweetpad profile, never an outside explorer */
+      h('button', { class: 'creator-who', title: 'View profile', onclick: () => openUser(w) },
+        avatarOf(p, w, 'creator-ava'),
+        h('span', { class: 'creator-main' },
+          h('b', { class: 'creator-name', text: p ? (p.name || '@' + p.handle) : shortAddr(w) }),
+          p ? h('span', { class: 'handle' }, '@' + p.handle, h('span', { class: 'check-badge', 'aria-label': 'verified', text: '✓' }))
+            : h('span', { class: 'creator-addr', text: 'Not verified · ' + shortAddr(w) }))),
+      h('div', { class: 'creator-stat', title: 'Coins this wallet launched on tweetpad' }, h('b', { text: n == null ? '…' : String(n) }), h('small', { text: n === 1 ? 'COIN' : 'COINS' })),
+      p ? h('a', { class: 'btn sm primary creator-follow', href: 'https://x.com/intent/follow?screen_name=' + encodeURIComponent(p.handle), target: '_blank', rel: 'noopener' }, 'Follow') : null));
+}
+/* ---------- someone else's profile: who they are and the coins they launched here ---------- */
+const viewed = { wallet: null, coins: null, from: 'coin', error: null };
+async function openUser(wallet) {
+  const mine = state.active && state.active.account && state.active.account.address;
+  if (wallet === mine) return selectTab('profile');
+  Object.assign(viewed, { wallet, coins: null, error: null, from: mainView === 'user' ? viewed.from : mainView });
+  selectTab('user');
+  loadProfiles([wallet]).then(renderUser);
+  try {
+    const res = await fetch('/api/launches?creator=' + wallet);
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    if (viewed.wallet !== wallet) return;
+    viewed.coins = out.launches;
+    loadMarket(out.launches.map(l => l.mint)).then(renderUser);
+  } catch (err) { if (viewed.wallet === wallet) viewed.error = errText(err); }
+  renderUser();
+}
+function renderUser() {
+  const root = $('tab-user'), w = viewed.wallet;
+  if (!w || root.hidden) return;
+  const p = profiles[w], coins = viewed.coins;
+  const mk = (l) => tokens.market[l.mint] || {};
+  const rows = (coins || []).map(l => h('li', {}, h('button', { class: 'tok', title: 'Open $' + l.symbol, onclick: () => openCoin(l.mint) },
+    coinImg(l), h('span', { class: 'tok-main' }, h('b', { text: l.name }), h('span', { class: 'tok-sub', text: '$' + l.symbol + ' · ' + ago(l.time) })),
+    h('span', { class: 'tok-mkt' }, h('b', { text: fmtUsd(mk(l).mcap) }),
+      mk(l).change1h != null ? h('span', { class: mk(l).change1h >= 0 ? 'up' : 'down', text: fmtPct(mk(l).change1h) }) : null))));
+  root.replaceChildren(h('div', { class: 'pane panel profile user' },
+    h('div', { class: 'launch-head' }, h('span', { text: 'Profile' }),
+      h('button', { class: 'menu-x', 'aria-label': 'Back', title: 'Back (Esc)', onclick: () => selectTab(viewed.from) }, '×')),
+    h('div', { class: 'who' },
+      avatarOf(p, w, 'lg'),
+      h('div', { class: 'who-main' },
+        h('b', { class: 'who-name', text: p ? (p.name || '@' + p.handle) : 'Anonymous' }),
+        p ? h('span', { class: 'handle' }, '@' + p.handle, h('span', { class: 'check-badge', 'aria-label': 'verified', text: '✓' }))
+          : h('span', { class: 'creator-addr', text: 'Not verified with X' }),
+        h('span', { class: 'who-addr' }, shortAddr(w), copyBtn(w, 'wallet address'))),
+      h('div', { class: 'creator-stat' }, h('b', { text: coins ? String(coins.length) : '…' }), h('small', { text: coins && coins.length === 1 ? 'COIN' : 'COINS' })),
+      p ? h('a', { class: 'btn sm primary creator-follow', href: 'https://x.com/intent/follow?screen_name=' + encodeURIComponent(p.handle), target: '_blank', rel: 'noopener' }, 'Follow') : null),
+    h('div', { class: 'menu-sec', text: 'Launched on tweetpad' }),
+    h('ul', { class: 'token-list' }, ...(rows.length ? rows : [h('li', { class: 'note', style: 'padding:10px 4px;text-align:center',
+      text: viewed.error ? 'Could not load: ' + viewed.error : coins ? 'No coins yet.' : 'Loading…' })]))));
+}
 function renderCoinBody() {
   for (const b of document.querySelectorAll('.tf [data-tf]')) b.setAttribute('aria-pressed', String(b.dataset.tf === coin.tf));
   drawChart();
   renderTrades();
 }
+const TRADES_SHOWN = 8;
 function renderTrades() {
-  const rows = coin.trades.map(t => h('li', { class: t.kind },
+  const shown = coin.allTrades ? coin.trades : coin.trades.slice(0, TRADES_SHOWN);
+  const more = $('trades-more');
+  more.hidden = coin.trades.length <= TRADES_SHOWN;
+  more.textContent = coin.allTrades ? 'Show fewer' : 'Show all ' + coin.trades.length + ' trades';
+  const rows = shown.map(t => h('li', { class: t.kind },
     h('span', { class: 'kind', text: t.kind === 'buy' ? 'BUY' : 'SELL' }),
     h('span', { class: 'amt', text: t.usd != null ? fmtUsd(t.usd) : (t.sol != null ? t.sol.toFixed(3) + ' SOL' : '—') }),
     h('a', { class: 'who', href: 'https://solscan.io/tx/' + t.tx, target: '_blank', rel: 'noopener', text: shortAddr(t.wallet || '????????') }),
@@ -974,12 +1345,14 @@ function drawChart() {
   const g = canvas.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, w, hgt);
+  /* colors and type come from the active skin */
+  const css = getComputedStyle(document.documentElement), v = (n) => css.getPropertyValue(n).trim();
   /* pump.fun coins have a fixed 1B supply, so the chart reads in market cap, which is how people talk about them */
   const SUPPLY = 1e9;
   const cs = coin.candles.slice(-Math.max(10, Math.floor(w / 5))).map(c => [c[0], c[1] * SUPPLY, c[2] * SUPPLY, c[3] * SUPPLY, c[4] * SUPPLY]);
   if (cs.length < 2) {
-    g.fillStyle = '#a6bcbf'; g.font = '16px VT323, monospace'; g.textAlign = 'center';
-    g.fillText(coin.loading ? 'Loading chart…' : coin.error ? 'No chart yet' : 'Not enough trades for a chart', w / 2, hgt / 2);
+    g.fillStyle = v('--chart-text'); g.font = v('--chart-font-lg'); g.textAlign = 'center';
+    g.fillText(coin.loading ? 'Loading chart…' : coin.error ? (/busy/.test(coin.error) ? 'Chart busy, retrying…' : 'No chart yet') : 'Not enough trades for a chart', w / 2, hgt / 2);
     return;
   }
   const inset = 14, axis = 46;
@@ -989,20 +1362,20 @@ function drawChart() {
   /* candles keep a sane width when there are only a few, and stay right-aligned like a live chart */
   const step = Math.min(9, (w - axis) / cs.length), bw = Math.max(1, Math.floor(step) - 1);
   const x0 = (w - axis) - step * cs.length;
-  g.fillStyle = 'rgba(140, 200, 210, .12)';
+  g.fillStyle = v('--chart-grid');
   for (let i = 0; i <= 3; i++) g.fillRect(0, Math.round(inset + (hgt - inset * 2) * i / 3), w - axis + 2, 1);
   cs.forEach((c, i) => {
     const x = Math.round(x0 + i * step), up = c[4] >= c[1];
-    g.fillStyle = up ? '#7dff9a' : '#ff6b6b';
+    g.fillStyle = up ? v('--chart-up') : v('--chart-down');
     g.fillRect(x + Math.floor(bw / 2), y(c[2]), 1, Math.max(1, y(c[3]) - y(c[2])));
     const top = y(Math.max(c[1], c[4])), bot = y(Math.min(c[1], c[4]));
     g.fillRect(x, top, bw, Math.max(2, bot - top));
   });
-  g.fillStyle = '#a6bcbf'; g.font = '14px VT323, monospace'; g.textAlign = 'left';
+  g.fillStyle = v('--chart-text'); g.font = v('--chart-font'); g.textAlign = 'left';
   g.fillText(fmtUsd(hi), w - axis + 6, inset + 4);
   g.fillText(fmtUsd(lo), w - axis + 6, hgt - inset + 4);
   const last = cs[cs.length - 1][4];
-  g.fillStyle = '#e8b64c'; g.fillRect(w - axis, y(last), 4, 1);
+  g.fillStyle = v('--chart-last'); g.fillRect(w - axis, y(last), 4, 1);
   g.fillText(fmtUsd(last), w - axis + 6, Math.min(hgt - inset - 10, Math.max(inset + 16, y(last) + 4)));
 }
 addEventListener('resize', () => { if (coin.mint && !$('tab-coin').hidden) drawChart(); });
@@ -1059,11 +1432,21 @@ function renderReport() {
   }, null, 2);
 }
 
-/* inventory: the coins you launched first, then the newest launches; 1-9 or a click opens the coin */
+/* inventory: the nine highest market caps on the whole pad (server-ranked, refreshed every minute); 1-9 or a click opens the coin.
+   Until that list arrives, the loaded page stands in, ranked the same way. */
+const top = { list: null };
+async function loadTop() {
+  try {
+    const res = await fetch('/api/launches?q=');
+    const out = await res.json();
+    if (res.ok) { top.list = out.launches.slice(0, 9); renderHud(); }
+  } catch { /* keep the last ranking */ }
+}
+setInterval(() => { if (!document.hidden) loadTop(); }, 60000);
+const mcapOf = (l) => (tokens.market[l.mint] && tokens.market[l.mint].mcap) || l.mcap || 0;
 function inventory() {
-  const me = state.active && state.active.account && state.active.account.address;
-  const mine = me ? tokens.list.filter(l => l.creator === me) : [];
-  return [...mine, ...tokens.list.filter(l => !mine.includes(l))].slice(0, 9);
+  if (top.list) return top.list;
+  return [...tokens.list].sort((a, b) => mcapOf(b) - mcapOf(a) || b.time - a.time).slice(0, 9);
 }
 function renderHud() {
   const items = inventory();
@@ -1073,7 +1456,7 @@ function renderHud() {
     const l = items[n - 1];
     const m = l && tokens.market[l.mint];
     slots.push(l
-      ? h('button', { class: 'slot', title: n + ': $' + l.symbol + (m && m.mcap ? ' · ' + fmtUsd(m.mcap) : ''), 'aria-label': 'Slot ' + n + ': ' + l.name,
+      ? h('button', { class: 'slot', title: n + ': $' + l.symbol + (mcapOf(l) ? ' · ' + fmtUsd(mcapOf(l)) : ''), 'aria-label': 'Slot ' + n + ': ' + l.name,
                       'aria-pressed': String(l.mint === open), onclick: () => openCoin(l.mint) },
           coinImg(l), h('span', { class: 'dot' + (m && m.change1h != null ? (m.change1h >= 0 ? ' ok' : ' bad') : '') }), h('span', { class: 'n', text: n }))
       : h('button', { class: 'slot', disabled: true, 'aria-label': 'Empty slot ' + n }));
@@ -1220,7 +1603,7 @@ function renderProfile() {
 
 /* ---------- verify with X: tweet a one-time code, paste the link, sign with the wallet ---------- */
 const verify = { code: null, message: null, busy: false, status: null };
-const verifyTweetText = () => 'Verifying my profile on Tweetpad ' + verify.code + ' ' + location.origin;
+const verifyTweetText = () => 'Verifying my profile on tweetpad ' + verify.code + ' ' + location.origin;
 async function openVerify() {
   if (!state.active) return openMenu();
   closeMenu();
@@ -1333,17 +1716,33 @@ async function loadChat() {
 setInterval(() => { if (!document.hidden) loadChat(); }, 3000);
 setInterval(() => { if (!chat.open) renderChat(); }, 2000);
 
+const chatLines = new Map();   // message key → its <li>, reused across polls
 function renderChat() {
   const messages = chat.rooms[chatRoom()] || [];
   const lines = chat.open ? messages : (Date.now() < chat.freshUntil ? messages.slice(-3) : []);
   const me = state.active && state.active.account && state.active.account.address;
-  $('feed-lines').classList.toggle('open', chat.open);
-  $('feed-lines').replaceChildren(...lines.map(m => h('li', { class: m.wallet === me ? 'mine' : '' },
-    h('img', { class: 'chat-ava', src: m.avatar || pixelAvatar(m.wallet), alt: '', referrerpolicy: 'no-referrer',
-      onerror: (ev) => { ev.target.src = pixelAvatar(m.wallet); } }),
-    h('b', { class: m.handle ? 'verified' : '', text: chatName(m) + (m.handle ? ' ✓' : '') }),
-    h('span', { text: m.text }))));
-  if (chat.open && !lines.length) $('feed-lines').append(h('li', { class: 'note' }, chat.error ? 'Chat is offline: ' + chat.error : 'No messages in ' + chatRoomLabel() + ' yet. Say gm.'));
+  const feed = $('feed-lines');
+  feed.classList.toggle('open', chat.open);
+  /* polls return the same messages every 3s: keep their lines, so avatars don't reload and only new lines animate in */
+  const nodes = lines.map(m => {
+    const key = String(m.id != null ? m.id : m.wallet + ':' + m.time + ':' + m.text);
+    let li = chatLines.get(key);
+    if (!li) {
+      li = h('li', {},
+        h('img', { class: 'chat-ava', src: m.avatar || pixelAvatar(m.wallet), alt: '', referrerpolicy: 'no-referrer',
+          onerror: (ev) => { ev.target.src = pixelAvatar(m.wallet); } }),
+        h('b', { class: m.handle ? 'verified' : '', text: chatName(m) + (m.handle ? ' ✓' : '') }),
+        h('span', { text: m.text }));
+      chatLines.set(key, li);
+    }
+    li.className = m.wallet === me ? 'mine' : '';
+    return li;
+  });
+  if (chat.open && !lines.length) nodes.push(h('li', { class: 'note' }, chat.error ? 'Chat is offline: ' + chat.error : 'No messages in ' + chatRoomLabel() + ' yet. Say gm.'));
+  for (const li of [...feed.children]) if (!nodes.includes(li)) li.remove();
+  /* only touch lines that are out of place; moving a line would restart its animation */
+  nodes.forEach((li, i) => { if (feed.children[i] !== li) feed.insertBefore(li, feed.children[i] || null); });
+  if (chatLines.size > 400) for (const [key, li] of chatLines) if (!li.isConnected) chatLines.delete(key);
   if (chat.open) $('feed-lines').scrollTop = $('feed-lines').scrollHeight;
   $('chat-room').textContent = chatRoomLabel();
   $('chat-send').disabled = chat.sending;
@@ -1369,7 +1768,7 @@ async function chatSession(wallet) {
   const address = wallet.account.address;
   if (chat.tokens[address] && chat.tokens[address].expires > Date.now() + 60000) return chat.tokens[address].token;
   const issued = Date.now();
-  const message = 'Tweetpad chat\nSign in to chat as this wallet. This is free and sends no transaction.\nwallet: ' + address + '\nissued: ' + issued;
+  const message = 'tweetpad chat\nSign in to chat as this wallet. This is free and sends no transaction.\nwallet: ' + address + '\nissued: ' + issued;
   const sig = await signRaw(wallet, new TextEncoder().encode(message));
   const out = await api('/api/chat', { json: { action: 'session', wallet: address, issued, signature: b58encode(sig) } });
   chat.tokens[address] = { token: out.token, expires: out.expires };
@@ -1409,23 +1808,29 @@ async function sendChat() {
 }
 
 /* ---------- wiring ---------- */
-/* main views: 'wallets' (the launch form) and 'tokens'; sign / env / report / fallbacks live inside the debug panel */
-const MAIN_VIEWS = ['wallets', 'tokens', 'coin', 'profile'];
+/* main views: 'wallets' (the launch form), 'tokens', 'coin', 'more' (profile, games, debug) and 'settings'; sign / env / report / fallbacks live inside the debug panel */
+const MAIN_VIEWS = ['wallets', 'tokens', 'coin', 'user', 'more', 'profile', 'games', 'about', 'settings'];
+const UNDER_MORE = ['more', 'profile', 'games', 'about'];   // the More button stays lit on these and on debug
 let debugTab = 'sign';
 let mainView = 'wallets';
+let settingsFrom = 'wallets';   // where Esc or × returns to from settings
 function selectTab(name) {
+  if (name === 'settings' && mainView !== 'settings') settingsFrom = mainView;
   const debug = !MAIN_VIEWS.includes(name);
   for (const v of MAIN_VIEWS) $('tab-' + v).hidden = debug || v !== name;
-  for (const t of document.querySelectorAll('.views [role="tab"]')) t.setAttribute('aria-selected', String(!debug && t.dataset.view === (name === 'coin' ? 'tokens' : name)));
+  for (const t of document.querySelectorAll('.views [role="tab"]')) t.setAttribute('aria-selected', String(!debug && t.dataset.view === (name === 'coin' || name === 'user' ? 'tokens' : name)));
   if (!debug) mainView = name;
   if (name !== 'coin') closeLive();
   if (name === 'tokens' && !tokens.loaded) loadTokens();
   if (name === 'coin') requestAnimationFrame(drawChart);
   if (name === 'profile') loadMe();
+  if (name === 'about') renderAbout();
+  if (name === 'user') renderUser();
   if (MAIN_VIEWS.includes(name)) loadChat();
   renderHud();
   $('debug').hidden = !debug;
-  $('btn-debug').setAttribute('aria-pressed', String(debug));
+  $('btn-more').setAttribute('aria-pressed', String(debug || UNDER_MORE.includes(name)));
+  $('btn-settings').setAttribute('aria-pressed', String(!debug && name === 'settings'));
   document.body.classList.toggle('debugging', debug);
   if (!debug) return;
   debugTab = name;
@@ -1440,7 +1845,18 @@ $('coin-back').addEventListener('click', () => selectTab('tokens'));
 for (const b of document.querySelectorAll('.tf [data-tf]')) b.addEventListener('click', () => { coin.tf = b.dataset.tf; loadChart(); });
 for (const b of document.querySelectorAll('.sort [data-sort]')) b.addEventListener('click', () => { tokens.sort = b.dataset.sort; renderTokens(); });
 const toggleFeed = () => { $('feed-lines').hidden = !$('feed-lines').hidden; };
-$('btn-debug').addEventListener('click', toggleDebug);
+/* More opens the list; from the list itself it closes back to launch, from profile / games / debug it steps back to the list */
+const toggleMore = () => selectTab(mainView === 'more' && $('debug').hidden ? 'wallets' : 'more');
+$('btn-more').addEventListener('click', toggleMore);
+for (const b of document.querySelectorAll('.more-row-btn')) b.addEventListener('click', () => (b.dataset.goto === 'debug' ? selectTab(debugTab) : selectTab(b.dataset.goto)));
+$('games-close').addEventListener('click', () => selectTab('more'));
+$('about-close').addEventListener('click', () => selectTab('more'));
+/* mailto may be blocked inside X's card sandbox, so the address is one click to copy as well */
+$('about-copy-email').addEventListener('click', () => copyText('tweetpad@proton.me', 'email'));
+const toggleSettings = () => selectTab(mainView === 'settings' && $('debug').hidden ? settingsFrom : 'settings');
+$('btn-settings').addEventListener('click', toggleSettings);
+$('settings-close').addEventListener('click', () => selectTab(settingsFrom));
+for (const b of document.querySelectorAll('.skin-opt')) b.addEventListener('click', () => setSkin(b.dataset.skin));
 $('lightbox-close').addEventListener('click', closeImage);
 $('btn-chat').addEventListener('click', () => (chat.open ? closeChat() : openChat()));
 $('chat-send').addEventListener('click', sendChat);
@@ -1469,15 +1885,18 @@ $('btn-debug-close').addEventListener('click', () => selectTab(mainView));
 $('wc-btn').addEventListener('click', toggleMenu);
 document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.wc')) closeMenu(); });
 $('verdict').addEventListener('click', () => { clearTimeout(setVerdict.hide); $('verdict').classList.add('gone'); });
-/* game-style hotkeys: Enter chat, C wallet menu, L launch, T tokens, P profile, D debug, S/E/R/B debug tabs, 1-9 inventory, H feed, Esc goes back */
+/* game-style hotkeys: Enter chat, C wallet menu, L launch, T tokens, P profile, M more, G games, A about, comma settings, D debug, S/E/R/B debug tabs, 1-9 inventory, H feed, Esc goes back */
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
-    if (closeImage() || closeVerify() || closeChat()) return;
+    if (closePairs() || closeImage() || closeVerify() || closeChat()) return;
     if (!$('wc-menu').hidden) { closeMenu(); $('wc-btn').focus(); } else if (!$('debug').hidden) selectTab(mainView);
     else if (mainView === 'coin') selectTab('tokens');
+    else if (mainView === 'user') selectTab(viewed.from);
+    else if (mainView === 'settings') selectTab(settingsFrom);
+    else if (mainView === 'profile' || mainView === 'games' || mainView === 'about') selectTab('more');
     return;
   }
-  if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.target.closest('textarea, input') || !$('lightbox').hidden || !$('verify').hidden) return;
+  if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.target.closest('textarea, input') || !$('lightbox').hidden || !$('verify').hidden || !$('pairs').hidden) return;
   if (ev.key === 'Enter' && !ev.target.closest('button, a')) { ev.preventDefault(); return openChat(); }
   const k = ev.key.toLowerCase();
   const tab = document.querySelector('.subnav [data-key="' + k + '"]');
@@ -1486,10 +1905,75 @@ document.addEventListener('keydown', (ev) => {
   else if (k === 'l' || k === 'w') selectTab('wallets');
   else if (k === 't') selectTab('tokens');
   else if (k === 'p') selectTab('profile');
+  else if (k === 'm') toggleMore();
+  else if (k === 'g') selectTab('games');
+  else if (k === 'a') selectTab('about');
+  else if (k === ',') toggleSettings();
   else if (tab) selectTab(tab.dataset.tab);
   else if (k >= '1' && k <= '9') selectSlot(Number(k));
   else if (k === 'h') toggleFeed();
 });
+/* ---------- skins: '2012' (the default) dresses the app as the old bird app; 'tweetcraft' is the pixel HUD ---------- */
+const SKINS = ['2012', 'tweetcraft'];
+const SKIN_KEY = 'tweetpad:skin';
+function setSkin(name) {
+  if (!SKINS.includes(name)) name = SKINS[0];
+  document.documentElement.dataset.skin = name;
+  store.set(SKIN_KEY, name);
+  renderSkins();
+  renderAbout();
+  if (coin.mint && !$('tab-coin').hidden) drawChart();
+}
+const SKIN_NAMES = { 2012: '2012', tweetcraft: 'Tweetcraft' };
+function renderAbout() {
+  $('about-ver').textContent = 'Version ' + VERSION + (CLUSTER === 'mainnet' ? '' : ' · ' + CLUSTER);
+  $('about-skin').textContent = SKIN_NAMES[document.documentElement.dataset.skin] || document.documentElement.dataset.skin;
+  $('about-net').textContent = 'Solana ' + CLUSTER;
+}
+function renderSkins() {
+  const cur = document.documentElement.dataset.skin;
+  for (const b of document.querySelectorAll('.skin-opt')) b.setAttribute('aria-checked', String(b.dataset.skin === cur));
+}
+renderSkins();
+/* ---------- the welcome post's share / repost / star: counts are shared (api/reactions), your own clicks are remembered here ---------- */
+const reacts = { counts: { share: 0, repost: 0, star: 0 }, mine: {} };
+try { reacts.mine = JSON.parse(store.get('tweetpad:reacts') || '{}') || {}; } catch { /* start fresh */ }
+const fmtCount = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e4 ? Math.floor(n / 1e3) + 'K' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : n ? String(n) : '');
+function renderReacts() {
+  for (const b of document.querySelectorAll('.tweet-act')) {
+    const a = b.dataset.act;
+    b.setAttribute('aria-pressed', String(!!reacts.mine[a]));
+    b.querySelector('.n').textContent = fmtCount(reacts.counts[a]);
+  }
+}
+async function loadReacts() {
+  try {
+    const res = await fetch('/api/reactions?post=welcome');
+    if (res.ok) Object.assign(reacts.counts, await res.json());
+  } catch { /* counts stay where they are */ }
+  renderReacts();
+}
+async function react(action) {
+  const on = action === 'share' ? true : !reacts.mine[action];
+  if (action === 'share') {
+    window.open('https://x.com/intent/post?text=' + encodeURIComponent('Launching coins without leaving the post on tweetpad. Such launch. Very wow.') +
+      '&url=' + encodeURIComponent(location.origin), '_blank', 'noopener');
+    if (reacts.mine.share) return;
+  }
+  /* optimistic: flip it now, then take the server's numbers */
+  if (!!reacts.mine[action] !== on) reacts.counts[action] = Math.max(0, reacts.counts[action] + (on ? 1 : -1));
+  reacts.mine[action] = on;
+  store.set('tweetpad:reacts', JSON.stringify(reacts.mine));
+  renderReacts();
+  const btn = document.querySelector('.tweet-act[data-act="' + action + '"]');
+  btn.classList.remove('pop'); void btn.offsetWidth; if (on) btn.classList.add('pop');
+  try { Object.assign(reacts.counts, await api('/api/reactions', { json: { post: 'welcome', action, on } })); }
+  catch (err) { log('warn', action + ' not counted: ' + errText(err)); }
+  renderReacts();
+}
+for (const b of document.querySelectorAll('.tweet-act')) b.addEventListener('click', () => react(b.dataset.act));
+renderReacts();
+loadReacts();
 /* blocky ground texture, painted once and tiled behind the HUD */
 try {
   const c = document.createElement('canvas'); c.width = c.height = 32;
@@ -1518,6 +2002,30 @@ if (bc) bc.addEventListener('message', (ev) => onBridgeMessage('BroadcastChannel
 $('link-newtab').href = STANDALONE;
 
 $('launch-btn').addEventListener('click', onLaunch);
+$('pair-pick').addEventListener('click', openPairs);
+$('trades-more').addEventListener('click', () => { coin.allTrades = !coin.allTrades; renderTrades(); });
+$('post-input').addEventListener('input', renderPosts);
+$('post-input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendPost(); } });
+$('post-send').addEventListener('click', sendPost);
+const renderDescLeft = () => {
+  const left = 120 - $('tk-desc').value.length;
+  $('desc-left').textContent = left;
+  $('desc-left').className = 'desc-left' + (left <= 10 ? ' warn' : '');
+};
+$('tk-desc').addEventListener('input', renderDescLeft);
+renderDescLeft();   // the prefilled description already uses some of the 120
+for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => {
+  $('tk-buy').value = b.dataset.buy === '0' ? '' : b.dataset.buy;
+  $('tk-buy').dispatchEvent(new Event('input'));
+});
+$('pairs-close').addEventListener('click', closePairs);
+$('pairs').addEventListener('click', (ev) => { if (ev.target === $('pairs')) closePairs(); });
+let pairsTimer = null;
+$('pairs-search').addEventListener('input', () => {
+  pairs.q = $('pairs-search').value;
+  clearTimeout(pairsTimer);
+  pairsTimer = setTimeout(loadPairs, 250);
+});
 for (const id of ['tk-name', 'tk-ticker']) $(id).addEventListener('keydown', (ev) => { if (ev.key === 'Enter') onLaunch(ev); });
 $('img').addEventListener('change', () => takeImage($('img').files[0], 'file picker'));
 $('drop').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); $('img').click(); } });
@@ -1529,7 +2037,7 @@ document.addEventListener('paste', (ev) => {
   if (file) { ev.preventDefault(); takeImage(file, 'paste'); }
 });
 $('tk-ticker').addEventListener('input', () => { $('tk-ticker').value = $('tk-ticker').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
-for (const id of ['tk-name', 'tk-ticker', 'tk-desc', 'tk-buy']) $(id).addEventListener('input', () => {
+for (const id of ['tk-name', 'tk-ticker', 'tk-desc', 'tk-buy', ...LINK_IDS]) $(id).addEventListener('input', () => {
   if (launch.busy) return;
   if (launch.done) launch.result = null;
   launch.done = false; launch.checks = []; renderLaunch();
@@ -1540,6 +2048,8 @@ for (const id of ['tk-name', 'tk-ticker', 'tk-desc', 'tk-buy']) $(id).addEventLi
   log('ok', 'probe started in ' + state.env.context + (state.env.ancestorOrigins instanceof Array && state.env.ancestorOrigins.length ? ' under ' + state.env.ancestorOrigins.join(' > ') : ''));
   discoverStandard(); discoverLegacy();
   loadTokens();
+  loadTop();
+  loadCurve();
   loadChat();
   if (isPubkeyLike(qs.get('coin'))) openCoin(qs.get('coin'));
   renderWallets();

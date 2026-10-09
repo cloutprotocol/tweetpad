@@ -3,42 +3,70 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tweetpad</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%224%22 y=%224%22 width=%228%22 height=%228%22 transform=%22rotate(45 8 8)%22 fill=%22%236fe7d8%22 stroke=%22%23071013%22/%3E%3C/svg%3E">
+<title>tweetpad</title>
+<link rel="icon" type="image/svg+xml" href="assets/twitter-2012-bird.svg">
 
 <!-- Every URL must be absolute HTTPS. -->
 <meta name="twitter:card" content="player">
 <meta name="twitter:site" content="@Prawnsfamily">
-<meta name="twitter:title" content="Tweetpad">
-<meta name="twitter:description" content="Launch a pump.fun token without leaving the post.">
+<meta name="twitter:title" content="tweetpad">
+<meta name="twitter:description" content="Launch a token without leaving the tweet.">
 <meta name="twitter:player" content="https://twitterpad.vercel.app/embed.html">
 <meta name="twitter:player:width" content="480">
 <meta name="twitter:player:height" content="480">
 <meta name="twitter:image" content="https://twitterpad.vercel.app/preview.png">
-<meta name="twitter:image:alt" content="Tweetpad">
-<meta property="og:title" content="Tweetpad">
-<meta property="og:description" content="Launch a pump.fun token without leaving the post.">
+<meta name="twitter:image:alt" content="tweetpad">
+<meta property="og:title" content="tweetpad">
+<meta property="og:description" content="Launch a token without leaving the tweet.">
 <meta property="og:image" content="https://twitterpad.vercel.app/preview.png">
 
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@600&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&display=swap">
 <style>
-  body { margin: 0; min-height: 100vh; background: #0b1210; color: #f2f6f4; font: 18px/1.25 "VT323", ui-monospace, monospace;
-         display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
+  /* dressed like the card's default 2012 skin */
+  body { margin: 0; min-height: 100vh; background: #e6e6e6; color: #333; font: 15px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif;
+         display: grid; place-items: center; padding: 16px; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
   .wrap { width: 100%; max-width: 480px; display: grid; gap: 12px; }
-  h1 { margin: 0; font: 600 28px/1 "Pixelify Sans", monospace; }
-  h1 span { color: #6fe7d8; }
-  p { color: #a6bcbf; margin: 0; }
-  a { color: #6fe7d8; }
-  iframe { width: 100%; aspect-ratio: 1 / 1; border: 2px solid #071013; border-radius: 16px; display: block;
-           box-shadow: 0 0 0 1px rgba(140, 200, 210, .25), 0 12px 40px rgba(0, 0, 0, .5); }
+  h1 { margin: 0; display: flex; align-items: center; gap: 8px; font: 600 34px/1 "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif;
+       letter-spacing: -.02em; color: #333; }
+  h1 .bird { width: 40px; height: 40px; flex: none; }
+  p { color: #777; margin: 0; }
+  a { color: #0084b4; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .embed { padding: 12px 14px; background: #fff; border: 1px solid #c8c8c8; border-radius: 6px; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
+  .embed h2 { margin: 0 0 6px; font: bold 16px/1.2 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #333; }
+  .embed ol { margin: 0; padding-left: 20px; color: #555; }
+  .embed li { margin: 4px 0; }
+  .embed code { padding: 2px 6px; font: 13px/1 Menlo, Monaco, monospace; color: #0084b4; background: #f2f8fc; border: 1px solid #cfe3f1; border-radius: 3px; }
+  #copy-link { margin-left: 4px; padding: 3px 9px; cursor: pointer; color: #fff; font: bold 12px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+               text-shadow: 0 -1px 0 rgba(0, 0, 0, .25); background: linear-gradient(#33bcef, #019ad2); border: 1px solid #057ed0; border-radius: 4px; }
+  iframe { width: 100%; aspect-ratio: 1 / 1; border: 1px solid #c8c8c8; border-radius: 6px; display: block; background: #e6e6e6;
+           box-shadow: 0 1px 3px rgba(0, 0, 0, .15), 0 12px 40px rgba(0, 0, 0, .12); }
 </style>
 </head>
 <body>
   <main class="wrap">
-    <h1>Tweet<span>pad</span></h1>
-    <p>Launch a pump.fun token without leaving the post. Paste this page's link into a tweet and the card below plays inside X.</p>
-    <iframe src="embed.html" title="Tweetpad" allow="clipboard-write"></iframe>
-    <p><a href="embed.html">Open full screen</a> · <a href="https://github.com/cloutprotocol/twitterpad">Source (MIT)</a></p>
+    <h1><img class="bird" src="assets/twitter-2012-bird.svg" alt="">tweetpad</h1>
+    <p>Launch a token without leaving the tweet.</p>
+    <iframe src="embed.html" title="tweetpad" allow="clipboard-write"></iframe>
+    <section class="embed">
+      <h2>Embed it in a post on X</h2>
+      <ol>
+        <li>Copy this link: <code id="page-link">this page's address</code> <button id="copy-link" type="button">Copy</button></li>
+        <li>Paste it into a new post on X and post it.</li>
+        <li>Your post shows the card above. Anyone can open it and launch or trade right inside the post.</li>
+      </ol>
+    </section>
+    <p><a href="embed.html">Open full screen</a> · <a href="https://github.com/cloutprotocol/tweetpad">Source (MIT)</a></p>
   </main>
+<script>
+  /* show the exact link to paste, and copy it in one click */
+  const link = location.origin + '/';
+  document.getElementById('page-link').textContent = link.replace(/^https?:\/\//, '');
+  document.getElementById('copy-link').addEventListener('click', async (ev) => {
+    try { await navigator.clipboard.writeText(link); ev.target.textContent = 'Copied!'; }
+    catch { getSelection().selectAllChildren(document.getElementById('page-link')); ev.target.textContent = 'Press ⌘C'; }
+    setTimeout(() => { ev.target.textContent = 'Copy'; }, 2000);
+  });
+</script>
 </body>
 </html>

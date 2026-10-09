@@ -1,4 +1,4 @@
-/* Tweetpad: pixel HUD styles for the X card (embed.html). */
+/* tweetpad: pixel HUD styles for the X card (embed.html). */
 
 :root {
   --bg: #0b1210; --panel: rgba(30, 56, 64, .82); --panel-hi: rgba(140, 200, 210, .35); --panel-lo: #071013;
@@ -7,6 +7,9 @@
   --px: "Pixelify Sans", ui-monospace, Menlo, monospace;
   --mono: "VT323", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --shadow: 2px 2px 0 rgba(0, 0, 0, .65);
+  /* the coin chart is a canvas, so drawChart reads these instead of the stylesheet */
+  --chart-up: #7dff9a; --chart-down: #ff6b6b; --chart-grid: rgba(140, 200, 210, .12); --chart-text: #a6bcbf; --chart-last: #e8b64c;
+  --chart-font: 14px VT323, monospace; --chart-font-lg: 16px VT323, monospace;
 }
 * { box-sizing: border-box; }
 /* the pixel fonts ship ligatures that turn "fl" into one glyph; the font shorthand resets this, hence !important */
@@ -370,7 +373,7 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 .slot[aria-pressed="true"] { z-index: 1; outline: 2px solid #e9fffb; outline-offset: -1px;
                              box-shadow: 0 0 0 4px rgba(111, 231, 216, .35), inset 2px 2px 0 rgba(0, 0, 0, .45); }
 .slot[disabled] { cursor: default; }
-@media (max-width: 420px) { .views .lbl, #btn-debug .lbl { display: none; } }
+@media (max-width: 420px) { .views .lbl, #btn-more .lbl { display: none; } }
 
 
 @media (max-width: 360px) { .ghost .lbl { display: none; } }
@@ -401,3 +404,223 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 .chat-slot { flex: none; width: 32px; max-width: 32px; color: var(--accent); }
 .chat-slot svg { width: 16px; height: 16px; image-rendering: pixelated; shape-rendering: crispEdges; }
 .avatar.pixel { image-rendering: pixelated; background: #1d3a3f; }
+
+/* ---------- settings: skins ---------- */
+#tab-settings:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.settings { padding: 10px; border-top: 2px solid var(--gold); display: flex; flex-direction: column; gap: 8px; }
+.settings .menu-sec { margin: 2px 2px 0; }
+.gear { width: 12px; height: 12px; flex: none; shape-rendering: crispEdges; }
+#btn-settings kbd { display: none; }   /* the gear says enough; keeps the title from truncating */
+.skins { display: flex; flex-direction: column; gap: 6px; }
+.skin-opt { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px; appearance: none; cursor: pointer; text-align: left;
+            color: var(--text); font: inherit; text-shadow: var(--shadow); background: rgba(40, 72, 82, .6); border: 2px solid transparent; }
+.skin-opt:hover { background: rgba(60, 110, 120, .85); }
+.skin-opt[aria-checked="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4); }
+.skin-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.skin-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.skin-main b { font: 600 13px/1.1 var(--px); }
+.skin-main small { font: 14px/1.05 var(--mono); color: var(--dim); }
+/* tiny mockups of each skin: a top bar, a card and a bottom bar, drawn in that skin's own colors whatever is active */
+.skin-swatch { position: relative; flex: none; width: 46px; height: 46px; overflow: hidden; border: 1px solid #000; }
+.skin-swatch i { position: absolute; left: 0; right: 0; }
+.skin-swatch i:nth-child(1) { top: 0; height: 9px; }
+.skin-swatch i:nth-child(2) { top: 14px; left: 6px; right: 6px; height: 18px; }
+.skin-swatch i:nth-child(3) { bottom: 0; height: 8px; }
+.s-2012 { background: #e6e6e6; border-radius: 6px; border-color: #999; }
+.s-2012 i:nth-child(1) { background: linear-gradient(#63b8ee, #2b86cc); }
+.s-2012 i:nth-child(2) { background: #fff; border: 1px solid #ccc; border-radius: 2px; }
+.s-2012 i:nth-child(3) { background: linear-gradient(#3a3a3a, #111); }
+.s-craft { background: #16231d; image-rendering: pixelated; }
+.s-craft i:nth-child(1) { background: transparent; border-bottom: 2px solid #6fe7d8; height: 6px; left: 4px; right: 22px; top: 3px; }
+.s-craft i:nth-child(2) { background: rgba(30, 56, 64, .95); border-top: 2px solid #e8b64c; }
+.s-craft i:nth-child(3) { left: 8px; right: 8px; bottom: 3px; height: 6px;
+                          background: repeating-linear-gradient(90deg, #2c4c55 0 5px, #071013 5px 6px); }
+
+/* ---------- more: profile, games, debug ---------- */
+#tab-more:not([hidden]), #tab-games:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.more-pane, .games { padding: 10px; border-top: 2px solid var(--gold); display: flex; flex-direction: column; gap: 8px; }
+.more-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.more-row-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px; appearance: none; cursor: pointer; text-align: left;
+                color: var(--text); font: inherit; text-shadow: var(--shadow); background: rgba(40, 72, 82, .6); border: 2px solid transparent; }
+.more-row-btn:hover { background: rgba(60, 110, 120, .85); border-color: rgba(255, 255, 255, .6); }
+.more-row-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.more-ico { flex: none; width: 28px; height: 28px; display: grid; place-items: center; color: var(--accent); background: rgba(5, 12, 14, .6);
+            border: 2px solid var(--panel-lo); }
+.more-ico svg { width: 16px; height: 16px; shape-rendering: crispEdges; }
+.more-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.more-main b { font: 600 13px/1.1 var(--px); }
+.more-main small { font: 14px/1.05 var(--mono); color: var(--dim); }
+.more-row-btn .chev { flex: none; font: 20px/1 var(--mono); color: var(--dim); }
+/* games: a ghosted grid of empty cartridges with a "coming soon" plate on top */
+.games-wrap { position: relative; }
+.games-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; opacity: .35; filter: grayscale(1); }
+.games-grid li { aspect-ratio: 1; background: repeating-conic-gradient(rgba(255, 255, 255, .05) 0 25%, transparent 0 50%) 0 0 / 12px 12px, rgba(5, 12, 14, .7);
+                 border: 2px dashed rgba(140, 200, 210, .45); }
+.soon { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; text-align: center; }
+.soon b { font: 600 15px/1 var(--px); color: var(--gold); padding: 6px 10px 7px; background: var(--panel); border: 2px solid var(--panel-lo);
+          box-shadow: inset 0 2px 0 var(--panel-hi); }
+.soon small { font: 15px/1.1 var(--mono); color: var(--dim); max-width: 220px; }
+
+/* welcome post: only the 2012 skin shows it (see skin-2012.css) */
+.welcome { display: none; }
+
+/* ---------- launch form: optional social links, folded away by default ---------- */
+.socials summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; padding: 2px 0;
+                   font: 15px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+.socials summary::-webkit-details-marker { display: none; }
+.socials summary::before { content: "+"; width: 10px; font: 600 13px/1 var(--px); }
+.socials[open] summary::before { content: "−"; }
+.socials summary .dim { color: var(--dim); text-transform: none; }
+.socials summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.socials-count { font: 13px/1 var(--mono); padding: 1px 4px 0; color: #04200e; background: var(--accent); text-shadow: none; }
+.socials-count:empty { display: none; }
+.socials-fields { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.link-field { display: flex; align-items: center; background: rgba(5, 12, 14, .75); border: 2px solid var(--panel-lo);
+              box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .4); }
+.link-field:focus-within { border-color: var(--accent); }
+.link-pre { flex: none; width: 38px; text-align: center; font: 14px/1 var(--mono); color: var(--dim); border-right: 1px solid var(--line); }
+.launch .link-field input { border: 0; box-shadow: none; background: transparent; }
+.tab-ico { display: none; }   /* tab icons belong to the 2012 skin */
+
+/* ---------- about: name, version, a small info table, and the links to come ---------- */
+#tab-about:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.about { padding: 10px; border-top: 2px solid var(--gold); display: flex; flex-direction: column; gap: 8px; }
+.about-hero { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 4px; text-align: center; }
+.about-badge { width: 22px; height: 22px; margin-bottom: 8px; background: var(--accent); transform: rotate(45deg);
+               box-shadow: 0 0 0 3px var(--panel-lo), 0 0 18px var(--accent); }
+.about-name { font: 600 16px/1.1 var(--px); }
+.about-ver { font: 15px/1 var(--mono); color: var(--accent); }
+.about-hero small { font: 14px/1.1 var(--mono); color: var(--dim); }
+.about-table td:first-child { width: 40%; }
+.about .menu-sec { margin: 4px 2px 0; }
+.about-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.about-links li { display: flex; align-items: center; gap: 8px; padding: 7px 8px; background: rgba(40, 72, 82, .35); border: 2px dashed var(--line);
+                  opacity: .6; cursor: not-allowed; }
+.about-link-name { font: 600 12px/1 var(--px); }
+.about-link-sub { flex: 1; font: 14px/1 var(--mono); color: var(--dim); }
+.about-foot { margin: 0; text-align: center; }
+.about-links li.about-contact { opacity: 1; cursor: auto; border-style: solid; }
+.about-contact a.about-link-sub { color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.about-contact a.about-link-sub:hover { text-decoration: underline; }
+
+/* ---------- crafting: what the new coin pairs with, and the picker grid ---------- */
+.pair-row { display: flex; align-items: center; gap: 8px; }
+.pair-label { flex: none; font: 15px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--dim); }
+.pair-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; padding: 4px 7px; appearance: none; cursor: pointer; text-align: left;
+             color: var(--text); text-shadow: var(--shadow); background: rgba(5, 12, 14, .75); border: 2px solid var(--panel-lo);
+             box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .4); }
+.pair-pick:hover, .pair-pick:focus-visible { border-color: var(--accent); outline: none; }
+.pair-pick[disabled] { opacity: .5; cursor: default; }
+.pair-pick b { flex: none; font: 600 12px/1 var(--px); }
+.pair-pick small { flex: 1; min-width: 0; font: 14px/1 var(--mono); color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pair-pick .caret { font: 14px/1 var(--mono); color: var(--dim); }
+.pair-img { width: 20px; height: 20px; flex: none; object-fit: cover; border: 1px solid #000; font-size: 11px; }
+/* SOL as wallets show it: the gradient mark on a black disc */
+.sol-ico { display: inline-block; flex: none; background: #000 url(solana.svg) center / 58% no-repeat; border-radius: 50%; }
+/* in the form's header the pick is a compact chip: "Pair [logo] SOL ▾" */
+.launch-head .pair-pick { flex: none; gap: 5px; padding: 2px 6px 2px 5px; letter-spacing: 0; text-transform: none; border-width: 1px; box-shadow: none; }
+.launch-head .pair-pick small { flex: none; font: 13px/1 var(--mono); color: var(--dim); }
+.launch-head .pair-img { width: 16px; height: 16px; }
+.pairs-card { width: min(100%, 360px); background: #10232a; }   /* solid: the form behind would show through the HUD glass */
+.pairs-search { width: 100%; padding: 6px 8px; color: var(--text); font: 16px/1 var(--mono); background: rgba(5, 12, 14, .75);
+                border: 2px solid var(--panel-lo); box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .4); }
+.pairs-search:focus { outline: none; border-color: var(--accent); }
+.pairs-grid { list-style: none; margin: 0; padding: 0 2px 2px 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;
+              max-height: min(260px, calc(100vh - 200px)); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #4b7a84 transparent; }
+.pair-tile { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 3px 4px; appearance: none; cursor: pointer;
+             color: var(--text); text-shadow: var(--shadow); background: rgba(40, 72, 82, .6); border: 2px solid transparent; }
+.pair-tile:hover:not([disabled]) { background: rgba(60, 110, 120, .85); border-color: rgba(255, 255, 255, .6); }
+.pair-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pair-tile[aria-selected="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4); }
+.pair-tile[disabled] { cursor: progress; }
+.pair-tile.bad { opacity: .55; }
+.pair-tile b { max-width: 100%; font: 600 11px/1.1 var(--px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pair-tile small { max-width: 100%; font: 12px/1 var(--mono); color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pair-tile-img { width: 26px; height: 26px; object-fit: cover; border: 1px solid #000; font-size: 15px; }
+.pair-tile small.pair-mcap { color: var(--gold); }
+.pair-tile small.no { color: var(--bad); }
+#pairs-status:empty { display: none; }
+
+/* ---------- dev buy: its own block above the launch button ---------- */
+.devbuy-box { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: rgba(5, 12, 14, .45); border: 1px dashed var(--line); }
+.devbuy-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.devbuy-hint { font: 13px/1 var(--mono); color: var(--dim); }
+.devbuy-row { display: flex; gap: 6px; }
+.devbuy-row .devbuy { flex: 1; min-width: 70px; }
+.buy-chips { display: flex; gap: 3px; }
+.buy-chips button { appearance: none; padding: 0 8px; cursor: pointer; color: var(--dim); font: 15px/1 var(--mono); background: transparent;
+                    border: 1px solid var(--line); text-shadow: var(--shadow); }
+.buy-chips button:hover:not([disabled]) { color: var(--text); }
+.buy-chips button[aria-pressed="true"] { color: #04200e; background: var(--accent); border-color: var(--accent); text-shadow: none; }
+.buy-chips button[disabled] { cursor: default; opacity: .5; }
+.devbuy-est { font: 15px/1.15 var(--mono); color: var(--dim); }
+.devbuy-est.ok b { color: var(--ok); font-weight: normal; }
+.devbuy-est.bad { color: var(--bad); }
+.devbuy-est small { color: var(--dim); font-size: 13px; }
+.devbuy-box.off .devbuy-row { opacity: .45; }
+
+/* ---------- description countdown ---------- */
+.desc-wrap { position: relative; }
+.desc-wrap textarea { padding-right: 34px; }
+.desc-left { position: absolute; right: 7px; bottom: 6px; font: 13px/1 var(--mono); color: var(--dim); pointer-events: none; }
+.desc-left.warn, .post-left.warn { color: var(--warn); }
+
+/* ---------- coin page: compact trades ---------- */
+.trades li { grid-template-columns: 34px 1fr 1fr 30px; gap: 4px; padding: 2px 2px; font-size: 14px; }
+.trades .kind { font-size: 13px; }
+.trades-more { align-self: center; font: 14px/1 var(--mono); }
+.trades-more[hidden] { display: none; }
+
+/* ---------- coin page: posts ---------- */
+.posts { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding-top: 8px; border-top: 2px solid var(--panel-lo); }
+.posts-head { display: flex; align-items: center; gap: 6px; font: 15px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); }
+.posts-count { font: 13px/1 var(--mono); padding: 1px 4px 0; color: #04200e; background: var(--gold); letter-spacing: 0; }
+.posts-count:empty { display: none; }
+.composer { display: flex; flex-direction: column; gap: 4px; }
+.composer textarea { height: auto; min-height: 0; resize: none; font: 16px/1.1 var(--mono); padding: 6px 7px; background: rgba(5, 12, 14, .75);
+                     border: 2px solid var(--panel-lo); box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .4); }
+.composer textarea:focus { outline: none; border-color: var(--accent); }
+.composer-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.post-left { font: 14px/1 var(--mono); color: var(--dim); }
+.posts-list { list-style: none; margin: 0; padding: 0; }
+.posts-list > li.note { margin: 4px 0 0; text-align: center; }
+.post { display: flex; gap: 8px; padding: 6px 2px; border-top: 1px dashed var(--line); }
+.post-ava { width: 28px; height: 28px; }
+.post-body { flex: 1; min-width: 0; }
+.post-head { display: flex; align-items: center; gap: 4px; }
+.post-head b { font: 600 12px/1.1 var(--px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.post.mine .post-head b { color: var(--pink); }
+.post-time { margin-left: auto; font: 13px/1 var(--mono); color: var(--dim); }
+.post-text { margin: 2px 0 0; font: 15px/1.1 var(--mono); overflow-wrap: anywhere; }
+
+/* ---------- token list: wider, with each coin's day drawn behind its row ---------- */
+#tab-tokens .pane { max-width: 363px; }   /* the original 330px, 10% wider */
+.tok { position: relative; isolation: isolate; }
+.tok > :not(.spark) { position: relative; }
+.spark { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+.spark-line { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
+.spark.up .spark-line { stroke: rgba(125, 255, 154, .4); } .spark.down .spark-line { stroke: rgba(255, 107, 107, .4); }
+.spark.up .spark-area { fill: rgba(125, 255, 154, .07); } .spark.down .spark-area { fill: rgba(255, 107, 107, .07); }
+
+/* ---------- coin page: the creator, under the links ---------- */
+.creator { display: flex; flex-direction: column; gap: 5px; padding: 7px 8px; background: rgba(5, 12, 14, .45); border: 1px dashed var(--line); }
+.creator[hidden] { display: none; }
+.creator-label { font: 14px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.creator-row { display: flex; align-items: center; gap: 8px; }
+.creator-ava { width: 20px; height: 20px; }   /* small: the coin's image is the star of this page */
+.creator-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.creator-name { max-width: 100%; font: 600 13px/1.1 var(--px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.creator-addr { font: 14px/1 var(--mono); color: var(--dim); }
+.creator-addr .ext { padding: 0; color: var(--accent); }
+.creator-stat { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 4px; }
+.creator-stat b { font: 600 14px/1 var(--px); }
+.creator-stat small { font: 12px/1 var(--mono); letter-spacing: .06em; color: var(--dim); }
+/* the creator's avatar + name is one button into their profile */
+.creator-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 2px; margin: -2px; appearance: none; cursor: pointer;
+               text-align: left; color: inherit; font: inherit; text-shadow: inherit; background: none; border: 0; }
+.creator-who:hover .creator-name { text-decoration: underline; }
+.creator-who:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.creator-who .handle { pointer-events: none; }
+.user .who { align-items: center; }
+.user .who-main { flex: 1; }
+#tab-user:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; align-items: center; }

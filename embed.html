@@ -4,21 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Tweetpad</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%224%22 y=%224%22 width=%228%22 height=%228%22 transform=%22rotate(45 8 8)%22 fill=%22%236fe7d8%22 stroke=%22%23071013%22/%3E%3C/svg%3E">
+<title>tweetpad</title>
+<link rel="icon" type="image/svg+xml" href="assets/twitter-2012-bird.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
 <link rel="stylesheet" href="assets/tweetpad.css">
+<link rel="stylesheet" href="assets/skin-2012.css">
+<!-- pick the skin before first paint so the default never flashes the other one -->
+<script>try { document.documentElement.dataset.skin = localStorage.getItem('tweetpad:skin') || '2012'; } catch { document.documentElement.dataset.skin = '2012'; }</script>
 </head>
 <body>
 <header>
-  <h1><button class="home" id="btn-home" title="Tweetpad home (L)"><span class="gem" aria-hidden="true"></span>Tweetpad</button></h1>
+  <h1><button class="home" id="btn-home" title="tweetpad home (L)"><span class="gem" aria-hidden="true"></span>tweetpad</button></h1>
   <nav class="views" role="tablist" aria-label="Views">
-    <button class="ghost" role="tab" aria-selected="true" data-view="wallets" title="Launch a token (L)"><kbd>L</kbd><span class="lbl">Launch</span></button>
-    <button class="ghost" role="tab" aria-selected="false" data-view="tokens" title="Tokens launched here (T)"><kbd>T</kbd><span class="lbl">Tokens</span><span class="count" id="token-count"></span></button>
+    <button class="ghost" role="tab" aria-selected="true" data-view="wallets" title="Launch a token (L)"><kbd>L</kbd><svg class="tab-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .8c2.7 1.7 3.9 4.6 3.5 7.8l1.9 2.4v3l-2.9-1.5h-5L3.6 14v-3l1.9-2.4C5.1 5.4 6.3 2.5 8 .8zm0 4.1a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM6.6 13.2h2.8L8 15.6z" fill-rule="evenodd"/></svg><span class="lbl">Launch</span></button>
+    <button class="ghost" role="tab" aria-selected="false" data-view="tokens" title="Tokens launched here (T)"><kbd>T</kbd><svg class="tab-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" fill-rule="evenodd"/><path d="M7.3 3.6h1.4v1c.9.1 1.7.5 2.1 1.1l-1 .9c-.4-.4-.9-.7-1.6-.7-.6 0-1 .3-1 .7 0 .5.5.6 1.4.9 1.3.3 2.4.8 2.4 2.1 0 1-.8 1.8-2.3 2v1H7.3v-1c-1-.1-1.9-.6-2.4-1.3l1-.9c.5.5 1.1.9 1.9.9.7 0 1.1-.3 1.1-.7 0-.5-.5-.7-1.5-.9-1.2-.3-2.3-.7-2.3-2 0-.9.8-1.7 2.2-1.9z"/></svg><span class="lbl">Tokens</span><span class="count" id="token-count"></span></button>
   </nav>
-  <button class="ghost" id="btn-debug" aria-pressed="false" title="Debug: environment, report, popup bridge (D)"><kbd>D</kbd><span class="lbl">Debug</span></button>
+  <button class="ghost" id="btn-settings" aria-pressed="false" aria-label="Settings" title="Settings (,)"><kbd>,</kbd><svg class="gear" viewBox="0 0 8 8" aria-hidden="true"><path d="M3 0h2v1h1v1h1v1h1v2H7v1H6v1H5v1H3V7H2V6H1V5H0V3h1V2h1V1h1zm0 3v2h2V3z" fill="currentColor" fill-rule="evenodd"/></svg></button>
+  <button class="ghost" id="btn-more" aria-pressed="false" title="More: profile, games, debug (M)"><kbd>M</kbd><span class="lbl">More</span></button>
   <div class="wc">
     <button class="btn primary wc-btn" id="wc-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="wc-menu" title="Wallet (C)">Connect<span class="caret">▾</span></button>
     <div class="menu" id="wc-menu" role="menu" aria-label="Wallet" hidden></div>
@@ -27,9 +31,22 @@
 <div class="stage">
   <main>
     <section id="tab-wallets">
+      <!-- the 2012 skin's welcome post; Tweetcraft hides it -->
+      <article class="pane tweet welcome" aria-label="Welcome post from Agent Doge">
+        <img class="tweet-ava" src="assets/agent-doge.jpg" alt="" width="48" height="48">
+        <div class="tweet-body">
+          <div class="tweet-head"><b>Agent Doge</b><span class="tweet-handle">@tweetpad</span><span class="tweet-time">2m</span></div>
+          <p class="tweet-copy">Welcome to <span class="hashtag">#tweetpad</span>. Drop an image, pick a ticker, hit Launch, and your coin goes live without leaving the tweet. Such launch. Very wow.</p>
+          <div class="tweet-actions">
+            <button class="tweet-act share" data-act="share" aria-pressed="false" aria-label="Share on X" title="Share on X"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 3 1 7.5 6.5 12V9.2c3.6 0 6 .9 8 3.8-.6-4.3-3.2-7.2-8-7.6z"/></svg><span class="lbl">Share</span><span class="n" data-count="share"></span></button>
+            <button class="tweet-act repost" data-act="repost" aria-pressed="false" aria-label="Repost" title="Repost"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2 .8 5.5H3V12h7v-2H5V5.5h2.2zm8 12 3.2-3.5H13V4H6v2h5v4.5H8.8z"/></svg><span class="lbl">Repost</span><span class="n" data-count="repost"></span></button>
+            <button class="tweet-act star" data-act="star" aria-pressed="false" aria-label="Star" title="Star"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m8 1.5 1.9 4.1 4.5.5-3.4 3 1 4.4L8 11.2 4 13.5l1-4.4-3.4-3 4.5-.5z"/></svg><span class="lbl">Star</span><span class="n" data-count="star"></span></button>
+          </div>
+        </div>
+      </article>
       <!-- a div, not a form: X's card sandbox drops form submissions without firing submit -->
       <div class="pane panel launch" id="launch">
-        <div class="launch-head"><span>Launch</span><span class="tag dim" id="launch-pair">MAINNET · 0 PAD FEE</span></div>
+        <div class="launch-head"><span>Launch</span><button class="pair-pick" id="pair-pick" type="button" aria-haspopup="dialog" aria-controls="pairs"></button></div>
         <div id="launch-banner" hidden></div>
         <div class="launch-grid">
           <label class="drop" id="drop" tabindex="0" title="Click, drop or paste an image">
@@ -39,22 +56,41 @@
           </label>
           <div class="fields">
             <input id="tk-name" maxlength="32" placeholder="Name" autocomplete="off" spellcheck="false" aria-label="Token name">
-            <div class="row2">
-              <input id="tk-ticker" maxlength="10" placeholder="Ticker" autocomplete="off" spellcheck="false" aria-label="Ticker">
-              <label class="devbuy" title="Optional: buy your own token in the same transaction"><input id="tk-buy" type="number" min="0" max="10" step="0.01" placeholder="0" inputmode="decimal" aria-label="Dev buy in SOL"><span>SOL buy</span></label>
-            </div>
+            <input id="tk-ticker" maxlength="10" placeholder="Ticker" autocomplete="off" spellcheck="false" aria-label="Ticker">
             <div class="img-meta" id="img-meta">PNG, JPG, GIF or WebP · up to 4 MB · drop or paste</div>
           </div>
         </div>
-        <textarea id="tk-desc" rows="2" maxlength="500" placeholder="Description (optional)" aria-label="Description"></textarea>
+        <div class="desc-wrap">
+          <textarea id="tk-desc" rows="2" maxlength="120" placeholder="Description (optional)" aria-label="Description">launched on tweetpad.io</textarea>
+          <span class="desc-left" id="desc-left" aria-hidden="true">120</span>
+        </div>
+        <details class="socials" id="socials">
+          <summary>Social links <span class="dim">(optional)</span><span class="socials-count" id="socials-count"></span></summary>
+          <div class="socials-fields">
+            <label class="link-field"><span class="link-pre" aria-hidden="true">X</span><input id="tk-x" maxlength="200" placeholder="@handle or x.com link" autocomplete="off" spellcheck="false" inputmode="url" aria-label="X link"></label>
+            <label class="link-field"><span class="link-pre" aria-hidden="true">TG</span><input id="tk-tg" maxlength="200" placeholder="@group or t.me link" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Telegram link"></label>
+            <label class="link-field"><span class="link-pre" aria-hidden="true">WEB</span><input id="tk-web" maxlength="200" placeholder="yoursite.com" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Website"></label>
+          </div>
+        </details>
+        <!-- dev buy: right above the button, with a live estimate of what it gets -->
+        <div class="devbuy-box" id="devbuy-box">
+          <div class="devbuy-head"><span class="pair-label">Dev buy</span><span class="devbuy-hint">optional · bought in the launch transaction</span></div>
+          <div class="devbuy-row">
+            <div class="buy-chips" role="group" aria-label="Dev buy presets">
+              <button type="button" data-buy="0">None</button><button type="button" data-buy="0.1">0.1</button><button type="button" data-buy="0.5">0.5</button><button type="button" data-buy="1">1</button>
+            </div>
+            <label class="devbuy"><input id="tk-buy" type="number" min="0" max="10" step="0.01" placeholder="0" inputmode="decimal" aria-label="Dev buy in SOL"><span>SOL</span></label>
+          </div>
+          <div class="devbuy-est" id="devbuy-est" aria-live="polite"></div>
+        </div>
         <button class="btn primary launch-btn" id="launch-btn" type="button">Connect wallet</button>
-        <p class="note" id="launch-note">Launches on pump.fun · network fees apply</p>
+        <p class="note" id="launch-note">Launches on pump.fun · 0 pad fee · network fees apply</p>
         <ul class="quests" id="launch-checks" hidden></ul>
       </div>
     </section>
     <section id="tab-tokens" hidden>
       <div class="pane panel tokens">
-        <div class="launch-head"><span>Launched on Tweetpad</span>
+        <div class="launch-head"><span>Launched on tweetpad</span>
           <span class="sort"><button data-sort="new" aria-pressed="true">New</button><button data-sort="hot" aria-pressed="false" title="Most 1h volume">Hot</button><button data-sort="mcap" aria-pressed="false">Mcap</button><button id="tokens-refresh" title="Refresh">↻</button></span></div>
         <ul class="token-list" id="token-list"></ul>
       </div>
@@ -66,10 +102,89 @@
         <div class="coin-head" id="coin-head"></div>
         <canvas id="coin-chart" aria-label="Price chart"></canvas>
         <div class="coin-links" id="coin-links"></div>
+        <div class="creator" id="coin-creator" hidden></div>
         <ul class="trades" id="coin-trades"></ul>
+        <button class="linkish trades-more" id="trades-more" type="button" hidden></button>
+        <!-- comments, as posts: tweet-sized, signed in with the same wallet session as chat -->
+        <div class="posts">
+          <div class="posts-head"><span>Posts</span><span class="posts-count" id="posts-count"></span></div>
+          <div class="composer">
+            <textarea id="post-input" rows="2" maxlength="120" aria-label="Write a post about this coin"></textarea>
+            <div class="composer-foot"><span class="post-left" id="post-left">120</span><button class="btn sm primary" id="post-send" type="button">Post</button></div>
+          </div>
+          <ul class="posts-list" id="coin-posts"></ul>
+        </div>
       </div>
     </section>
     <section id="tab-profile" hidden></section>
+    <section id="tab-user" hidden></section>
+    <section id="tab-more" hidden>
+      <div class="pane panel more-pane">
+        <div class="launch-head"><span>More</span></div>
+        <ul class="more-list">
+          <li><button class="more-row-btn" data-goto="profile"><span class="more-ico" aria-hidden="true">
+            <svg viewBox="0 0 8 8"><path d="M3 0h2v1h1v3H5v1H3V4H2V1h1zM1 6h1V5h4v1h1v2H1z" fill="currentColor"/></svg></span>
+            <span class="more-main"><b>Profile</b><small>Your X link, coins you launched, creator rewards</small></span><kbd>P</kbd><span class="chev" aria-hidden="true">›</span></button></li>
+          <li><button class="more-row-btn" data-goto="games"><span class="more-ico" aria-hidden="true">
+            <svg viewBox="0 0 8 8"><path d="M1 2h6v1h1v4H6V6H2v1H0V3h1zm1 1v1H1v1h1v1h1V5h1V4H3V3zm3 1v1h1V4zm1-1v1h1V3z" fill="currentColor" fill-rule="evenodd"/></svg></span>
+            <span class="more-main"><b>Games</b><small>Play with your coins</small></span><span class="tag dim">Soon</span><kbd>G</kbd><span class="chev" aria-hidden="true">›</span></button></li>
+          <li><button class="more-row-btn" data-goto="debug"><span class="more-ico" aria-hidden="true">
+            <svg viewBox="0 0 8 8"><path d="M3 0h2v1h1v1H2V1h1zM1 2h1v1h4V2h1v1H6v1h2v1H6v1h1v1H6v1H2V7H1V6h1V5H0V4h2V3H1z" fill="currentColor"/></svg></span>
+            <span class="more-main"><b>Debug</b><small>Sign tests, environment, report, popup bridge</small></span><kbd>D</kbd><span class="chev" aria-hidden="true">›</span></button></li>
+          <li><button class="more-row-btn" data-goto="about"><span class="more-ico" aria-hidden="true">
+            <svg viewBox="0 0 8 8"><path d="M3 0h2v2H3zM2 3h3v4h1v1H2V7h1V4H2z" fill="currentColor"/></svg></span>
+            <span class="more-main"><b>About</b><small>Version, credits, where to find us</small></span><kbd>A</kbd><span class="chev" aria-hidden="true">›</span></button></li>
+        </ul>
+      </div>
+    </section>
+    <section id="tab-games" hidden>
+      <div class="pane panel games">
+        <div class="launch-head"><span>Games</span><button class="menu-x" id="games-close" aria-label="Back" title="Back (Esc)">×</button></div>
+        <div class="games-wrap">
+          <ul class="games-grid" aria-hidden="true"><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ul>
+          <div class="soon"><b>Coming soon</b><small>Games you can play with the coins in your hotbar.</small></div>
+        </div>
+      </div>
+    </section>
+    <section id="tab-about" hidden>
+      <div class="pane panel about">
+        <div class="launch-head"><span>About</span><button class="menu-x" id="about-close" aria-label="Back" title="Back (Esc)">×</button></div>
+        <div class="about-hero">
+          <span class="about-badge" aria-hidden="true"></span>
+          <b class="about-name">tweetpad</b>
+          <span class="about-ver" id="about-ver"></span>
+          <small>Launch a token without leaving the tweet.</small>
+        </div>
+        <table class="about-table">
+          <tr><td>Skin</td><td id="about-skin"></td></tr>
+          <tr><td>Network</td><td id="about-net"></td></tr>
+          <tr><td>Launches on</td><td>pump.fun</td></tr>
+          <tr><td>License</td><td>MIT</td></tr>
+        </table>
+        <div class="menu-sec">Contact</div>
+        <ul class="about-links">
+          <li class="about-contact"><span class="about-link-name">Email</span>
+            <a class="about-link-sub" href="mailto:tweetpad@proton.me">tweetpad@proton.me</a>
+            <button class="copy" id="about-copy-email" title="Copy email" aria-label="Copy email">⧉</button></li>
+        </ul>
+        <p class="note fine about-foot">© 2026 cloutprotocol · Made for the timeline</p>
+      </div>
+    </section>
+    <section id="tab-settings" hidden>
+      <div class="pane panel settings">
+        <div class="launch-head"><span>Settings</span><button class="menu-x" id="settings-close" aria-label="Back" title="Back (Esc)">×</button></div>
+        <div class="menu-sec">Skins</div>
+        <div class="skins" id="skins" role="radiogroup" aria-label="Skin">
+          <button class="skin-opt" role="radio" aria-checked="false" data-skin="2012">
+            <span class="skin-swatch s-2012" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="skin-main"><b>2012</b><small>Blue bar, white cards, the old bird app</small></span><span class="tag">Default</span></button>
+          <button class="skin-opt" role="radio" aria-checked="false" data-skin="tweetcraft">
+            <span class="skin-swatch s-craft" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="skin-main"><b>Tweetcraft</b><small>Pixel HUD, night sky, hotbar</small></span></button>
+        </div>
+        <p class="note fine">Saved in this browser.</p>
+      </div>
+    </section>
     <section id="debug" hidden>
       <div class="subnav" role="tablist">
         <button role="tab" aria-selected="true" data-tab="sign" data-key="s"><kbd>S</kbd>Sign</button>
@@ -109,6 +224,15 @@
     <div class="lightbox-head"><b id="lightbox-title"></b><button class="menu-x" id="lightbox-close" aria-label="Close image" title="Close (Esc)">×</button></div>
     <div class="lightbox-frame"><img id="lightbox-img" alt=""><span class="note" id="lightbox-note">Loading…</span></div>
     <div class="lightbox-foot"><span class="tok-sub" id="lightbox-sub"></span><a class="chiplink" id="lightbox-open" target="_blank" rel="noopener">pump.fun ↗</a></div>
+  </div>
+</div>
+<div class="lightbox" id="pairs" role="dialog" aria-modal="true" aria-labelledby="pairs-title" hidden>
+  <div class="lightbox-card panel pairs-card">
+    <div class="lightbox-head"><b id="pairs-title">Pair with</b><button class="menu-x" id="pairs-close" aria-label="Close" title="Close (Esc)">×</button></div>
+    <input id="pairs-search" class="pairs-search" placeholder="Search name, $ticker or contract" autocomplete="off" spellcheck="false" aria-label="Search coins to pair with">
+    <ul class="pairs-grid" id="pairs-grid" role="listbox" aria-label="Pairs"></ul>
+    <div class="status" id="pairs-status"></div>
+    <p class="note fine">SOL or any tweetpad coin.</p>
   </div>
 </div>
 <div class="lightbox" id="verify" role="dialog" aria-modal="true" aria-labelledby="verify-title" hidden>

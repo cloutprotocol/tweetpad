@@ -1,12 +1,13 @@
 // Step 2 of a launch: build the pump.fun create transaction (unsigned), check it, and remember the launch as
 // pending so only launches made through the pad can be listed later.
-// QUOTE_MINT (env) picks what new coins are paired with: a pump coin (default: $JACK, standing in for the
-// platform token) is built here with pump.fun's SDK (create_v2 with the quote coin's curve accounts);
-// "sol" uses PumpPortal's local transaction API, which also supports a dev buy.
-// Body JSON: { publicKey, mint, name, symbol, uri, image, thumb, devBuy }
+// The launcher picks the pair ("crafting"): `quote: 'sol'`, or the mint of any coin launched on tweetpad that pump.fun
+// admits as a quote (checked by pairQuote). Without `quote`, QUOTE_MINT (env) decides, and unset means SOL.
+// SOL pairs are built with PumpPortal's local transaction API, which also supports a dev buy; coin pairs are built
+// here with pump.fun's SDK (create_v2 with the quote coin's curve accounts).
+// Body JSON: { publicKey, mint, name, symbol, uri, image, thumb, devBuy, quote }
 const { PublicKey, TransactionMessage, VersionedTransaction, ComputeBudgetProgram } = require('@solana/web3.js');
 const { OnlinePumpSdk, PUMP_SDK } = require('@pump-fun/pump-sdk');
-const { PUMP_PROGRAM, cors, readJson, isPubkey, signerKeys, redis, connection, quoteConfig, cleanThumb, rateLimit, fail } = require('./_lib');
+const { PUMP_PROGRAM, cors, readJson, isPubkey, signerKeys, redis, connection, quoteConfig, pairQuote, cleanThumb, rateLimit, fail } = require('./_lib');
 
 const PENDING_TTL = 60 * 60; // seconds a built launch may wait to be signed and sent
 const MAX_DEV_BUY = 10;      // SOL
@@ -26,9 +27,9 @@ async function viaPumpPortal({ publicKey, mint, name, symbol, uri, devBuy }) {
   return tx;
 }
 
-async function viaSdkPaired({ publicKey, mint, name, symbol, uri }, quoteMint) {
+async function viaSdkPaired({ publicKey, mint, name, symbol, uri }, quoteMint, resolved) {
   const conn = connection();
-  const quote = await new OnlinePumpSdk(conn).resolveQuoteMint(new PublicKey(quoteMint));
+  const quote = resolved || await new OnlinePumpSdk(conn).resolveQuoteMint(new PublicKey(quoteMint));
   const payer = new PublicKey(publicKey);
   const ix = await PUMP_SDK.createV2Instruction({
     mint: new PublicKey(mint), name, symbol, uri, creator: payer, user: payer, mayhemMode: false,
@@ -54,7 +55,14 @@ module.exports = async (req, res) => {
   const name = typeof b.name === 'string' ? b.name.trim() : '';
   const symbol = b.symbol;
   const devBuy = Number(b.devBuy || 0);
-  const quote = quoteConfig();
+  let quote = quoteConfig(), resolved = null;
+  if (b.quote === 'sol') quote = { mint: null, symbol: 'SOL' };
+  else if (b.quote != null) {
+    if (!isPubkey(b.quote)) return fail(res, 400, 'invalid pair address');
+    if (b.quote === mint) return fail(res, 400, 'a coin cannot be paired with itself');
+    try { ({ resolved, ...quote } = await pairQuote(b.quote)); }
+    catch (err) { return fail(res, err.status || 502, err.message); }
+  }
   if (!isPubkey(publicKey) || !isPubkey(mint) || publicKey === mint) return fail(res, 400, 'invalid wallet or mint address');
   if (!name || name.length > 32) return fail(res, 400, 'name must be 1–32 characters');
   if (typeof symbol !== 'string' || !/^[A-Z0-9]{2,10}$/.test(symbol)) return fail(res, 400, 'ticker must be 2–10 letters or numbers');
@@ -65,7 +73,7 @@ module.exports = async (req, res) => {
 
   let tx;
   try {
-    tx = quote.mint ? await viaSdkPaired({ publicKey, mint, name, symbol, uri }, quote.mint)
+    tx = quote.mint ? await viaSdkPaired({ publicKey, mint, name, symbol, uri }, quote.mint, resolved)
                     : await viaPumpPortal({ publicKey, mint, name, symbol, uri, devBuy });
   } catch (err) {
     return fail(res, 502, 'could not build the transaction: ' + err.message);

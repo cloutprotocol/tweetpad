@@ -2,9 +2,9 @@
   "name": "tweetpad",
   "version": "0.1.0",
   "private": true,
-  "description": "Launch a pump.fun token without leaving the post: an X player card with a pixel HUD.",
+  "description": "Launch a token without leaving the tweet.",
   "license": "MIT",
-  "repository": "github:cloutprotocol/twitterpad",
+  "repository": "github:cloutprotocol/tweetpad",
   "engines": {
     "node": ">=20"
   },

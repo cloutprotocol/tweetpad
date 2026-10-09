@@ -103,14 +103,71 @@ async function rpc(method, params) {
   return out.result;
 }
 
-/* what new coins are paired with: QUOTE_MINT=<pump coin mint> (default $JACK, standing in for the
-   platform token), or QUOTE_MINT=sol for plain SOL pairs */
-const DEFAULT_QUOTE = { mint: 'DC4RxGX9otgsXu9AQ8KCFG5T8vKGa4FLd35uJuJrsUG', symbol: 'JACK' };
+/* what new coins are paired with: plain SOL by default, until the platform token exists;
+   QUOTE_MINT=<pump coin mint> (+ QUOTE_SYMBOL) pairs every new coin with that coin instead */
+const SOL_QUOTE = { mint: null, symbol: 'SOL' };
 function quoteConfig() {
   const env = (process.env.QUOTE_MINT || '').trim();
-  if (env.toLowerCase() === 'sol') return { mint: null, symbol: 'SOL' };
   if (isPubkey(env)) return { mint: env, symbol: (process.env.QUOTE_SYMBOL || '').trim() || 'QUOTE' };
-  return DEFAULT_QUOTE;
+  return SOL_QUOTE;
+}
+
+/* "crafting": a new coin can be paired with any coin launched on tweetpad, if pump.fun admits it as a quote.
+   Resolves the coin's quote accounts for create_v2, or throws an error a person can read. */
+const PAIR_ERRORS = {
+  CurveDepthExceededError: (s) => '$' + s + ' is itself paired with a coin, and pump.fun only allows one level of pairing',
+  QuoteBondingCurveNotEligibleError: (s) => '$' + s + ' cannot be a pair on pump.fun (mayhem mode)',
+  QuoteCurveAwaitingMigrationError: (s) => '$' + s + ' finished its curve and is moving to PumpSwap; try again in a few minutes',
+  QuotePoolNotFoundError: (s) => '$' + s + ' graduated but has no PumpSwap pool to price it',
+  QuoteReservesOutOfRangeError: (s) => '$' + s + ' is priced outside what pump.fun accepts for a pair right now',
+  UnsupportedQuoteMintError: (s) => '$' + s + ' is not accepted as a pair by pump.fun',
+};
+async function pairQuote(mint) {
+  if (!isPubkey(mint)) throw Object.assign(new Error('invalid pair address'), { status: 400 });
+  const [row] = await redis(['GET', 'launch:' + mint]);
+  if (!row) throw Object.assign(new Error('only coins launched on tweetpad can be paired with'), { status: 400 });
+  const launch = JSON.parse(row);
+  const { PublicKey } = require('@solana/web3.js');
+  const { OnlinePumpSdk } = require('@pump-fun/pump-sdk');
+  try {
+    const resolved = await new OnlinePumpSdk(connection()).resolveQuoteMint(new PublicKey(mint));
+    return { mint, symbol: launch.symbol, name: launch.name, resolved };
+  } catch (err) {
+    const why = PAIR_ERRORS[err && err.name];
+    throw Object.assign(new Error(why ? why(launch.symbol) : 'cannot pair with $' + launch.symbol + ': ' + err.message), { status: why ? 400 : 502 });
+  }
+}
+
+/* DexScreener market data for up to 30 mints (the most liquid pair per coin). Each market cap seen is also kept in
+   Redis (hash mcaps), so the pair picker and the hotbar can rank every coin by market cap without a call per coin. */
+async function marketData(mints) {
+  const r = await fetch('https://api.dexscreener.com/tokens/v1/solana/' + mints.join(','), { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error('DexScreener ' + r.status);
+  const pairs = await r.json();
+  const market = {};
+  /* a coin can have several pairs (curve, then PumpSwap after migration): keep the most liquid one */
+  for (const p of Array.isArray(pairs) ? pairs : []) {
+    const mint = p.baseToken && p.baseToken.address;
+    if (!mints.includes(mint)) continue;
+    const liq = (p.liquidity && p.liquidity.usd) || 0;
+    if (market[mint] && market[mint].liquidity >= liq) continue;
+    market[mint] = {
+      mcap: p.marketCap || p.fdv || null,
+      price: p.priceUsd ? Number(p.priceUsd) : null,
+      priceNative: p.priceNative ? Number(p.priceNative) : null,
+      change1h: p.priceChange ? p.priceChange.h1 ?? null : null,
+      change24h: p.priceChange ? p.priceChange.h24 ?? null : null,
+      buys1h: p.txns && p.txns.h1 ? p.txns.h1.buys : 0,
+      sells1h: p.txns && p.txns.h1 ? p.txns.h1.sells : 0,
+      volume1h: p.volume ? p.volume.h1 ?? 0 : 0,
+      volume24h: p.volume ? p.volume.h24 ?? 0 : 0,
+      liquidity: liq,
+      dex: p.dexId, pair: p.pairAddress,
+    };
+  }
+  const caps = Object.entries(market).filter(([, v]) => v.mcap).flatMap(([k, v]) => [k, String(v.mcap)]);
+  if (caps.length) await redis(['HSET', 'mcaps', ...caps]).catch(() => {});   // a bonus: never fail market data over it
+  return market;
 }
 
 let conn = null;
@@ -149,5 +206,5 @@ function fail(res, status, error) {
 
 module.exports = {
   PUMP_PROGRAM, MAX_IMAGE_BYTES, cors, sniffImage, readBody, readJson, sha256,
-  b58encode, b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, cleanThumb, rateLimit, fail,
+  b58encode, b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, cleanThumb, rateLimit, fail,
 };

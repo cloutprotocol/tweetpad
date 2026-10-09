@@ -13,7 +13,7 @@ const CODE_TTL = 60 * 60;
 const MAX_BATCH = 50;
 const ED25519_SPKI = Buffer.from('302a300506032b6570032100', 'hex');
 
-const challengeMessage = (wallet, code) => 'Tweetpad profile\nLink this wallet to the X account that tweets the code.\nwallet: ' + wallet + '\ncode: ' + code;
+const challengeMessage = (wallet, code) => 'tweetpad profile\nLink this wallet to the X account that tweets the code.\nwallet: ' + wallet + '\ncode: ' + code;
 
 function signatureValid(wallet, message, signatureB58) {
   const sig = b58decode(String(signatureB58 || ''));

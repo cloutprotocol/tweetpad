@@ -1,7 +1,7 @@
 // Step 1 of a launch: put the image and the token metadata JSON on IPFS and return the metadata URI.
 // pump.fun's own IPFS endpoint answers servers but not browsers (no CORS), so the upload goes through here.
 // Pinata (PINATA_JWT) is a fallback in case pump.fun's endpoint fails or goes away.
-// Body: the raw image bytes. Header x-meta: URI-encoded JSON { name, symbol, description, twitter, website }.
+// Body: the raw image bytes. Header x-meta: URI-encoded JSON { name, symbol, description, twitter, telegram, website }.
 const { MAX_IMAGE_BYTES, cors, sniffImage, readBody, sha256, rateLimit, fail } = require('./_lib');
 
 const GATEWAY = 'https://ipfs.io/ipfs/';
@@ -9,7 +9,7 @@ const GATEWAY = 'https://ipfs.io/ipfs/';
 async function viaPump(meta, blob, filename) {
   const form = new FormData();
   form.append('file', blob, filename);
-  for (const k of ['name', 'symbol', 'description', 'twitter', 'website']) if (meta[k]) form.append(k, meta[k]);
+  for (const k of ['name', 'symbol', 'description', 'twitter', 'telegram', 'website']) if (meta[k]) form.append(k, meta[k]);
   form.append('showName', 'true');
   const res = await fetch('https://pump.fun/api/ipfs', { method: 'POST', body: form });
   const out = await res.json().catch(() => null);
@@ -22,7 +22,7 @@ async function viaPinata(jwt, meta, blob, filename) {
   const metadata = {
     name: meta.name, symbol: meta.symbol, description: meta.description, image, showName: true,
     createdOn: 'https://twitterpad.vercel.app',
-    ...(meta.twitter && { twitter: meta.twitter }), ...(meta.website && { website: meta.website }),
+    ...(meta.twitter && { twitter: meta.twitter }), ...(meta.telegram && { telegram: meta.telegram }), ...(meta.website && { website: meta.website }),
   };
   const uri = await pin(jwt, new Blob([JSON.stringify(metadata)], { type: 'application/json' }), meta.symbol.toLowerCase() + '.json');
   return { uri, image, metadata, via: 'pinata' };
@@ -48,8 +48,8 @@ function cleanMeta(raw) {
   const link = (v) => { try { const u = new URL(String(v || '').trim()); return u.protocol === 'https:' ? u.href : ''; } catch { return ''; } };
   if (!name || name.length > 32) return { error: 'name must be 1–32 characters' };
   if (!/^[A-Z0-9]{2,10}$/.test(symbol)) return { error: 'ticker must be 2–10 letters or numbers' };
-  if (description.length > 500) return { error: 'description is over 500 characters' };
-  return { name, symbol, description, twitter: link(m.twitter), website: link(m.website) };
+  if (description.length > 120) return { error: 'description is over 120 characters' };
+  return { name, symbol, description, twitter: link(m.twitter), telegram: link(m.telegram), website: link(m.website) };
 }
 
 module.exports = async (req, res) => {

@@ -1,6 +1,6 @@
 # Checklist
 
-Where Tweetpad stands, and what to do next. `[x]` is done and verified, `[ ]` is open.
+Where tweetpad stands, and what to do next. `[x]` is done and verified, `[ ]` is open.
 
 ## Critical fixes (before a public launch)
 
@@ -17,7 +17,7 @@ Where Tweetpad stands, and what to do next. `[x]` is done and verified, `[ ]` is
 - [ ] **Private RPC** (`RPC_URL`): sends, confirmations and on-chain checks use the free publicnode RPC, which
       rate-limits under load. Route browser sends through a function so the key stays secret.
 - [ ] **Moderation**: an admin way to hide a listing (`ZREM launches <mint>`), plus a word filter on names and tickers.
-- [ ] **Fee split decisions** for the treasury (address, Tweetpad's share of creator fees, creator fee rate on
+- [ ] **Fee split decisions** for the treasury (address, tweetpad's share of creator fees, creator fee rate on
       paired coins). The split is a second transaction signed in the same wallet prompt; pump.fun locks it after.
 
 ## Quick wins
@@ -39,6 +39,11 @@ Where Tweetpad stands, and what to do next. `[x]` is done and verified, `[ ]` is
 - [ ] **Buy / sell inside the card.** SOL coins: PumpPortal `trade-local`. `$JACK`-paired coins: pump.fun's
       `multi_hop_swap` (SOL → `$JACK` → coin) through the SDK. Quick-amount buttons, slippage, same signing path.
 - [ ] **Dev buy on paired launches** via the same multi-hop swap.
+- [x] **Crafting: pair a new coin with any tweetpad coin.** "Pair with" on the launch form opens a searchable grid
+      (SOL + every listed coin); `/api/launches?pair=` and `/api/create` check the pick with the SDK's
+      `resolveQuoteMint`. Limits, checked on mainnet 2026-10-09: `Global.max_curve_depth` is 1, so only SOL-paired
+      (depth 0) coins can be parents; mayhem-mode coins and curves complete awaiting migration are refused.
+- [ ] **First real crafted launch** (a coin paired with a tweetpad coin) from a funded wallet, then trade it.
 - [ ] **Public profiles**: `/u/<handle>` card with a creator's coins, like `/c/<mint>`.
 - [ ] **Treasury tab**: treasury balance, coins sharing fees, and a "Harvest" button that triggers pump.fun's
       permissionless fee distribution.

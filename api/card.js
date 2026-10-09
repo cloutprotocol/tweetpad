@@ -12,8 +12,8 @@ module.exports = async (req, res) => {
     try { const [row] = await redis(['GET', 'launch:' + mint]); launch = row ? JSON.parse(row) : null; } catch { /* plain card */ }
   }
   const cid = launch && /\/ipfs\/([A-Za-z0-9]+)/.exec(launch.image || '');
-  const title = launch ? '$' + launch.symbol + ' · ' + launch.name + ' on Tweetpad' : 'Tweetpad';
-  const description = launch ? 'Chart, live trades and launches, inside the post.' : 'Launch a pump.fun token without leaving the post.';
+  const title = launch ? '$' + launch.symbol + ' · ' + launch.name + ' on tweetpad' : 'tweetpad';
+  const description = launch ? 'Chart, live trades and launches, inside the post.' : 'Launch a token without leaving the tweet.';
   const image = cid ? origin + '/api/image?cid=' + cid[1] : origin + '/preview.png';
   const player = origin + '/embed.html' + (launch ? '?coin=' + mint : '');
 
@@ -25,6 +25,7 @@ module.exports = async (req, res) => {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
+<link rel="icon" type="image/svg+xml" href="${esc(origin)}/assets/twitter-2012-bird.svg">
 <meta name="twitter:card" content="player">
 <meta name="twitter:site" content="@Prawnsfamily">
 <meta name="twitter:title" content="${esc(title)}">
@@ -38,8 +39,8 @@ module.exports = async (req, res) => {
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:image" content="${esc(image)}">
 <style>
-  body { margin: 0; min-height: 100vh; background: #0b1210; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-  iframe { width: 100%; max-width: 480px; aspect-ratio: 1 / 1; border: 2px solid #071013; border-radius: 16px; display: block; }
+  body { margin: 0; min-height: 100vh; background: #e6e6e6; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
+  iframe { width: 100%; max-width: 480px; aspect-ratio: 1 / 1; border: 1px solid #c8c8c8; border-radius: 6px; display: block; background: #e6e6e6; }
 </style>
 </head>
 <body><iframe src="${esc(player)}" title="${esc(title)}" allow="clipboard-write"></iframe></body>

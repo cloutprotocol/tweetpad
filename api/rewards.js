@@ -1,19 +1,38 @@
-// Creator rewards: the fees pump.fun has set aside for a coin creator, per quote token (SOL, and the pairing token).
+// Creator rewards: the fees pump.fun has set aside for a coin creator, per quote token: SOL, the current pairing token,
+// and any token the creator's own launches were paired with (coins launched before a pairing change keep earning in it).
 // GET ?wallet=<w>            → claimable amounts
 // POST { wallet }            → an unsigned claim transaction for the wallet to sign and send; it only includes the
 //                              quotes that hold fees (collecting from a quote vault that does not exist fails).
 const { PublicKey, TransactionMessage, VersionedTransaction, ComputeBudgetProgram } = require('@solana/web3.js');
 const { OnlinePumpSdk, creatorVaultPda } = require('@pump-fun/pump-sdk');
 const { NATIVE_MINT, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } = require('@solana/spl-token');
-const { cors, readJson, isPubkey, connection, quoteConfig, rateLimit, fail } = require('./_lib');
+const { cors, readJson, isPubkey, connection, quoteConfig, redis, rateLimit, fail } = require('./_lib');
+
+/* every non-SOL quote this creator could hold fees in */
+async function creatorQuotes(wallet) {
+  const quotes = new Map();
+  const current = quoteConfig();
+  if (current.mint) quotes.set(current.mint, current.symbol);
+  try {
+    const [mints] = await redis(['ZREVRANGE', 'creator:' + wallet, 0, 199]);
+    /* the slim search index (see launches.js) has each coin's pair without its thumbnail; fall back to full records if a coin isn't in it */
+    const slim = mints.length ? (await redis(['HMGET', 'launchidx', ...mints]))[0] : [];
+    const gaps = mints.filter((m, i) => !slim[i]);
+    const full = gaps.length ? (await redis(['MGET', ...gaps.map(m => 'launch:' + m)]))[0] : [];
+    for (const row of [...slim, ...full].filter(Boolean)) {
+      const q = JSON.parse(row).quote;
+      if (q && isPubkey(q.mint) && !quotes.has(q.mint)) quotes.set(q.mint, q.symbol || 'QUOTE');
+    }
+  } catch { /* the registry is down: the current quote still shows */ }
+  return [...quotes].map(([mint, symbol]) => ({ mint, symbol }));
+}
 
 async function balances(wallet) {
   const conn = connection();
   const creator = new PublicKey(wallet);
   const sol = await new OnlinePumpSdk(conn).getCreatorVaultBalanceBothPrograms(creator);
   const out = { wallet, sol: Math.max(0, sol.toNumber()) / 1e9, quotes: [] };
-  const quote = quoteConfig();
-  if (quote.mint) {
+  for (const quote of await creatorQuotes(wallet)) {
     const ata = getAssociatedTokenAddressSync(new PublicKey(quote.mint), creatorVaultPda(creator), true, TOKEN_2022_PROGRAM_ID);
     const bal = await conn.getTokenAccountBalance(ata).then(r => r.value).catch(() => null);
     out.quotes.push({ mint: quote.mint, symbol: quote.symbol, amount: bal ? Number(bal.uiAmountString) : 0, exists: !!bal });

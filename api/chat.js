@@ -3,7 +3,8 @@
 // Writing needs a session: the wallet signs one message (free, no transaction) and gets a token for 24h.
 //   POST { action: 'session', wallet, issued, signature } → { token }
 //   POST { action: 'send', token, room, text }            → { message }
-//   GET  ?room=lobby|<mint>                               → { messages } (oldest first)
+//   GET  ?room=lobby|<mint>|post:<mint>                   → { messages } (oldest first)
+// post:<mint> rooms are a coin page's comments: tweet-sized (120 characters), slower, and only for coins launched here.
 const { createPublicKey, verify: edVerify, randomBytes } = require('node:crypto');
 const { cors, readJson, isPubkey, b58decode, redis, rateLimit, fail } = require('./_lib');
 
@@ -15,8 +16,11 @@ const ED25519_SPKI = Buffer.from('302a300506032b6570032100', 'hex');
 /* a short, deliberately small filter; real moderation is on the checklist */
 const BLOCKED = /\b(n[i1]gg(?:er|a)|f[a@]gg?[o0]t|k[i1]ke|retard)s?\b/i;
 
-const sessionMessage = (wallet, issued) => 'Tweetpad chat\nSign in to chat as this wallet. This is free and sends no transaction.\nwallet: ' + wallet + '\nissued: ' + issued;
-const validRoom = (room) => room === 'lobby' || isPubkey(room);
+const sessionMessage = (wallet, issued) => 'tweetpad chat\nSign in to chat as this wallet. This is free and sends no transaction.\nwallet: ' + wallet + '\nissued: ' + issued;
+const POST_LEN = 120;      // comments under a coin page are tweet-sized
+const POST_SLOW = 10;      // seconds between comments per wallet
+const isPostRoom = (room) => room.startsWith('post:') && isPubkey(room.slice(5));
+const validRoom = (room) => room === 'lobby' || isPubkey(room) || isPostRoom(room);
 
 function signatureValid(wallet, message, signatureB58) {
   const sig = b58decode(String(signatureB58 || ''));
@@ -46,13 +50,19 @@ async function send(b, res) {
   const text = clean(b.text);
   if (!validRoom(room)) return fail(res, 400, 'unknown room');
   if (!text) return fail(res, 400, 'say something');
-  if (text.length > MAX_LEN) return fail(res, 400, 'keep it under ' + MAX_LEN + ' characters');
+  const post = isPostRoom(room);
+  const max = post ? POST_LEN : MAX_LEN;
+  if (text.length > max) return fail(res, 400, 'keep it under ' + max + ' characters');
   if (BLOCKED.test(text)) return fail(res, 400, 'that message is not allowed');
   const [wallet] = await redis(['GET', 'chatsess:' + String(b.token || '')]);
   if (!wallet) return fail(res, 401, 'chat session expired; sign in again');
-  /* one message every 2 seconds per wallet */
-  const [slot] = await redis(['SET', 'chatslow:' + wallet, '1', 'NX', 'EX', 2]);
-  if (slot !== 'OK') return fail(res, 429, 'slow down a little');
+  if (post) {
+    const [launch] = await redis(['EXISTS', 'launch:' + room.slice(5)]);
+    if (!launch) return fail(res, 404, 'comments are only for coins launched on tweetpad');
+  }
+  /* one chat message every 2 seconds per wallet, one comment every 10 */
+  const [slot] = await redis(['SET', (post ? 'postslow:' : 'chatslow:') + wallet, '1', 'NX', 'EX', post ? POST_SLOW : 2]);
+  if (slot !== 'OK') return fail(res, 429, post ? 'one comment every ' + POST_SLOW + ' seconds' : 'slow down a little');
   const [profileRaw, id] = await redis(['GET', 'profile:' + wallet], ['INCR', 'chat:seq']);
   const profile = profileRaw ? JSON.parse(profileRaw) : null;
   const message = { id, room, wallet, handle: profile ? profile.handle : null, avatar: profile ? profile.avatar : null, text, t: Date.now() };

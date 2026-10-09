@@ -1,29 +1,33 @@
-# Tweetpad ◆
+# tweetpad ◆
 
-**Launch a pump.fun token without leaving the post.**
+**Launch a token without leaving the tweet.**
 
-Tweetpad is an X player card with a pixel HUD. Expand the tweet, connect a Solana wallet, drop an image, pick a ticker,
-press **Launch**. The coin goes live on pump.fun, gets listed on Tweetpad, and has its own chart, live trades and a
+tweetpad is an X player card dressed as the 2012 bird app (or a pixel HUD, if you pick that skin). Expand the tweet, connect a Solana wallet, drop an image, pick a ticker,
+press **Launch**. The coin goes live on pump.fun, gets listed on tweetpad, and has its own chart, live trades and a
 shareable card that plays inside X again. No app to install and no tab to open.
 
-> Every launch is paired with the platform token (today `$JACK`, a stand-in), so every trade on every Tweetpad coin
-> buys the platform token first.
+> Launches are plain SOL pairs for now. Once the platform token exists, setting `QUOTE_MINT` pairs every new coin
+> with it, so every trade on a tweetpad coin buys the platform token first. Coins already paired with `$JACK` (the
+> earlier stand-in) keep their pair, and their creators can still claim `$JACK` fees.
 
-![Tweetpad preview](preview.png)
+![tweetpad preview](preview.png)
 
 ## What it does
 
 | | |
 | --- | --- |
-| **Launch** | Image (pick, drop or paste), name, ticker, description. One wallet approval. Live on pump.fun in seconds. |
-| **Pairing** | New coins are quoted in a pump coin (`QUOTE_MINT`) through pump.fun's `create_v2`, or in SOL. |
-| **Tokens** | Every coin launched here, with market cap and 1h move. New / Hot / Mcap, 24 at a time. |
-| **Coin screen** | Pixel candle chart, recent trades, live trades over a websocket, copyable contract address, share card. |
+| **Launch** | Image (pick, drop or paste), name, ticker, a description of up to 120 characters, optional X / Telegram / website links, and a dev buy with a live estimate of the tokens it gets. One wallet approval. Live on pump.fun in seconds. |
+| **Pairing** | "Pair with" on the form: SOL (default) or any coin launched on tweetpad, picked from a grid you can search by name, ticker or contract. The server checks pump.fun accepts it before building (`create_v2`). `QUOTE_MINT` sets the default pair. |
+| **Tokens** | Every coin launched here, with market cap, 1h move and the last day drawn faintly behind each row. New / Hot / Mcap, 24 at a time. |
+| **Coin screen** | Candle chart, compact recent trades, live trades over a websocket, the creator (2012-style author card), copyable contract address, share card, and **posts**: tweet-sized comments (120 characters) signed in with the wallet. |
 | **Inventory** | The hotbar holds your coins, then the newest. `1`–`9` opens them. |
+| **More** | Profile, Games, Debug and About (version, network, contact: tweetpad@proton.me) in one list. |
 | **Profile** | Link your wallet to your X account with one tweet, see the coins you launched, claim creator rewards. |
+| **Settings** | Skins: **2012** (default: blue bar, white cards, dark tab bar) or **Tweetcraft** (the pixel HUD). Saved per browser. |
+| **Games** | Coming soon: a placeholder grid for now. |
 | **Debug** | The original wallet-in-an-iframe probe: sign tests, environment, report, popup bridge. |
 
-Keys: `C` wallet · `L` launch · `T` tokens · `P` profile · `D` debug · `1`–`9` inventory · `H` chat · `Esc` back.
+Keys: `C` wallet · `L` launch · `T` tokens · `M` more · `P` profile · `G` games · `A` about · `,` settings · `D` debug · `1`–`9` inventory · `H` chat · `Esc` back.
 
 ## How it works
 
@@ -71,11 +75,13 @@ Both halves are required, so nobody can claim someone else's wallet or handle.
 ```
 index.html            landing page, carries the X card tags
 embed.html            the card: markup only
-assets/tweetpad.css   pixel HUD styles
+assets/tweetpad.css   layout and the Tweetcraft skin (pixel HUD)
+assets/skin-2012.css  the default 2012 skin, layered over tweetpad.css
 assets/tweetpad.js    the card app (plain JS, no build step)
 api/                  Vercel functions, one per route; _lib.js is shared and not a route
-  ipfs · create · launches · market · chart · image · card · profile · rewards · upload
+  ipfs · create · launches · market · chart · image · card · profile · rewards · upload · reactions
 scripts/check.js      `npm run check`: syntax and wiring smoke test
+scripts/preview.html  source for preview.png, the X card image (render command inside)
 docs/CHECKLIST.md     what's next: critical fixes, quick wins, quality of life
 ```
 
@@ -89,7 +95,7 @@ npm run local                    # http://localhost:3000/embed.html
 npm run check
 ```
 
-Settings live in [`.env.example`](.env.example): `QUOTE_MINT` (pairing token, or `sol`), `RPC_URL`, `PINATA_JWT`.
+Settings live in [`.env.example`](.env.example): `QUOTE_MINT` (pairing token; empty means SOL), `RPC_URL`, `PINATA_JWT`.
 
 ### Put it in a tweet
 
