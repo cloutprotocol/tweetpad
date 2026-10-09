@@ -24,9 +24,12 @@ shareable card that plays inside X again. No app to install and no tab to open.
 | | |
 | --- | --- |
 | **Launch** | Image (pick, drop or paste), name, ticker, a description of up to 140 characters, optional X / Telegram / website links, and a dev buy with a live estimate of the tokens it gets. One wallet approval. Live on pump.fun in seconds. |
+| **Jito bundle** | "⚡ Bundle with Jito" (on by default, Solana): the launch, create and dev buy together, carries a 0.0001 SOL tip and goes to Jito's block engine, so it lands first in its block and never sits in the public mempool. One wallet, one signature; the tip is the user's (`api/_jito.js`). |
+| **Robinhood Chain** | A Solana / Robinhood switch on the launch form. Robinhood launches go through Launch Party's live solo launcher (gateway `0xe0B9…A620`) with a 1% trading fee, split between the creator and holders as the creator chooses (Launch Party's hook keeps 10% of it): an EVM wallet (MetaMask, Rabby, Phantom…) signs one transaction that creates the token, opens its Uniswap v4 pool and makes the optional dev buy. Built and dry-run server side (`api/evm-create.js`), verified on chain before listing. |
 | **Pairing** | "Pair with" on the form: SOL (default) or any coin launched on tweetpad, picked from a grid you can search by name, ticker or contract. The server checks pump.fun accepts it before building (`create_v2`). `QUOTE_MINT` sets the default pair. |
 | **Feed** | A pad-wide timeline: "What's happening?" in 140 characters, with one tweetpad coin embedded as a card; $TICKERs link to their coins. Likes, retweets (they land on the retweeter's profile) and replies, with a 2012-style tweet view. |
-| **Tokens** | Every coin launched here, with market cap, 1h move and the last day drawn faintly behind each row. New / Hot / Mcap, 24 at a time. |
+| **Tokens** | Every coin launched here, on both chains in one list, each coin image badged with its chain. Market cap, 1h move and the last day drawn faintly behind each row. New / Hot / Mcap, All / Solana / Robinhood, 24 at a time. |
+| **Trade** | Buy and sell on the coin screen: presets, % of your bag, slippage, a live quote. Solana coins trade on their pump.fun curve through pump.fun's own SDK (`api/trade.js`, Jito optional), graduated ones through Jupiter's free API; Robinhood coins in their Uniswap v4 pool through Uniswap's Universal Router (`api/evm-trade.js`). The wallet signs and pays; tweetpad takes no fee. |
 | **Coin screen** | Candle chart, compact recent trades, live trades over a websocket, the creator (2012-style author card), copyable contract address, share card, and **posts**: tweet-sized comments (140 characters) signed in with the wallet. |
 | **Inventory** | The hotbar holds your coins, then the newest. `1`–`9` opens them. |
 | **More** | Profile, Games, Debug, About (version, network, $TP contract, contact) and Settings (skins) in one list. |
@@ -90,8 +93,9 @@ assets/tweetpad.js     the card app (plain JS, no build step)
 assets/tweetpad.css    layout and the Tweetcraft skin (pixel HUD)
 assets/skin-2012.css   the default 2012 skin, layered over tweetpad.css
 assets/brand/          app icon kit: favicons, # icon sizes, # glyphs
-api/                   Vercel functions, one per route; _lib.js is shared and not a route
-  ipfs · create · launches · market · chart · image · upload     launching, the token list, prices and charts
+api/                   Vercel functions, one per route; _lib.js (shared) and _evm.js (Robinhood Chain) are not routes
+  ipfs · create · evm-create · launches · market · chart · image · upload     launching (Solana and Robinhood), the token list, prices and charts
+  trade · evm-trade                                              buying and selling (Solana curve, Robinhood v4 pool); _jito.js adds Jito tips
   card · card-image                                              share pages and their per-coin card images
   chat · social · reactions · profile · rewards                  chat, feed, posts, likes/retweets, profiles, creator fees
 scripts/check.js       `npm run check`: syntax and wiring smoke test

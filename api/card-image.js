@@ -2,7 +2,7 @@
 // over the middle, so the coin sits above the middle and the numbers card below it; where there's no play button
 // (other sites, chats) the two read as one balanced poster. Rendered with @vercel/og (satori + resvg, its own font handling, so no system fonts are needed) and held
 // at the CDN for 5 minutes, so the market cap is fresh when a post is first shared without rendering per view.
-const { isPubkey, redis, marketData, rateLimit } = require('./_lib');
+const { isCoinId, redis, marketData, rateLimit } = require('./_lib');
 
 const SIZE = 1080;
 /* the app icon from the hash kit, fetched from our own assets once per instance and inlined */
@@ -60,7 +60,7 @@ module.exports = async (req, res) => {
   if (!await rateLimit(req, res, 'cardimg', 200, 600)) return;
   const origin = (req.headers['x-forwarded-proto'] || 'https').split(',')[0] + '://' + (req.headers['x-forwarded-host'] || req.headers.host || 'www.tweetpad.io');
   let launch = null;
-  if (isPubkey(mint)) {
+  if (isCoinId(mint)) {
     try { const [row] = await redis(['GET', 'launch:' + mint]); launch = row ? JSON.parse(row) : null; } catch { /* fall back below */ }
   }
   if (!launch) { res.setHeader('cache-control', 'public, s-maxage=60'); return res.redirect(302, origin + '/preview.png'); }

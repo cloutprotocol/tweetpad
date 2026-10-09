@@ -4,9 +4,12 @@
 // admits as a quote (checked by pairQuote). Without `quote`, QUOTE_MINT (env) decides, and unset means SOL.
 // SOL pairs are built with PumpPortal's local transaction API, which also supports a dev buy; coin pairs are built
 // here with pump.fun's SDK (create_v2 with the quote coin's curve accounts).
-// Body JSON: { publicKey, mint, name, symbol, uri, image, thumb, devBuy, quote }
+// With `jito: true` the launch carries a Jito tip (api/_jito.js) and the page sends it to Jito's block engine as a bundle:
+// create and dev buy land together, first in the block they make, never seen in the public mempool. The tip is the user's.
+// Body JSON: { publicKey, mint, name, symbol, uri, image, thumb, devBuy, quote, jito }
 const { PublicKey, TransactionMessage, VersionedTransaction, ComputeBudgetProgram } = require('@solana/web3.js');
 const { OnlinePumpSdk, PUMP_SDK } = require('@pump-fun/pump-sdk');
+const { withTip, tipInstruction } = require('./_jito');
 const { PUMP_PROGRAM, cors, readJson, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, cleanThumb, rateLimit, fail } = require('./_lib');
 
 /* Phantom flags dApps whose transactions fail on chain, so a build that would fail never reaches the wallet: simulate it
@@ -41,7 +44,7 @@ async function viaPumpPortal({ publicKey, mint, name, symbol, uri, devBuy }) {
   return tx;
 }
 
-async function viaSdkPaired({ publicKey, mint, name, symbol, uri }, quoteMint, resolved) {
+async function viaSdkPaired({ publicKey, mint, name, symbol, uri, jito }, quoteMint, resolved) {
   const conn = connection();
   const quote = resolved || await new OnlinePumpSdk(conn).resolveQuoteMint(new PublicKey(quoteMint));
   const payer = new PublicKey(publicKey);
@@ -53,7 +56,8 @@ async function viaSdkPaired({ publicKey, mint, name, symbol, uri }, quoteMint, r
   const { blockhash } = await conn.getLatestBlockhash('confirmed');
   const message = new TransactionMessage({
     payerKey: payer, recentBlockhash: blockhash,
-    instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: CREATE_CU }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: CU_PRICE }), ix],
+    instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: CREATE_CU }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: CU_PRICE }), ix,
+      ...(jito ? [tipInstruction(publicKey)] : [])],
   }).compileToV0Message();
   return Buffer.from(new VersionedTransaction(message).serialize());
 }
@@ -89,8 +93,10 @@ module.exports = async (req, res) => {
 
   let tx;
   try {
-    tx = quote.mint ? await viaSdkPaired({ publicKey, mint, name, symbol, uri }, quote.mint, resolved)
+    const jito = b.jito === true;
+    tx = quote.mint ? await viaSdkPaired({ publicKey, mint, name, symbol, uri, jito }, quote.mint, resolved)
                     : await viaPumpPortal({ publicKey, mint, name, symbol, uri, devBuy });
+    if (jito && !quote.mint) tx = await withTip(tx, publicKey, connection());
   } catch (err) {
     return fail(res, 502, 'could not build the transaction: ' + err.message);
   }

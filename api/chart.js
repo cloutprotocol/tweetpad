@@ -5,11 +5,13 @@
 const { cors, isPubkey, redis, fail } = require('./_lib');
 const SPARK_TTL = 300;   // seconds a row chart is reused, from Redis, across every region and viewer
 
-const BASE = 'https://api.geckoterminal.com/api/v2/networks/solana/pools/';
+/* Solana pools are base58 accounts; Robinhood Chain pools are Uniswap v4 pool ids (0x + 64 hex) */
+const isV4Pool = (s) => /^0x[0-9a-fA-F]{64}$/.test(s);
+const baseFor = (pool) => 'https://api.geckoterminal.com/api/v2/networks/' + (isV4Pool(pool) ? 'robinhood' : 'solana') + '/pools/';
 const TIMEFRAMES = { '1m': ['minute', 1], '5m': ['minute', 5], '15m': ['minute', 15], '1h': ['hour', 1] };
 
 async function gecko(path) {
-  const r = await fetch(BASE + path, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+  const r = await fetch(baseFor(path.split('/')[0]) + path, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
   if (!r.ok) throw new Error('GeckoTerminal ' + r.status);
   return r.json();
 }
@@ -19,7 +21,7 @@ module.exports = async (req, res) => {
   const q = req.query || {};
   const pool = String(q.pool || '');
   const tf = TIMEFRAMES[q.tf] ? q.tf : '5m';
-  if (!isPubkey(pool)) return fail(res, 400, 'invalid pool');
+  if (!isPubkey(pool) && !isV4Pool(pool)) return fail(res, 400, 'invalid pool');
   const [period, aggregate] = TIMEFRAMES[tf];
   if (q.spark) {
     try {

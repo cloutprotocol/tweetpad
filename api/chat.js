@@ -10,7 +10,7 @@
 // reply:<id> rooms hold the replies to one feed post. Feed posts and replies are also kept by id (msg:<id>) and on their
 // author's timeline (user:posts:<wallet>), so likes, retweets (api/social.js) and profiles can find them.
 const { createPublicKey, verify: edVerify, randomBytes } = require('node:crypto');
-const { cors, readJson, isPubkey, b58decode, redis, loadPost, rateLimit, fail } = require('./_lib');
+const { cors, readJson, isPubkey, isCoinId, b58decode, redis, loadPost, rateLimit, fail } = require('./_lib');
 
 const KEEP = 200;            // messages stored per room
 const SHOW = 60;             // messages returned per poll
@@ -24,8 +24,8 @@ const sessionMessage = (wallet, issued) => 'tweetpad chat\nSign in to chat as th
 const POST_LEN = 140;      // comments and feed posts are tweet-sized: 140, like the original
 const POST_SLOW = 10;      // seconds between comments per wallet
 const isReplyRoom = (room) => /^reply:\d{1,12}$/.test(room);
-const isPostRoom = (room) => room === 'feed' || isReplyRoom(room) || (room.startsWith('post:') && isPubkey(room.slice(5)));
-const validRoom = (room) => room === 'lobby' || isPubkey(room) || isPostRoom(room);
+const isPostRoom = (room) => room === 'feed' || isReplyRoom(room) || (room.startsWith('post:') && isCoinId(room.slice(5)));
+const validRoom = (room) => room === 'lobby' || isCoinId(room) || isPostRoom(room);
 
 function signatureValid(wallet, message, signatureB58) {
   const sig = b58decode(String(signatureB58 || ''));
@@ -75,7 +75,7 @@ async function send(b, res) {
   /* a feed post can embed one coin launched here; keep only what the card shows */
   let coin = null;
   if (room === 'feed' && b.coin != null) {
-    if (!isPubkey(b.coin)) return fail(res, 400, 'invalid coin');
+    if (!isCoinId(b.coin)) return fail(res, 400, 'invalid coin');
     const [row] = await redis(['GET', 'launch:' + b.coin]);
     if (!row) return fail(res, 404, 'only coins launched on tweetpad can be tagged');
     const l = JSON.parse(row);

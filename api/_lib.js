@@ -67,6 +67,10 @@ function b58decode(str) {
   return Uint8Array.from(bytes.reverse());
 }
 const isPubkey = (s) => typeof s === 'string' && s.length >= 32 && s.length <= 44 && (b58decode(s) || []).length === 32;
+/* coins live on two chains: a Solana mint, or a Robinhood Chain (EVM) token address */
+const isEvmAddress = (s) => typeof s === 'string' && /^0x[0-9a-fA-F]{40}$/.test(s);
+const isCoinId = (s) => isPubkey(s) || isEvmAddress(s);
+const chainOf = (coin) => (isEvmAddress(coin) ? 'robinhood' : 'solana');
 
 /* signer keys of a serialized (legacy or v0) transaction; key counts here stay under 128, so compact-u16 is one byte */
 function signerKeys(tx) {
@@ -141,14 +145,23 @@ async function pairQuote(mint) {
 /* DexScreener market data for up to 30 mints (the most liquid pair per coin). Each market cap seen is also kept in
    Redis (hash mcaps), so the pair picker and the hotbar can rank every coin by market cap without a call per coin. */
 async function marketData(mints) {
-  const r = await fetch('https://api.dexscreener.com/tokens/v1/solana/' + mints.join(','), { signal: AbortSignal.timeout(8000) });
-  if (!r.ok) throw new Error('DexScreener ' + r.status);
-  const pairs = await r.json();
+  /* one DexScreener call per chain; EVM addresses may come back in another letter case, so they match case-insensitively */
+  const byKey = new Map(mints.map(m => [isEvmAddress(m) ? m.toLowerCase() : m, m]));
+  const groups = { solana: mints.filter(m => !isEvmAddress(m)), robinhood: mints.filter(isEvmAddress) };
+  const pairs = [];
+  for (const [chain, list] of Object.entries(groups)) {
+    if (!list.length) continue;
+    const r = await fetch('https://api.dexscreener.com/tokens/v1/' + chain + '/' + list.join(','), { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) throw new Error('DexScreener ' + r.status);
+    const out = await r.json();
+    if (Array.isArray(out)) pairs.push(...out);
+  }
   const market = {};
   /* a coin can have several pairs (curve, then PumpSwap after migration): keep the most liquid one */
-  for (const p of Array.isArray(pairs) ? pairs : []) {
-    const mint = p.baseToken && p.baseToken.address;
-    if (!mints.includes(mint)) continue;
+  for (const p of pairs) {
+    const raw = p.baseToken && p.baseToken.address;
+    const mint = raw && byKey.get(isEvmAddress(raw) ? raw.toLowerCase() : raw);
+    if (!mint) continue;
     const liq = (p.liquidity && p.liquidity.usd) || 0;
     if (market[mint] && market[mint].liquidity >= liq) continue;
     market[mint] = {
@@ -223,5 +236,5 @@ function fail(res, status, error) {
 
 module.exports = {
   PUMP_PROGRAM, MAX_IMAGE_BYTES, cors, sniffImage, readBody, readJson, sha256,
-  b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, fail,
+  b58decode, isPubkey, isEvmAddress, isCoinId, chainOf, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, fail,
 };

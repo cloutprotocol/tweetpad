@@ -472,6 +472,75 @@ html[data-skin="2012"] .official { margin-bottom: 10px; padding: 8px 10px; backg
 html[data-skin="2012"] .official-label { font: 12px/1.2 var(--px); letter-spacing: 0; text-transform: none; color: #777; }
 html[data-skin="2012"] .official-label b { color: #333; font-weight: bold; }
 
+/* launch network: a segmented pill. In the dark tab bar it is a recessed track with the picked chain in the old blue; in the
+   Launch header it is the light segmented control the other filters use. Logos are white when picked, grey otherwise. */
+html[data-skin="2012"] .net-switch { gap: 0; }
+html[data-skin="2012"] .hud-row .net-switch { padding: 2px; background: rgba(0, 0, 0, .45); border: 1px solid #000; border-radius: 15px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .8), 0 1px 0 rgba(255, 255, 255, .1); }
+html[data-skin="2012"] .hud-row .net-switch button { width: 32px; height: 24px; color: #8a8a8a; background: transparent; border: 0; border-radius: 12px; }
+html[data-skin="2012"] .hud-row .net-switch button:hover:not([disabled]) { color: #ccc; }
+html[data-skin="2012"] .hud-row .net-switch button[aria-checked="true"] { color: #fff; background: linear-gradient(#4aa9e9, #2c8fd6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 1px 2px rgba(0, 0, 0, .5); }
+html[data-skin="2012"] .launch-head .net-switch button { width: 30px; height: 24px; margin-left: -1px; color: #888; background: linear-gradient(#fff, #e6e6e6); border: 1px solid #bbb; }
+html[data-skin="2012"] .launch-head .net-switch button:first-child { margin-left: 0; border-radius: 12px 0 0 12px; }
+html[data-skin="2012"] .launch-head .net-switch button:last-child { border-radius: 0 12px 12px 0; }
+html[data-skin="2012"] .launch-head .net-switch button[aria-checked="true"] { color: #fff; background: linear-gradient(#2c8fd6, #4aa9e9); border-color: #1d6aa5;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .3); }
+html[data-skin="2012"] .net-switch .net-logo { width: 15px; height: 15px; }
+html[data-skin="2012"] .evm-wallet { font: 12px/1.3 var(--px); color: #999; }
+html[data-skin="2012"] .evm-wallet b { font: bold 12px/1 var(--px); color: #333; }
+html[data-skin="2012"] .chain-tag { color: #5a7a00; }
+
+/* Robinhood fees: a light well like the dev buy, the old blue on the slider */
+html[data-skin="2012"] .fee-box { padding: 10px; background: #f7f9fa; border: 1px solid #e3e3e3; border-radius: 5px; }
+html[data-skin="2012"] .fee-split input { accent-color: #2c8fd6; }
+html[data-skin="2012"] .fee-side { font: bold 12px/1 var(--px); color: #333; }
+html[data-skin="2012"] .coin-fees-line { font: 12px/1.3 var(--px); color: #999; }
+html[data-skin="2012"] .coin-fees-line b { color: #333; font-weight: bold; }
+html[data-skin="2012"] .net-sec .net-logo { color: #333; }
+html[data-skin="2012"] .fee-sub { font: 11px/1.3 var(--px); color: #aaa; }
+html[data-skin="2012"] .fee-sub a { color: inherit; text-decoration-color: #ccc; }
+html[data-skin="2012"] .fee-sub a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+/* chain badge and filter, 2012 style */
+html[data-skin="2012"] .chain-badge { box-shadow: 0 0 0 2px #fff, 0 1px 2px rgba(0, 0, 0, .3); }
+html[data-skin="2012"] .slot .chain-badge { box-shadow: 0 0 0 1px #111; }
+html[data-skin="2012"] .chain-filter { gap: 0; margin: 0 -10px; padding: 8px 10px; border-bottom: 1px solid #e8e8e8; }
+html[data-skin="2012"] .chain-filter button { margin-left: -1px; padding: 5px 10px; color: #555; font: bold 11px/1 var(--px); text-shadow: 0 1px 0 #fff;
+  background: linear-gradient(#fff, #e6e6e6); border: 1px solid #bbb; }
+html[data-skin="2012"] .chain-filter button:first-child { margin-left: 0; border-radius: 4px 0 0 4px; }
+html[data-skin="2012"] .chain-filter button:last-child { border-radius: 0 4px 4px 0; }
+html[data-skin="2012"] .chain-filter button[aria-checked="true"] { color: #fff; text-shadow: 0 -1px 0 rgba(0, 0, 0, .25);
+  background: linear-gradient(#2c8fd6, #4aa9e9); border-color: #1d6aa5; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .3); }
+html[data-skin="2012"] .chain-name .net-logo { color: #999; }
+
+/* trading and Jito, 2012 style: the dev buy box's look, green Buy and red Sell */
+html[data-skin="2012"] .jito-row { font: 12px/1.3 var(--px); color: #999; }
+html[data-skin="2012"] .launch .jito-row input { width: auto; padding: 0; border: 0; box-shadow: none; background: none; }
+html[data-skin="2012"] .jito-name { color: #333; font-weight: bold; }
+html[data-skin="2012"] .jito-row input:not(:checked) ~ .jito-name { color: #999; }
+html[data-skin="2012"] .trade { gap: 8px; margin: 10px 0; padding: 10px; background: #f7f9fa; border: 1px solid #e3e3e3; border-radius: 5px; }
+html[data-skin="2012"] .trade-side { gap: 0; }
+html[data-skin="2012"] .trade-side button { padding: 6px 16px; color: #555; font: bold 13px/1 var(--px); text-shadow: 0 1px 0 #fff;
+  background: linear-gradient(#fff, #e6e6e6); border: 1px solid #bbb; }
+html[data-skin="2012"] .trade-side .buy { border-radius: 4px 0 0 4px; }
+html[data-skin="2012"] .trade-side .sell { margin-left: -1px; border-radius: 0 4px 4px 0; }
+html[data-skin="2012"] .trade-side .buy[aria-selected="true"] { color: #fff; text-shadow: 0 -1px 0 rgba(0, 0, 0, .25); background: linear-gradient(#62c462, #51a351);
+  border-color: #3e8a3e; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .25); }
+html[data-skin="2012"] .trade-side .sell[aria-selected="true"] { color: #fff; text-shadow: 0 -1px 0 rgba(0, 0, 0, .25); background: linear-gradient(#ee5f5b, #bd362f);
+  border-color: #a02622; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .25); }
+html[data-skin="2012"] .trade-slip { padding: 5px 8px; color: #777; font: 11px/1 var(--px); border: 1px solid #ddd; border-radius: 4px; background: #fff; }
+html[data-skin="2012"] .trade-amt { background: #fff; border: 1px solid #ccc; border-radius: 4px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1); }
+html[data-skin="2012"] .trade-amt:focus-within { border-color: #56b4ef; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1), 0 0 5px rgba(82, 168, 236, .6); }
+html[data-skin="2012"] .trade-amt input { padding: 8px 4px 8px 10px; color: #333; font: 16px/1 var(--px); box-shadow: none; }
+html[data-skin="2012"] .trade-unit { font: bold 12px/1 var(--px); color: #999; }
+html[data-skin="2012"] .trade-est { font: 13px/1.35 var(--px); color: #333; }
+html[data-skin="2012"] .trade-est b { color: #3e8a3e; } html[data-skin="2012"] .trade-est .hold { color: #333; }
+html[data-skin="2012"] .trade-est .dim { color: #999; } html[data-skin="2012"] .trade-est .bad { color: #bd362f; }
+html[data-skin="2012"] .trade-btn.sell { color: #fff; background: linear-gradient(#ee5f5b, #bd362f); border-color: #a02622; text-shadow: 0 -1px 0 rgba(0, 0, 0, .25); }
+html[data-skin="2012"] .trade-status { font: 12px/1.35 var(--px); }
+html[data-skin="2012"] .trade-status.ok { color: #3e8a3e; } html[data-skin="2012"] .trade-status.bad { color: #bd362f; } html[data-skin="2012"] .trade-status.warn { color: #c09853; }
+
 /* ---------- welcome post: an old-style tweet above the launch form ---------- */
 html[data-skin="2012"] .welcome { display: flex; gap: 10px; margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #c8c8c8;
   border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
@@ -535,3 +604,5 @@ html[data-skin="2012"] .soon small { font: 12px/1.35 var(--px); color: #777; pad
 }
 
 @media (prefers-reduced-motion: reduce) { html[data-skin="2012"] .live.on { animation: none; } }
+html[data-skin="2012"] .launch input[type=range], html[data-skin="2012"] .launch input[type=range]:focus, html[data-skin="2012"] .launch input[type=range]:hover {
+  padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; outline: none; }

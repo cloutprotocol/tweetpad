@@ -405,7 +405,132 @@ const walletIcon = (w) => {
   const c = CATALOG.find(c => c.name.toLowerCase() === baseName(w.name));
   return iconOf(w, h('span', { class: 'ph', style: '--c:' + (c ? c.color : '#3b5560'), text: w.name.slice(0, 1).toUpperCase() }));
 };
-const shortAddr = (a) => a.slice(0, 4) + '…' + a.slice(-4);
+const shortAddr = (a) => (isEvm(a) ? a.slice(0, 6) : a.slice(0, 4)) + '…' + a.slice(-4);
+
+/* ---------- Robinhood Chain (EVM): an injected wallet signs a solo launch the server built (api/evm-create) ---------- */
+const ROBINHOOD = { id: 4663, hex: '0x1237', name: 'Robinhood Chain', rpc: 'https://rpc.mainnet.chain.robinhood.com', explorer: 'https://robinhoodchain.blockscout.com',
+  maxDevBuy: 1, presets: ['0', '0.001', '0.005', '0.01'] };
+function isEvm(a) { return typeof a === 'string' && /^0x[0-9a-fA-F]{40}$/.test(a); }
+const evm = { providers: [], active: null, address: null, picking: false };
+/* EIP-6963: every installed EVM wallet announces itself; window.ethereum is the fallback for older ones */
+window.addEventListener('eip6963:announceProvider', (ev) => {
+  const d = ev.detail;
+  /* wallets can announce while this script is still loading: redraw once it has finished */
+  if (d && d.provider && d.info && !evm.providers.some(p => p.info.uuid === d.info.uuid)) { evm.providers.push(d); setTimeout(() => renderLaunch(), 0); }
+});
+window.dispatchEvent(new Event('eip6963:requestProvider'));
+const evmProviders = () => (evm.providers.length ? evm.providers
+  : window.ethereum ? [{ info: { name: 'Browser wallet', uuid: 'injected', icon: '' }, provider: window.ethereum }] : []);
+async function ensureRobinhood(p) {
+  if (parseInt(await p.request({ method: 'eth_chainId' }), 16) === ROBINHOOD.id) return;
+  try { await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ROBINHOOD.hex }] }); }
+  catch (err) {
+    /* 4902: the wallet doesn't know Robinhood Chain yet, so offer to add it */
+    if (!(err && (err.code === 4902 || /unrecognized|not added|unknown chain|try adding/i.test(err.message || '')))) throw err;
+    await p.request({ method: 'wallet_addEthereumChain', params: [{ chainId: ROBINHOOD.hex, chainName: ROBINHOOD.name,
+      nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: [ROBINHOOD.rpc], blockExplorerUrls: [ROBINHOOD.explorer] }] });
+  }
+}
+async function connectEvm(entry) {
+  evm.picking = false;
+  try {
+    const [address] = await entry.provider.request({ method: 'eth_requestAccounts' });
+    if (!isEvm(address)) throw new Error('the wallet returned no account');
+    await ensureRobinhood(entry.provider);
+    Object.assign(evm, { active: entry, address });
+    if (entry.provider.on) entry.provider.on('accountsChanged', (list) => { evm.address = list && list[0] || null; if (!evm.address) evm.active = null; renderLaunch(); });
+    log('ok', entry.info.name + ' (EVM) → connected ' + address);
+    loadEvmMe();
+    if (coin.mint && isEvm(coin.mint)) { loadHolderRewards(); loadHolding(); }   // the open coin's rewards and balance are this wallet's now
+    setVerdict('ok', 'Connected!', entry.info.name + ' · ' + shortAddr(address));
+  } catch (err) {
+    const msg = errText(err);
+    setVerdict('bad', entry.info.name + ' didn’t connect', /reject|denied|cancel/i.test(msg) ? 'The request was declined in the wallet' : msg);
+  }
+  renderLaunch();
+}
+function disconnectEvm() { Object.assign(evm, { active: null, address: null }); renderLaunch(); }
+/* the wallet line under the network switch: who is connected, or which wallet to use */
+function renderEvmWallet() {
+  const box = $('evm-wallet');
+  box.hidden = launch.chain !== 'robinhood';
+  if (box.hidden) return;
+  if (evm.address) {
+    return box.replaceChildren(h('span', { class: 'evm-label', text: 'EVM wallet' }), h('b', { text: shortAddr(evm.address) }),
+      h('small', { text: evm.active.info.name }), h('button', { class: 'linkish', onclick: disconnectEvm }, 'Disconnect'));
+  }
+  const list = evmProviders();
+  box.replaceChildren(...(!list.length ? [h('span', { class: 'evm-label', text: 'No EVM wallet here. Install MetaMask, Rabby or Phantom, or open tweetpad in your wallet’s browser.' })]
+    : evm.picking ? list.map(e => h('button', { class: 'opt evm-opt', onclick: () => connectEvm(e) },
+        e.info.icon ? h('img', { src: e.info.icon, alt: '' }) : h('span', { class: 'ph', text: e.info.name.slice(0, 1) }), h('span', { class: 'opt-name', text: e.info.name })))
+    : [h('span', { class: 'evm-label', text: list.length + ' EVM wallet' + (list.length > 1 ? 's' : '') + ' found' })]));
+}
+/* the creator / holders split of the 1% fee. Launch Party's hook takes 10% of each fee first; the rest splits as chosen. */
+const holdersPct = () => Math.max(0, Math.min(100, Number($('fee-holders').value) || 0));
+function renderFeeBox() {
+  const box = $('fee-box');
+  box.hidden = launch.chain !== 'robinhood';
+  if (box.hidden) return;
+  const hp = holdersPct(), cp = 100 - hp;
+  $('fee-holders').disabled = launch.busy;
+  $('fee-creator').textContent = 'Creator ' + cp + '%';
+  $('fee-holders-label').textContent = 'Holder rewards ' + hp + '%';
+  /* of every 1% fee: 0.10% to the platform, the other 0.90% split as chosen */
+  const share = (p) => (0.9 * p / 100).toFixed(2).replace(/\.?0+$/, '') + '%';
+  $('fee-note').replaceChildren('Each trade: ', h('b', { text: share(cp) + ' to you' }), hp ? ' · ' + share(hp) + ' to holders (ETH, claimed on the coin page)' : '',
+    h('small', { text: ' Fixed at launch.' }),
+    /* the launcher's cut, set apart and credited */
+    h('span', { class: 'fee-sub' }, '0.1% to ', h('a', { href: 'https://party.studio', target: '_blank', rel: 'noopener' }, 'Launch Party SDK')));
+}
+async function onLaunchEvm() {
+  if (!evm.address) {
+    const list = evmProviders();
+    if (list.length === 1) return connectEvm(list[0]);
+    evm.picking = list.length > 1;
+    return renderLaunch();
+  }
+  if (launchProblem()) return renderLaunch();
+  Object.assign(launch, { busy: true, done: false, result: null, checks: [] });
+  const links = socialLinks();
+  const meta = { name: $('tk-name').value.trim(), symbol: $('tk-ticker').value.trim(), description: $('tk-desc').value.trim(), ...links };
+  try {
+    check('warn', 'Uploading image and metadata to IPFS…');
+    const ipfs = await api('/api/ipfs', { body: launch.bytes, headers: {
+      'content-type': 'application/octet-stream', 'x-file-type': launch.file.type, 'x-meta': encodeURIComponent(JSON.stringify(meta)) } });
+    if (ipfs.sha256 !== launch.sha) throw new Error('IPFS step hashed a different image');
+    check('ok', 'Image and metadata on IPFS', ipfs.uri, 'JSON ↗');
+
+    check('warn', 'Building the Robinhood launch…');
+    const built = await api('/api/evm-create', { json: { wallet: evm.address, name: meta.name, symbol: meta.symbol, uri: ipfs.uri, image: ipfs.image,
+      thumb: launch.thumb, devBuy: $('tk-buy').value.trim() || '0', holdersBps: holdersPct() * 100, twitter: links.twitter || '', telegram: links.telegram || '', website: links.website || '' } });
+    check('ok', 'Transaction built and checked against the live launcher');
+
+    const p = evm.active.provider;
+    await ensureRobinhood(p);
+    check('warn', 'Approve in ' + evm.active.info.name + '…');
+    const hash = await p.request({ method: 'eth_sendTransaction', params: [{ from: evm.address, ...built.tx }] });
+    check('warn', 'Confirming on Robinhood Chain…', ROBINHOOD.explorer + '/tx/' + hash, 'Tx ↗');
+
+    /* the server waits for the receipt, then checks it's a real launch built here before listing it */
+    let rec = null;
+    for (let i = 0; i < 6 && !rec; i++) {
+      try { rec = await api('/api/launches', { json: { chain: 'robinhood', hash } }); }
+      catch (err) { if (!/not found yet/.test(errText(err)) || i === 5) throw err; await new Promise(r => setTimeout(r, 2500)); }
+    }
+    check('ok', '$' + meta.symbol + ' is live on Robinhood Chain', ROBINHOOD.explorer + '/token/' + rec.launch.mint, 'Explorer ↗');
+    Object.assign(launch, { done: true, result: rec.launch });
+    setVerdict('ok', 'Token launched!', 'Share it: the link plays as its own card on X');
+    tokens.loaded = false;
+    loadTokens();
+    openCoin(rec.launch.mint);
+  } catch (err) {
+    const msg = errText(err).replace(/^Error:? /, '');
+    check('bad', /reject|denied|cancel/i.test(msg) ? 'Cancelled in the wallet' : msg);
+  } finally {
+    launch.busy = false;
+    renderLaunch();
+  }
+}
 
 async function connectWallet(wallet) {
   closeMenu();
@@ -523,7 +648,8 @@ function signPanel(wallet) {
 const MAX_IMAGE = 4 * 1024 * 1024;   // Vercel function bodies cap at 4.5 MB
 const MAX_DEV_BUY = 10;              // SOL; the server enforces the same cap
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
-const launch = { file: null, bytes: null, url: null, sha: null, dims: null, busy: false, done: false, dryDone: false, result: null, checks: [] };
+const launch = { file: null, bytes: null, url: null, sha: null, dims: null, busy: false, done: false, dryDone: false, result: null, checks: [],
+  chain: store.get('tweetpad:chain') === 'robinhood' ? 'robinhood' : 'solana' };
 const fmtSize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
 const b64enc = (bytes) => { let s = ''; for (const b of bytes) s += String.fromCharCode(b); return btoa(s); };
 const b64dec = (str) => Uint8Array.from(atob(str), c => c.charCodeAt(0));
@@ -614,6 +740,17 @@ const socialLinks = () => ({
   website: toUrl($('tk-web').value),
 });
 function launchProblem() {
+  if (launch.chain === 'robinhood') {
+    if (!launch.file) return 'Add an image';
+    if (!$('tk-name').value.trim()) return 'Add a name';
+    if (!/^[A-Z0-9]{2,10}$/.test($('tk-ticker').value.trim())) return 'Ticker: 2–10 letters or numbers';
+    if (!/^\d{0,4}(\.\d{0,18})?$/.test($('tk-buy').value.trim()) || !(devBuy() >= 0 && devBuy() <= ROBINHOOD.maxDevBuy)) return 'Dev buy: 0–' + ROBINHOOD.maxDevBuy + ' ETH';
+    const l = socialLinks();
+    if (l.twitter === null) return 'X link: @handle or an x.com link';
+    if (l.telegram === null) return 'Telegram: @group or a t.me link';
+    if (l.website === null) return 'Website: check the address';
+    return null;
+  }
   if (CLUSTER !== 'mainnet') return 'pump.fun is mainnet only';
   if (!launch.file) return 'Add an image';
   if (!$('tk-name').value.trim()) return 'Add a name';
@@ -634,7 +771,18 @@ function renderLaunch() {
   $('socials-count').textContent = filled ? String(filled) : '';
   if (/^(X link|Telegram|Website):/.test(problem || '')) $('socials').open = true;
   btn.disabled = launch.busy;
-  btn.textContent = launch.busy ? 'Launching…'
+  const rh = launch.chain === 'robinhood';
+  for (const b of document.querySelectorAll('.net-switch [data-net]')) { b.setAttribute('aria-checked', String(b.dataset.net === launch.chain)); b.disabled = launch.busy; }
+  $('pair-pick').hidden = rh;
+  $('launch-note').textContent = rh ? 'Launches on Robinhood Chain · 1% trading fee · 0.0005 ETH launch fee + gas' : 'Launches on pump.fun · 0 pad fee · network fees apply';
+  renderEvmWallet();
+  renderFeeBox();
+  if (rh) {
+    btn.textContent = launch.busy ? 'Launching…' : launch.done ? 'Launch another'
+      : !evm.address ? (evmProviders().length ? (evm.picking ? 'Choose a wallet above' : 'Connect EVM wallet') : 'Get an EVM wallet')
+      : problem || 'Launch $' + $('tk-ticker').value.trim() + ' on Robinhood' + (devBuy() > 0 ? ' · buy ' + devBuy() + ' ETH' : '');
+    btn.classList.toggle('primary', !evm.address || !problem || launch.done);
+  } else btn.textContent = launch.busy ? 'Launching…'
     : launch.done ? 'Launch another'
     : !active ? (list.length || !settled ? 'Connect wallet' : 'Get a wallet')
     : problem || 'Launch $' + $('tk-ticker').value.trim() + (!currentPair() && devBuy() > 0 ? ' · buy ' + devBuy() + ' SOL' : '');
@@ -649,10 +797,10 @@ function renderLaunch() {
   renderPairPick();
   if (posts.mint) renderPosts();   // the composers follow the wallet too
   renderFeed();
-  btn.classList.toggle('primary', !active || !problem || launch.done);
+  if (!rh) btn.classList.toggle('primary', !active || !problem || launch.done);
   $('launch-note').hidden = launch.checks.length > 0;
   const banner = $('launch-banner');
-  banner.hidden = !!active || !settled || list.length > 0;
+  banner.hidden = rh || !!active || !settled || list.length > 0;   // Solana wallets only; Robinhood has its own wallet line
   if (!banner.hidden) banner.replaceChildren(h('div', { class: 'more' }, h('span', { text: MOBILE ? 'No wallet here. Open in:' : 'No wallet here. Get:' }),
     missingWallets(list).map(c => h('a', { class: 'chiplink', href: catalogHref(c), target: '_blank', rel: 'noopener' },
       h('span', { class: 'ph', style: '--c:' + c.color, text: c.name.slice(0, 1) }), c.name))));
@@ -704,6 +852,23 @@ function txParts(tx) {
   for (let i = 0; i < message[o]; i++) signers.push(b58encode(message.subarray(o + 4 + 32 * i, o + 36 + 32 * i)));
   return { sigCount, message, signers };
 }
+/* Jito: a signed transaction that carries a tip goes to Jito's block engine as a bundle (private, lands as one, first in its
+   block). Its endpoint is free and answers browsers, so nothing passes through us. If Jito refuses it, the public RPC sends it. */
+const JITO_URL = 'https://mainnet.block-engine.jito.wtf/api/v1/transactions?bundleOnly=true';
+const jitoOn = () => store.get('tweetpad:jito') !== '0';
+async function sendTx(tx, bundle) {
+  const b64 = b64enc(tx);
+  if (bundle && CLUSTER === 'mainnet') {
+    try {
+      const res = await fetch(JITO_URL, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'sendTransaction', params: [b64, { encoding: 'base64' }] }) });
+      const out = await res.json();
+      if (out.result) { log('ok', 'sent as a Jito bundle'); return out.result; }
+      log('warn', 'Jito refused the bundle (' + ((out.error && out.error.message) || 'HTTP ' + res.status) + '); sending normally');
+    } catch (err) { log('warn', 'Jito unreachable (' + errText(err) + '); sending normally'); }
+  }
+  return rpcCall('sendTransaction', [b64, { encoding: 'base64', preflightCommitment: 'confirmed', maxRetries: 5 }]);
+}
 async function confirm(signature) {
   for (let i = 0; i < 50; i++) {
     const [st] = (await rpcCall('getSignatureStatuses', [[signature]])).value;
@@ -718,6 +883,7 @@ async function onLaunch(ev) {
   ev.preventDefault();
   if (launch.busy) return;
   if (launch.done) return resetLaunch();
+  if (launch.chain === 'robinhood') return onLaunchEvm();
   if (!state.active) return openMenu();
   if (launchProblem()) return renderLaunch();
   const wallet = state.active;
@@ -740,7 +906,7 @@ async function onLaunch(ev) {
     const mintKeys = await newKeypair();
     const mint = b58encode(mintKeys.publicKey);
     const built = await api('/api/create', { json: { publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image,
-      thumb: launch.thumb, devBuy: pair ? 0 : devBuy(), quote: pair ? pair.mint : 'sol' } });
+      thumb: launch.thumb, devBuy: pair ? 0 : devBuy(), quote: pair ? pair.mint : 'sol', jito: jitoOn() } });
     check('ok', 'Transaction built · mint ' + shortAddr(mint) + (pair ? ' · paired with $' + pair.symbol : ''));
 
     /* 3. wallet signs first (it may add instructions), then the mint signs whatever the wallet returned */
@@ -757,8 +923,8 @@ async function onLaunch(ev) {
     check('ok', 'Signed by ' + wallet.name + ' and the new mint');
 
     /* 4. send and wait for confirmation */
-    check('warn', 'Sending to Solana…');
-    signature = await rpcCall('sendTransaction', [b64enc(tx), { encoding: 'base64', preflightCommitment: 'confirmed', maxRetries: 5 }]);
+    check('warn', jitoOn() ? 'Sending as a Jito bundle…' : 'Sending to Solana…');
+    signature = await sendTx(tx, jitoOn());
     check('warn', 'Confirming…', 'https://solscan.io/tx/' + signature, 'Tx ↗');
     await confirm(signature);
     check('ok', 'Confirmed on mainnet', 'https://solscan.io/tx/' + signature, 'Tx ↗');
@@ -808,7 +974,7 @@ async function onDryRun() {
 }
 
 /* ---------- tokens launched through the pad ---------- */
-const tokens = { list: [], next: null, total: 0, loaded: false, loading: false, error: null, market: {}, sort: 'new' };
+const tokens = { list: [], next: null, total: 0, loaded: false, loading: false, error: null, market: {}, sort: 'new', chain: 'all' };
 const pad = { quote: null };   // the server's default pair (QUOTE_MINT), from /api/launches
 
 /* ---------- dev buy: presets, and a live estimate from a fresh curve's reserves and fee (api/launches?curve=new) ---------- */
@@ -833,6 +999,28 @@ function estimateBuy(sol) {
 const fmtAmount = (n) => (n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : Math.round(n).toString());
 function renderDevBuy(pair) {
   const box = $('devbuy-box'), est = $('devbuy-est'), sol = devBuy();
+  const rh = launch.chain === 'robinhood';
+  $('devbuy-unit').textContent = rh ? 'ETH' : 'SOL';
+  $('jito-row').hidden = rh;
+  $('tk-jito').checked = jitoOn();
+  $('tk-jito').disabled = launch.busy;
+  /* presets follow the network: ETH amounts are far smaller than SOL ones */
+  const presets = rh ? ROBINHOOD.presets : ['0', '0.1', '0.5', '1'];
+  box.querySelectorAll('[data-buy]').forEach((b, i) => { b.dataset.buy = presets[i]; b.textContent = i ? presets[i] : 'None'; });
+  if (rh) {
+    for (const b of box.querySelectorAll('[data-buy]')) { b.disabled = launch.busy; b.setAttribute('aria-pressed', String(Number(b.dataset.buy) === sol && ($('tk-buy').value !== '' || sol === 0))); }
+    box.classList.remove('off'); $('tk-buy').disabled = launch.busy;
+    const ticker = $('tk-ticker').value.trim();
+    est.className = 'devbuy-est';
+    if (!(sol >= 0 && sol <= ROBINHOOD.maxDevBuy)) { est.className += ' bad'; est.textContent = 'Between 0 and ' + ROBINHOOD.maxDevBuy + ' ETH.'; return; }
+    if (!sol) { est.textContent = 'No dev buy: you launch holding none of your coin.'; return; }
+    /* the pool opens at a 1 ETH valuation over 1B tokens; after the 1% fee a buy of b ETH gets about 1B × 0.99b / (1 + 0.99b) */
+    const net = sol * 0.99, tokensOut = 1e9 * net / (1 + net);
+    est.className += ' ok';
+    est.replaceChildren('You get ≈ ', h('b', { text: fmtAmount(tokensOut) + ' ' + (ticker ? '$' + ticker : 'tokens') }),
+      ' · ' + (tokensOut / 1e7).toFixed(2) + '% of supply', h('small', { text: ' after the 1% fee, guarded at 99% when you sign' }));
+    return;
+  }
   box.classList.toggle('off', !!pair);
   $('tk-buy').disabled = !!pair || launch.busy;
   for (const b of box.querySelectorAll('[data-buy]')) {
@@ -861,7 +1049,7 @@ function renderPairPick() {
   const pair = currentPair();
   const known = pair && (tokens.list.find(l => l.mint === pair.mint) || pair);
   /* compact, in the form's header: "Pair [logo] SOL ▾" */
-  $('pair-pick').replaceChildren(h('small', { text: 'Pair' }), pair ? coinImg(known, 'pair-img') : solIcon('pair-img'),
+  $('pair-pick').replaceChildren(h('small', { text: 'Pair' }), pair ? coinPic(known, 'pair-img') : solIcon('pair-img'),
     h('b', { text: pair ? '$' + pair.symbol : 'SOL' }), h('span', { class: 'caret', text: '▾' }));
   $('pair-pick').title = 'Paired with ' + (pair ? '$' + pair.symbol + ' (' + (known.name || 'tweetpad coin') + ')' : 'SOL') + ' · click to change';
   $('pair-pick').disabled = launch.busy;
@@ -973,10 +1161,15 @@ setInterval(() => {
 }, 10000);
 /* IPFS links go through our cached gateway proxy; anything else is shown as is */
 const imageSrc = (url, w) => { const m = /\/ipfs\/([A-Za-z0-9]+)/.exec(url || ''); return m ? '/api/image?cid=' + m[1] + (w ? '&w=' + w : '') : url; };
-const coinImg = (l, cls) => (l.thumb || l.image)
+const coinPic = (l, cls) => (l.thumb || l.image)
   ? h('img', { class: cls || '', src: l.thumb || imageSrc(l.image, 64), alt: '', loading: 'lazy',
       onerror: (ev) => ev.target.replaceWith(h('span', { class: 'ph ' + (cls || ''), text: l.symbol.slice(0, 1) })) })
   : h('span', { class: 'ph ' + (cls || ''), text: l.symbol.slice(0, 1) });
+/* every coin image carries its chain: a small Solana or Robinhood badge in the corner (coinPic is the bare image) */
+const chainName = (mint) => (isEvm(mint) ? 'Robinhood Chain' : 'Solana');
+const chainBadge = (mint) => h('span', { class: 'chain-badge ' + (isEvm(mint) ? 'rh' : 'sol'), title: chainName(mint), 'aria-label': chainName(mint) },
+  h('span', { class: 'net-logo ' + (isEvm(mint) ? 'rh' : 'sol'), 'aria-hidden': 'true' }));
+const coinImg = (l, cls) => h('span', { class: 'coin-ico' }, coinPic(l, cls), l.mint ? chainBadge(l.mint) : null);
 const ago = (t) => {
   const s = Math.max(1, Math.round((Date.now() - t) / 1000));
   return s < 60 ? s + 's' : s < 3600 ? Math.round(s / 60) + 'm' : s < 86400 ? Math.round(s / 3600) + 'h' : Math.round(s / 86400) + 'd';
@@ -1009,7 +1202,12 @@ function renderTokens() {
   const me = state.active && state.active.account && state.active.account.address;
   const mk = (l) => tokens.market[l.mint] || {};
   const by = { mcap: (l) => mk(l).mcap || 0, hot: (l) => mk(l).volume1h || 0 }[tokens.sort];
-  const sorted = by ? [...tokens.list].sort((a, b) => by(b) - by(a)) : tokens.list;
+  /* one list for every chain; the filter only narrows it (counts are of the coins loaded so far) */
+  const onChain = (l, c) => c === 'all' || (c === 'robinhood') === isEvm(l.mint);
+  for (const c of ['all', 'solana', 'robinhood']) $('cf-' + c).textContent = tokens.list.filter(l => onChain(l, c)).length || '';
+  for (const b of document.querySelectorAll('.chain-filter [data-chain]')) b.setAttribute('aria-checked', String(b.dataset.chain === tokens.chain));
+  const shown = tokens.list.filter(l => onChain(l, tokens.chain));
+  const sorted = by ? [...shown].sort((a, b) => by(b) - by(a)) : shown;
   for (const b of document.querySelectorAll('.sort [data-sort]')) b.setAttribute('aria-pressed', String(b.dataset.sort === tokens.sort));
   for (const l of sorted) if (mk(l).pair) queueSpark(l.mint, mk(l).pair);
   const rows = sorted.map(l => h('li', {},
@@ -1083,6 +1281,7 @@ async function openCoin(mint) {
   let launch = tokens.list.find(l => l.mint === mint);
   Object.assign(coin, { mint, launch, candles: [], trades: [], error: null, allTrades: false, creatorCoins: null });
   Object.assign(posts, { mint, list: [], error: null, loaded: false });
+  resetTrade(mint);
   selectTab('coin');
   renderCoin();
   if (!launch) {
@@ -1098,7 +1297,9 @@ async function openCoin(mint) {
   loadCreatorCoins(launch.creator);
   if (!tokens.market[mint]) await loadMarket([mint]);
   loadChart();
-  openLive();
+  if (!isEvm(mint)) openLive();   // PumpPortal's live feed is Solana-only; Robinhood trades come with the chart refresh
+  else loadHolderRewards();
+  loadHolding();
   loadPosts();
 }
 
@@ -1375,7 +1576,7 @@ function renderFeed() {
   input.placeholder = state.active ? 'What’s happening?' : 'What’s happening? Connect a wallet to tweet';
   const c = feed.coin;
   $('feed-attach').hidden = !c;
-  $('feed-attach').replaceChildren(...(c ? [h('span', { class: 'attach-chip' }, coinImg(c, 'attach-img'), '$' + c.symbol,
+  $('feed-attach').replaceChildren(...(c ? [h('span', { class: 'attach-chip' }, coinPic(c, 'attach-img'), '$' + c.symbol,
     h('button', { class: 'attach-x', 'aria-label': 'Remove $' + c.symbol, title: 'Remove', onclick: () => { feed.coin = null; renderFeed(); } }, '×'))] : []));
   $('feed-tag').textContent = c ? '$ Change coin' : '$ Tag a coin';
   $('feed-list').replaceChildren(...(feed.list.length ? feed.list.map(postItem) : [h('li', { class: 'note' },
@@ -1503,7 +1704,254 @@ function closeImage() {
   if (back) back.focus();
   return true;
 }
-function renderCoin() { renderCoinHead(); renderCreator(); renderCoinBody(); }
+function renderCoin() { renderCoinHead(); renderTrade(); renderCreator(); renderCoinFees(); renderCoinBody(); }
+/* Robinhood coins: the fee split, and the connected wallet's holder rewards (ETH) when the coin pays holders */
+const holder = { mint: null, earned: null, claim: null, claiming: false };
+async function loadHolderRewards() {
+  const l = coin.launch;
+  if (!l || !isEvm(l.mint) || !(l.holdersBps > 0) || !evm.address) { holder.earned = null; return renderCoinFees(); }
+  const mint = l.mint;
+  try {
+    const r = await (await fetch('/api/rewards?coin=' + mint + '&holder=' + evm.address)).json();
+    if (coin.mint !== mint) return;
+    Object.assign(holder, { mint, earned: r.error ? null : r.earned, claim: r.claim || null });
+  } catch { holder.earned = null; }
+  renderCoinFees();
+}
+async function claimHolderRewards() {
+  if (!holder.claim || holder.claiming || !evm.address) return;
+  const p = evm.active.provider;
+  holder.claiming = true; renderCoinFees();
+  try {
+    await ensureRobinhood(p);
+    const hash = await p.request({ method: 'eth_sendTransaction', params: [{ from: evm.address, to: holder.claim.to, data: holder.claim.data, chainId: ROBINHOOD.hex }] });
+    await evmReceipt(p, hash);
+    setVerdict('ok', 'Rewards claimed!', 'Holder rewards sent to ' + shortAddr(evm.address));
+  } catch (err) {
+    const text = errText(err).replace(/^Error /, '');
+    setVerdict('bad', 'Claim failed', /reject|declin|denied|cancel/i.test(text) ? 'Cancelled in the wallet' : text);
+  } finally { holder.claiming = false; loadHolderRewards(); }
+}
+function renderCoinFees() {
+  const box = $('coin-fees'), l = coin.launch;
+  box.hidden = !l || !isEvm(l.mint) || !l.feeBps;
+  if (box.hidden) return;
+  const hp = (l.holdersBps || 0) / 100;
+  box.replaceChildren(...[
+    h('div', { class: 'coin-fees-line' }, h('b', { text: (l.feeBps / 100) + '% trading fee' }),
+      ' · creator ' + (100 - hp) + '% · holders ' + hp + '%'),
+    h('span', { class: 'fee-sub' }, '10% of the fee to ', h('a', { href: 'https://party.studio', target: '_blank', rel: 'noopener' }, 'Launch Party SDK')),
+    hp > 0 ? h('div', { class: 'rewards compact' },
+      h('span', { class: 'rewards-label', text: 'Your holder rewards' }),
+      h('b', { text: !evm.address ? 'connect an EVM wallet' : holder.earned == null ? '…' : (holder.earned > 0 && holder.earned < 0.00001 ? '<0.00001' : holder.earned.toFixed(5)) + ' ETH' }),
+      evm.address ? h('button', { class: 'btn sm' + (holder.earned > 0 ? ' primary' : ''), disabled: !(holder.earned > 0) || holder.claiming, onclick: claimHolderRewards },
+        holder.claiming ? 'Claiming…' : 'Claim') : null) : null].filter(Boolean));
+}
+/* ---------- trading on the coin page: buy and sell without leaving the card ----------
+   Solana: on the pump.fun curve, built by /api/trade with pump.fun's own SDK (optionally tipped to go as a Jito bundle); a coin
+   that has graduated trades through Jupiter's free swap API, straight from the page. Robinhood: in the coin's Uniswap v4 pool,
+   built by /api/evm-trade. Either way the user's wallet signs and pays; tweetpad takes nothing and holds nothing. */
+const JUP = 'https://lite-api.jup.ag/swap/v1';
+const SOL_MINT = 'So11111111111111111111111111111111111111112';
+const SLIPPAGES = [1, 3, 5, 10, 20];
+const BUY_PRESETS = { sol: ['0.05', '0.1', '0.5', '1'], rh: ['0.001', '0.005', '0.01', '0.05'] };
+const trade = { mint: null, side: 'buy', amount: '', raw: null, slip: 5, quote: null, quoting: false, seq: 0, timer: null,
+  busy: false, status: null, holding: null, graduated: false, picking: false };
+function resetTrade(mint) {
+  clearTimeout(trade.timer);
+  Object.assign(trade, { mint, amount: '', raw: null, quote: null, quoting: false, busy: false, status: null, holding: null, graduated: false, picking: false });
+}
+/* decimal string ⇄ base units, never through floating point */
+const toRaw = (s, d) => { const m = /^(\d+)(?:\.(\d*))?$/.exec(String(s).trim()); return m ? BigInt(m[1] + (m[2] || '').slice(0, d).padEnd(d, '0')) : null; };
+const fromRaw = (n, d) => { const s = BigInt(n).toString().padStart(d + 1, '0'); return (s.slice(0, -d) + '.' + s.slice(-d)).replace(/\.?0+$/, ''); };
+const fmtQty = (n) => n >= 1e3 ? fmtAmount(n) : n >= 1 ? n.toFixed(2).replace(/\.?0+$/, '') : n.toPrecision(3).replace(/\.?0+$/, '');
+const tradeWallet = () => isEvm(trade.mint) ? evm.address : state.active && state.active.account.address;
+/* what the open coin is paired with: SOL, ETH, or a tweetpad coin it was crafted with */
+const tradeQuote = () => isEvm(trade.mint) ? { symbol: 'ETH', decimals: 18 }
+  : coin.launch && coin.launch.quote ? { symbol: coin.launch.quote.symbol, decimals: 6, mint: coin.launch.quote.mint } : { symbol: 'SOL', decimals: 9 };
+const coinDecimals = () => (isEvm(trade.mint) ? 18 : 6);
+
+/* the connected wallet's balance of the open coin */
+async function loadHolding() {
+  const mint = trade.mint, owner = tradeWallet();
+  if (!mint || !owner) return;
+  try {
+    let raw;
+    if (isEvm(mint)) {
+      const hex = await evm.active.provider.request({ method: 'eth_call', params: [{ to: mint, data: '0x70a08231' + owner.slice(2).toLowerCase().padStart(64, '0') }, 'latest'] });
+      raw = BigInt(hex === '0x' ? 0 : hex);
+    } else {
+      const out = await rpcCall('getTokenAccountsByOwner', [owner, { mint }, { encoding: 'jsonParsed', commitment: 'confirmed' }]);
+      raw = out.value.reduce((t, a) => t + BigInt(a.account.data.parsed.info.tokenAmount.amount), 0n);
+    }
+    if (trade.mint === mint) { trade.holding = raw; renderTrade(); }
+  } catch (err) { log('warn', 'trade · balance: ' + errText(err)); }
+}
+
+/* the live estimate as the amount changes (debounced; only the latest answer counts) */
+function requestQuote() {
+  clearTimeout(trade.timer);
+  trade.quote = null;
+  const seq = ++trade.seq;
+  if (!tradeAmountRaw()) { trade.quoting = false; return renderTrade(); }
+  trade.quoting = true;
+  renderTrade();
+  trade.timer = setTimeout(async () => {
+    try {
+      const q = await fetchQuote();
+      if (seq === trade.seq) trade.quote = q;
+    } catch (err) { if (seq === trade.seq) trade.quote = { error: errText(err).replace(/^Error /, '') }; }
+    if (seq === trade.seq) { trade.quoting = false; renderTrade(); }
+  }, 350);
+}
+const tradeAmountRaw = () => trade.raw != null ? trade.raw : toRaw(trade.amount, trade.side === 'buy' ? tradeQuote().decimals : coinDecimals());
+const tradeAmountText = () => trade.raw != null ? fromRaw(trade.raw, coinDecimals()) : trade.amount.trim();
+/* { out (base units of what you receive), jup (Jupiter's quote, for a graduated coin) } */
+async function fetchQuote() {
+  const amount = tradeAmountText(), side = trade.side;
+  if (isEvm(trade.mint)) {
+    const res = await fetch('/api/evm-trade?' + new URLSearchParams({ coin: trade.mint, side, amount }));
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    return { out: BigInt(out.expected) };
+  }
+  if (!trade.graduated) {
+    const res = await fetch('/api/trade?' + new URLSearchParams({ mint: trade.mint, side, amount }));
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    if (!out.graduated) return { out: BigInt(out.expected) };
+    trade.graduated = true;
+  }
+  const raw = tradeAmountRaw(), quoteMint = tradeQuote().mint || SOL_MINT;
+  const res = await fetch(JUP + '/quote?' + new URLSearchParams({ inputMint: side === 'buy' ? quoteMint : trade.mint, outputMint: side === 'buy' ? trade.mint : quoteMint,
+    amount: raw.toString(), slippageBps: String(trade.slip * 100) }));
+  const jup = await res.json();
+  if (!res.ok || !jup.outAmount) throw new Error(jup.error || 'no route for this trade');
+  return { out: BigInt(jup.outAmount), jup };
+}
+
+async function runTrade() {
+  if (trade.busy) return;
+  const l = coin.launch, side = trade.side, q = tradeQuote(), amount = tradeAmountText(), mint = trade.mint;
+  const say = (tone, text, href) => { trade.status = { tone, text, href }; log(tone, 'trade · ' + text); renderTrade(); };
+  trade.busy = true;
+  let sig = null;
+  try {
+    if (isEvm(mint)) {
+      const p = evm.active.provider;
+      await ensureRobinhood(p);
+      say('warn', 'Getting the best price…');
+      const built = await api('/api/evm-trade', { json: { wallet: evm.address, coin: mint, side, amount, slippageBps: trade.slip * 100 } });
+      for (const [i, call] of built.calls.entries()) {
+        const many = built.calls.length > 1 ? ' (' + (i + 1) + ' of ' + built.calls.length + ': ' + call.label + ')' : '';
+        say('warn', 'Approve in ' + evm.active.info.name + many + '…');
+        sig = await p.request({ method: 'eth_sendTransaction', params: [{ from: evm.address, to: call.to, data: call.data, value: call.value, chainId: ROBINHOOD.hex }] });
+        say('warn', 'Confirming…', ROBINHOOD.explorer + '/tx/' + sig);
+        await evmReceipt(p, sig);
+      }
+      say('ok', (side === 'buy' ? 'Bought ≈ ' + fmtQty(Number(built.expected) / 1e18) + ' $' + l.symbol : 'Sold for ≈ ' + fmtQty(Number(built.expected) / 1e18) + ' ETH'), ROBINHOOD.explorer + '/tx/' + sig);
+    } else {
+      const wallet = state.active;
+      const feature = wallet.kind === 'standard' && wallet.ref.features['solana:signTransaction'];
+      if (!feature) throw new Error(wallet.name + ' cannot sign transactions here. Use Phantom, Solflare or Backpack.');
+      say('warn', 'Getting the best price…');
+      let txB64, bundle = false, expected;
+      if (!trade.graduated) {
+        const built = await api('/api/trade', { json: { wallet: wallet.account.address, mint, side, amount, slippage: trade.slip, jito: jitoOn() } });
+        if (built.graduated) trade.graduated = true;
+        else { txB64 = built.tx; bundle = jitoOn(); expected = BigInt(built.expected); }
+      }
+      if (trade.graduated) {
+        /* graduated: Jupiter quotes and builds it (no Jito: its pool route leaves no room for the tip) */
+        const { jup } = await fetchQuote();
+        const res = await fetch(JUP + '/swap', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ quoteResponse: jup,
+          userPublicKey: wallet.account.address, dynamicComputeUnitLimit: true, prioritizationFeeLamports: { priorityLevelWithMaxLamports: { maxLamports: 300000, priorityLevel: 'high' } } }) });
+        const out = await res.json();
+        if (!res.ok || !out.swapTransaction) throw new Error(out.error || 'Jupiter could not build the swap');
+        txB64 = out.swapTransaction; expected = BigInt(jup.outAmount);
+      }
+      say('warn', 'Approve in ' + wallet.name + '…');
+      const [signed] = await feature.signTransaction({ account: wallet.account.raw, transaction: b64dec(txB64), chain: CHAIN });
+      say('warn', bundle ? 'Sending as a Jito bundle…' : 'Sending…');
+      sig = await sendTx(new Uint8Array(signed.signedTransaction), bundle);
+      say('warn', 'Confirming…', 'https://solscan.io/tx/' + sig);
+      await confirm(sig);
+      say('ok', side === 'buy' ? 'Bought ≈ ' + fmtQty(Number(expected) / 1e6) + ' $' + l.symbol : 'Sold for ≈ ' + fmtQty(Number(expected) / 10 ** q.decimals) + ' ' + q.symbol, 'https://solscan.io/tx/' + sig);
+    }
+    setVerdict('ok', side === 'buy' ? 'Bought $' + l.symbol + '!' : 'Sold $' + l.symbol, trade.status.text);
+    Object.assign(trade, { amount: '', raw: null, quote: null });
+    loadMarket([mint]);
+    if (isEvm(mint)) loadChart();
+  } catch (err) {
+    const text = errText(err).replace(/^Error /, '');
+    say('bad', /reject|declin|denied|cancel/i.test(text) ? 'Cancelled in wallet'
+      : /blockhash not found|block height exceeded/i.test(text) ? 'Took too long to approve; try again'
+      : text, sig ? (isEvm(mint) ? ROBINHOOD.explorer + '/tx/' : 'https://solscan.io/tx/') + sig : undefined);
+  } finally {
+    trade.busy = false;
+    renderTrade();
+    setTimeout(loadHolding, 1500);
+  }
+}
+
+function renderTrade() {
+  const box = $('coin-trade'), l = coin.launch;
+  box.hidden = !l || trade.mint !== l.mint;
+  if (box.hidden) return;
+  const rh = isEvm(l.mint), q = tradeQuote(), buy = trade.side === 'buy', owner = tradeWallet();
+  const unit = buy ? q.symbol : '$' + l.symbol;
+  const holding = trade.holding != null ? Number(trade.holding) / 10 ** coinDecimals() : null;
+  const setSide = (side) => { if (trade.side === side || trade.busy) return; Object.assign(trade, { side, amount: '', raw: null, status: null }); requestQuote(); };
+  const setAmount = (amount, raw = null) => { Object.assign(trade, { amount, raw, status: null }); requestQuote(); };
+  const chips = buy ? (rh ? BUY_PRESETS.rh : q.mint ? ['1000', '10000', '100000', '1000000'] : BUY_PRESETS.sol).map(v => h('button', { type: 'button', disabled: trade.busy,
+      'aria-pressed': String(trade.amount === v), onclick: () => setAmount(v) }, fmtQty(Number(v))))
+    : [25, 50, 100].map(p => h('button', { type: 'button', disabled: trade.busy || !trade.holding,
+      'aria-pressed': String(trade.raw != null && trade.holding && trade.raw === trade.holding * BigInt(p) / 100n),
+      onclick: () => { const raw = trade.holding * BigInt(p) / 100n; setAmount(fromRaw(raw, coinDecimals()), raw); } }, p + '%'));
+  const input = h('input', { type: 'text', inputmode: 'decimal', placeholder: '0', value: trade.raw != null ? fmtQty(holding * Number(trade.raw) / Number(trade.holding || 1n)) : trade.amount,
+    disabled: trade.busy, 'aria-label': (buy ? 'Amount of ' + q.symbol + ' to spend' : 'Amount of $' + l.symbol + ' to sell'),
+    oninput: (ev) => { const v = ev.target.value.replace(',', '.'); if (/^\d*\.?\d*$/.test(v)) setAmount(v); else ev.target.value = trade.amount; } });
+  /* what it gets you, from the latest quote */
+  const out = trade.quote && trade.quote.out != null ? Number(trade.quote.out) / 10 ** (buy ? coinDecimals() : q.decimals) : null;
+  const est = trade.quoting ? h('span', { class: 'dim', text: 'Quoting…' })
+    : trade.quote && trade.quote.error ? h('span', { class: 'bad', text: trade.quote.error })
+    : out != null ? h('span', null, '≈ ', h('b', { text: fmtQty(out) + ' ' + (buy ? '$' + l.symbol : q.symbol) }),
+        h('span', { class: 'dim', text: ' · min ' + fmtQty(out * (1 - trade.slip / 100)) }))
+    : !buy && holding != null ? h('span', { class: 'dim' }, 'You hold ', h('b', { class: 'hold', text: fmtQty(holding) + ' $' + l.symbol }))
+    : h('span', { class: 'dim', text: rh ? '1% coin fee, to its creator and holders · tweetpad takes nothing' : 'pump.fun’s fees only · tweetpad takes nothing' });
+  const jito = !rh && !trade.graduated;
+  let action;
+  if (!owner) {
+    if (rh) {
+      const list = evmProviders();
+      action = trade.picking && list.length > 1 ? h('div', { class: 'trade-pick' }, ...list.map(e => h('button', { class: 'opt evm-opt', onclick: () => connectEvm(e) },
+          e.info.icon ? h('img', { src: e.info.icon, alt: '' }) : h('span', { class: 'ph', text: e.info.name.slice(0, 1) }), h('span', { class: 'opt-name', text: e.info.name }))))
+        : h('button', { class: 'btn primary trade-btn', disabled: !list.length, onclick: () => { if (list.length === 1) connectEvm(list[0]); else { trade.picking = true; renderTrade(); } } },
+          list.length ? 'Connect EVM wallet to trade' : 'No EVM wallet here');
+    } else action = h('button', { class: 'btn primary trade-btn', onclick: openMenu }, 'Connect wallet to trade');
+  } else {
+    const ready = tradeAmountRaw() > 0n && !(trade.quote && trade.quote.error) && !trade.busy;
+    action = h('button', { class: 'btn primary trade-btn' + (buy ? '' : ' sell'), disabled: !ready, onclick: runTrade },
+      trade.busy ? 'Working…' : (buy ? 'Buy $' : 'Sell $') + l.symbol);
+  }
+  box.replaceChildren(...[
+    h('div', { class: 'trade-top' },
+      h('div', { class: 'trade-side', role: 'tablist' },
+        h('button', { type: 'button', role: 'tab', class: 'buy', 'aria-selected': String(buy), onclick: () => setSide('buy') }, 'Buy'),
+        h('button', { type: 'button', role: 'tab', class: 'sell', 'aria-selected': String(!buy), onclick: () => setSide('sell') }, 'Sell')),
+      h('button', { type: 'button', class: 'trade-slip', title: 'Slippage: the most the price may move against you before the trade cancels', disabled: trade.busy,
+        onclick: () => { trade.slip = SLIPPAGES[(SLIPPAGES.indexOf(trade.slip) + 1) % SLIPPAGES.length]; requestQuote(); } }, 'Slippage ' + trade.slip + '%')),
+    h('div', { class: 'trade-row' }, h('label', { class: 'trade-amt' }, input, h('span', { class: 'trade-unit', text: unit })), h('div', { class: 'buy-chips' }, ...chips)),
+    h('div', { class: 'trade-est', 'aria-live': 'polite' }, est),
+    jito ? h('label', { class: 'jito-row compact' }, h('input', { type: 'checkbox', checked: jitoOn(), disabled: trade.busy,
+        onchange: (ev) => { store.set('tweetpad:jito', ev.target.checked ? '1' : '0'); renderTrade(); renderDevBuy(currentPair()); } }),
+      h('span', { class: 'jito-name', text: '⚡ Jito bundle' }), h('span', { class: 'jito-hint', text: '+0.0001 SOL tip · first in its block, private' })) : null,
+    action,
+    trade.status ? h('div', { class: 'trade-status ' + trade.status.tone }, trade.status.text,
+      trade.status.href ? h('a', { href: trade.status.href, target: '_blank', rel: 'noopener', text: ' Tx ↗' }) : null) : null,
+  ].filter(Boolean));
+}
+
 /* ---------- sharing: every coin's /c/<mint> link plays in a post as its own card (api/card.js + api/card-image.js) ---------- */
 const shareUrlOf = (mint) => location.origin + '/c/' + mint;
 const shareIntent = (l) => 'https://x.com/intent/post?text=' + encodeURIComponent('$' + l.symbol + ' is live on tweetpad. Trade it right inside this tweet')
@@ -1529,6 +1977,7 @@ function renderCoinHead() {
     h('div', { class: 'coin-title' },
       h('div', { class: 'coin-name' }, h('b', { text: l.symbol }), h('span', { text: l.name })),
       h('div', { class: 'coin-meta' },
+        h('span', { class: 'chain-name' }, h('span', { class: 'net-logo ' + (isEvm(l.mint) ? 'rh' : 'sol'), 'aria-hidden': 'true' }), chainName(l.mint)),
         h('span', { text: ago(l.time) }),
         h('button', { class: 'ca', title: 'Copy contract address', 'aria-label': 'Copy contract address ' + l.mint, onclick: () => copyText(l.mint, 'contract address') },
           shortAddr(l.mint), h('span', { class: 'copy-ico', 'aria-hidden': 'true', text: '⧉' })),
@@ -1538,9 +1987,12 @@ function renderCoinHead() {
       m.change1h != null ? h('span', { class: m.change1h >= 0 ? 'up' : 'down', text: fmtPct(m.change1h) + ' 1h' }) : null),
   ]));
   $('coin-links').replaceChildren(...(!l ? [] : [
-    h('span', { class: 'live' + (coin.live ? ' on' : ''), title: coin.live ? 'Live trades connected' : 'Live trades offline' }, coin.live ? 'LIVE' : 'OFFLINE'),
-    h('a', { class: 'chiplink', href: 'https://pump.fun/coin/' + coin.mint, target: '_blank', rel: 'noopener' }, 'Trade on pump.fun ↗'),
-  ]));
+    isEvm(coin.mint) ? null : h('span', { class: 'live' + (coin.live ? ' on' : ''), title: coin.live ? 'Live trades connected' : 'Live trades offline' }, coin.live ? 'LIVE' : 'OFFLINE'),
+    ...(isEvm(coin.mint)
+      ? [h('a', { class: 'chiplink', href: 'https://dexscreener.com/robinhood/' + coin.mint, target: '_blank', rel: 'noopener' }, 'Uniswap ↗'),
+         h('a', { class: 'chiplink', href: ROBINHOOD.explorer + '/token/' + coin.mint, target: '_blank', rel: 'noopener' }, 'Explorer ↗')]
+      : [h('a', { class: 'chiplink', href: 'https://pump.fun/coin/' + coin.mint, target: '_blank', rel: 'noopener' }, 'pump.fun ↗')]),
+  ].filter(Boolean)));
   $('coin-share').replaceChildren(...(l ? [shareBox(l)] : []));
 }
 /* ---------- who launched it, as the old tweet view showed its author ---------- */
@@ -1628,7 +2080,7 @@ function renderTrades() {
   const rows = shown.map(t => h('li', { class: t.kind },
     h('span', { class: 'kind', text: t.kind === 'buy' ? 'BUY' : 'SELL' }),
     h('span', { class: 'amt', text: t.usd != null ? fmtUsd(t.usd) : (t.sol != null ? t.sol.toFixed(3) + ' SOL' : '—') }),
-    h('a', { class: 'who', href: 'https://solscan.io/tx/' + t.tx, target: '_blank', rel: 'noopener', text: shortAddr(t.wallet || '????????') }),
+    h('a', { class: 'who', href: (isEvm(coin.mint) ? ROBINHOOD.explorer + '/tx/' : 'https://solscan.io/tx/') + t.tx, target: '_blank', rel: 'noopener', text: shortAddr(t.wallet || '????????') }),
     h('span', { class: 'when', text: ago(t.time) })));
   $('coin-trades').replaceChildren(...(rows.length ? rows : [h('li', { class: 'note', text: coin.error || (coin.loading ? 'Loading trades…' : 'No trades yet.') })]));
 }
@@ -1691,6 +2143,12 @@ function setVerdict(tone, title, text, sub) {
 function renderWallets() {
   const list = visibleWallets();
   const active = state.active;
+  /* the open coin's trade box follows the Solana wallet: its button, and the balance it shows */
+  if (coin.mint && !isEvm(coin.mint)) {
+    const who = active && active.account.address;
+    if (trade.owner !== who) { trade.owner = who; trade.holding = null; if (who) loadHolding(); }
+    renderTrade();
+  }
   const where = 'in this ' + (state.env.context === 'top-level' ? 'page' : state.env.context || 'context');
   if (active && launch.done && launch.result) {
     setVerdict('ok', 'Token launched!', '$' + launch.result.symbol + ' is live on pump.fun');
@@ -1778,7 +2236,7 @@ async function copyText(text, label) {
 const copyBtn = (text, label) => h('button', { class: 'copy', title: 'Copy ' + (label || ''), 'aria-label': 'Copy ' + (label || ''), onclick: (ev) => { ev.stopPropagation(); copyText(text, label); } }, '⧉');
 
 async function loadProfiles(wallets) {
-  const need = [...new Set(wallets)].filter(w => w && !(w in profiles));
+  const need = [...new Set(wallets)].filter(w => w && !isEvm(w) && !(w in profiles));   // X links are signed by Solana wallets only
   for (let i = 0; i < need.length; i += 50) {
     try {
       const res = await fetch('/api/profile?wallets=' + need.slice(i, i + 50).sort().join(','));
@@ -1845,6 +2303,84 @@ async function claimRewards() {
     loadMe();
   }
 }
+/* ---------- Robinhood Chain profile: the connected EVM wallet's coins and creator fees ---------- */
+const evmMe = { wallet: null, rewards: null, coins: [], loading: false, claiming: false, status: null };
+async function loadEvmMe() {
+  const wallet = evm.address;
+  if (!wallet) { Object.assign(evmMe, { wallet: null, rewards: null, coins: [], status: null }); return renderProfile(); }
+  if (evmMe.wallet !== wallet) Object.assign(evmMe, { wallet, rewards: null, coins: [], status: null });
+  evmMe.loading = true;
+  renderProfile();
+  const [r, c] = await Promise.all([
+    fetch('/api/rewards?wallet=' + wallet).then(x => x.json()).catch(() => null),
+    fetch('/api/launches?creator=' + wallet).then(x => x.json()).catch(() => null),
+  ]);
+  if (evmMe.wallet !== wallet) return;
+  evmMe.rewards = r && !r.error ? r : null;
+  evmMe.coins = c && c.launches ? c.launches.filter(l => isEvm(l.mint)) : [];
+  evmMe.loading = false;
+  if (evmMe.coins.length) loadMarket(evmMe.coins.map(l => l.mint));
+  renderProfile();
+}
+/* wait for an EVM transaction through the wallet's own connection */
+async function evmReceipt(p, hash) {
+  for (let i = 0; i < 40; i++) {
+    const r = await p.request({ method: 'eth_getTransactionReceipt', params: [hash] }).catch(() => null);
+    if (r) { if (r.status !== '0x1') throw new Error('the transaction failed on chain'); return r; }
+    await new Promise(res => setTimeout(res, 1500));
+  }
+  throw new Error('not confirmed yet; check the explorer');
+}
+/* claim: the server lists one call per coin holding fees (each pays the creator, holders and platform at once); the wallet sends them in turn */
+async function claimEvmRewards() {
+  if (!evm.address || evmMe.claiming) return;
+  const p = evm.active.provider;
+  evmMe.claiming = true;
+  const say = (tone, text, href) => { evmMe.status = { tone, text, href }; log(tone, 'profile (Robinhood) · ' + text); renderProfile(); };
+  try {
+    await ensureRobinhood(p);
+    const built = await api('/api/rewards', { json: { wallet: evm.address } });
+    let last = null;
+    for (const [i, call] of built.calls.entries()) {
+      say('warn', 'Approve claim ' + (i + 1) + ' of ' + built.calls.length + ' (' + call.label + ') in ' + evm.active.info.name + '…');
+      last = await p.request({ method: 'eth_sendTransaction', params: [{ from: evm.address, to: call.to, data: call.data, chainId: ROBINHOOD.hex }] });
+      say('warn', 'Confirming…');
+      await evmReceipt(p, last);
+    }
+    say('ok', 'Rewards claimed to your wallet', ROBINHOOD.explorer + '/tx/' + last);
+    setVerdict('ok', 'Rewards claimed!', 'Creator fees sent to ' + shortAddr(evm.address));
+  } catch (err) {
+    const text = errText(err).replace(/^Error /, '');
+    say('bad', /reject|declin|denied|cancel/i.test(text) ? 'Claim cancelled in wallet' : 'Claim failed: ' + text);
+  } finally {
+    evmMe.claiming = false;
+    loadEvmMe();
+  }
+}
+function evmRewardsBox() {
+  const r = evmMe.rewards, has = r && r.eth > 0;
+  return h('div', { class: 'rewards' },
+    h('span', { class: 'rewards-label', text: 'Creator rewards' }),
+    h('b', { text: r ? r.eth.toFixed(5) + ' ETH' : evmMe.loading ? '…' : '—' }),
+    h('button', { class: 'btn sm' + (has ? ' primary' : ''), disabled: !has || evmMe.claiming, onclick: claimEvmRewards }, evmMe.claiming ? 'Claiming…' : 'Claim'));
+}
+/* the Robinhood part of the profile: wallet, creator rewards, coins */
+function evmProfileSection() {
+  if (!evm.address) return [];
+  const mk = (l) => tokens.market[l.mint] || {};
+  return [h('div', { class: 'menu-sec net-sec' }, h('span', { class: 'net-logo rh', 'aria-hidden': 'true' }), 'Robinhood Chain'),
+    h('div', { class: 'who-addr' }, shortAddr(evm.address), copyBtn(evm.address, 'EVM address'),
+      h('a', { class: 'ext', href: ROBINHOOD.explorer + '/address/' + evm.address, target: '_blank', rel: 'noopener', title: 'View on the explorer' }, '↗')),
+    evmRewardsBox(),
+    evmMe.status ? h('div', { class: 'status ' + evmMe.status.tone }, evmMe.status.text,
+      evmMe.status.href ? h('a', { class: 'chiplink', style: 'margin-left:6px', href: evmMe.status.href, target: '_blank', rel: 'noopener' }, 'Tx ↗') : null) : null,
+    h('div', { class: 'menu-sec', text: 'Your Robinhood coins · ' + evmMe.coins.length }),
+    h('ul', { class: 'token-list' }, ...(evmMe.coins.length ? evmMe.coins.map(l => shareRow(
+      h('button', { class: 'tok', onclick: () => openCoin(l.mint) }, coinImg(l),
+        h('span', { class: 'tok-main' }, h('b', { text: l.name }), h('span', { class: 'tok-sub', text: '$' + l.symbol + ' · ' + ago(l.time) + ' · ' + (100 - (l.holdersBps || 0) / 100) + '% yours' })),
+        h('span', { class: 'tok-mkt' }, h('b', { text: fmtUsd(mk(l).mcap) }))), l))
+      : [h('li', { class: 'note', style: 'padding:10px 2px' }, evmMe.loading ? 'Loading…' : 'No Robinhood coins yet.')]))];
+}
 function setStatus(tone, text, href) {
   me.status = { tone, text, href };
   log(tone, 'profile · ' + text);
@@ -1876,8 +2412,9 @@ function renderProfile() {
   if (!root) return;
   if (!me.wallet) {
     root.replaceChildren(h('div', { class: 'pane panel profile' }, h('div', { class: 'launch-head' }, h('span', { text: 'Profile' })),
-      h('p', { class: 'note', text: 'Connect a wallet to see your profile, your coins and your creator rewards.' }),
-      h('button', { class: 'btn primary', onclick: openMenu }, 'Connect wallet')));
+      evm.address ? null : h('p', { class: 'note', text: 'Connect a wallet to see your profile, your coins and your creator rewards.' }),
+      h('button', { class: 'btn primary', onclick: openMenu }, evm.address ? 'Connect a Solana wallet' : 'Connect wallet'),
+      ...evmProfileSection()));
     return;
   }
   const mk = (l) => tokens.market[l.mint] || {};
@@ -1895,6 +2432,7 @@ function renderProfile() {
           mk(l).change1h != null ? h('span', { class: mk(l).change1h >= 0 ? 'up' : 'down', text: fmtPct(mk(l).change1h) }) : null)), l))
       : [h('li', { class: 'note', style: 'padding:10px 2px' }, me.loading ? 'Loading…' : 'No coins yet. ',
           me.loading ? null : h('button', { class: 'linkish', onclick: () => selectTab('wallets') }, 'Launch one')) ])),
+    ...evmProfileSection(),
     ...tweetsSection(me.wallet, 'you')));
 }
 
@@ -2121,7 +2659,7 @@ function selectTab(name) {
   if (name !== 'coin') closeLive();
   if (name === 'tokens' && !tokens.loaded) loadTokens();
   if (name === 'coin') requestAnimationFrame(drawChart);
-  if (name === 'profile') loadMe();
+  if (name === 'profile') { loadMe(); loadEvmMe(); }
   if (name === 'about') renderAbout();
   if (name === 'user') renderUser();
   if (name === 'feed') loadFeed();
@@ -2142,6 +2680,7 @@ $('tokens-refresh').addEventListener('click', () => loadTokens());
 $('coin-back').addEventListener('click', () => selectTab('tokens'));
 for (const b of document.querySelectorAll('.tf [data-tf]')) b.addEventListener('click', () => { coin.tf = b.dataset.tf; loadChart(); });
 for (const b of document.querySelectorAll('.sort [data-sort]')) b.addEventListener('click', () => { tokens.sort = b.dataset.sort; renderTokens(); });
+for (const b of document.querySelectorAll('.chain-filter [data-chain]')) b.addEventListener('click', () => { tokens.chain = b.dataset.chain; renderTokens(); });
 const toggleFeed = () => { $('feed-lines').hidden = !$('feed-lines').hidden; };
 /* More opens the list; from the list itself it closes back to launch, from profile / games / debug it steps back to the list */
 const toggleMore = () => selectTab(mainView === 'more' && $('debug').hidden ? 'wallets' : 'more');
@@ -2313,6 +2852,16 @@ $('link-newtab').href = STANDALONE;
 
 $('launch-btn').addEventListener('click', onLaunch);
 $('pair-pick').addEventListener('click', () => openPairs('pair'));
+$('fee-holders').addEventListener('input', renderLaunch);
+for (const b of document.querySelectorAll('.net-switch [data-net]')) b.addEventListener('click', () => {
+  if (launch.busy || launch.chain === b.dataset.net) return;
+  launch.chain = b.dataset.net;
+  store.set('tweetpad:chain', launch.chain);
+  $('tk-buy').value = '';
+  Object.assign(launch, { done: false, result: null, checks: [] });
+  evm.picking = false;
+  renderLaunch();
+});
 $('feed-tag').addEventListener('click', () => openPairs('tag'));
 $('feed-input').addEventListener('input', renderFeed);
 $('feed-input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendFeed(); } });
@@ -2333,6 +2882,7 @@ const renderDescLeft = () => {
 };
 $('tk-desc').addEventListener('input', renderDescLeft);
 renderDescLeft();   // the prefilled description already uses some of the 140
+$('tk-jito').addEventListener('change', (ev) => { store.set('tweetpad:jito', ev.target.checked ? '1' : '0'); renderTrade(); });
 for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => {
   $('tk-buy').value = b.dataset.buy === '0' ? '' : b.dataset.buy;
   $('tk-buy').dispatchEvent(new Event('input'));
@@ -2370,7 +2920,7 @@ for (const id of ['tk-name', 'tk-ticker', 'tk-desc', 'tk-buy', ...LINK_IDS]) $(i
   loadTop();
   loadCurve();
   loadChat();
-  if (isPubkeyLike(qs.get('coin'))) openCoin(qs.get('coin'));
+  if (isPubkeyLike(qs.get('coin')) || isEvm(qs.get('coin'))) openCoin(qs.get('coin'));   // Solana or Robinhood share links
   renderWallets();
   for (const delay of [300, 1000, 2500]) setTimeout(discoverLegacy, delay);
   setTimeout(() => {

@@ -4,7 +4,7 @@
 //   POST { action: 'like' | 'retweet', token, id, on } → that post's stats, after the change
 // A wallet likes or retweets a post once (a set per post); a retweet also lands on the retweeter's timeline.
 // Writing uses the chat session (api/chat.js), so it is the same one free signature as chatting and posting.
-const { cors, readJson, isPubkey, redis, loadPost, rateLimit, fail } = require('./_lib');
+const { cors, readJson, isPubkey, isEvmAddress, redis, loadPost, rateLimit, fail } = require('./_lib');
 
 const MAX_IDS = 60, TIMELINE = 50;
 const validId = (id) => /^\d{1,12}$/.test(String(id));
@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
       /* fresh=1: your own timeline right after you retweet, past the CDN */
       res.setHeader('cache-control', q.fresh ? 'no-store' : 'public, s-maxage=3, stale-while-revalidate=10');
       if (q.user) {
-        if (!isPubkey(String(q.user))) return fail(res, 400, 'invalid wallet');
+        if (!isPubkey(String(q.user)) && !isEvmAddress(String(q.user))) return fail(res, 400, 'invalid wallet');
         return res.status(200).json({ posts: await timeline(String(q.user)) });
       }
       const ids = [...new Set(String(q.ids || '').split(',').filter(validId))].slice(0, MAX_IDS);

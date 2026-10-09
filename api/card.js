@@ -1,6 +1,6 @@
 // Share card for one coin: /c/<mint> (rewritten here by vercel.json). X reads these tags to build a player card
 // with the coin's own name and image; the player opens the card straight to that coin's chart.
-const { isPubkey, redis } = require('./_lib');
+const { isCoinId, redis } = require('./_lib');
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
   const mint = String((req.query && req.query.mint) || '');
   const origin = 'https://' + (req.headers['x-forwarded-host'] || req.headers.host || 'www.tweetpad.io');
   let launch = null;
-  if (isPubkey(mint)) {
+  if (isCoinId(mint)) {
     try { const [row] = await redis(['GET', 'launch:' + mint]); launch = row ? JSON.parse(row) : null; } catch { /* plain card */ }
   }
   const title = launch ? '$' + launch.symbol + ' · ' + launch.name + ' on tweetpad' : 'tweetpad';

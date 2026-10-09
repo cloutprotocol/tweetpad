@@ -515,6 +515,7 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 /* SOL as wallets show it: the gradient mark on a black disc */
 .sol-ico { display: inline-block; flex: none; background: #000 url(solana.svg) center / 58% no-repeat; border-radius: 50%; }
 /* in the form's header the pick is a compact chip: "Pair [logo] SOL ▾" */
+.launch-head .pair-pick[hidden] { display: none; }
 .launch-head .pair-pick { flex: none; gap: 5px; padding: 2px 6px 2px 5px; letter-spacing: 0; text-transform: none; border-width: 1px; box-shadow: none; }
 .launch-head .pair-pick small { flex: none; font: 13px/1 var(--mono); color: var(--dim); }
 .launch-head .pair-img { width: 16px; height: 16px; }
@@ -702,3 +703,103 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .official[hidden] { display: none; }
 .official-label { font: 15px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--dim); }
 .official-label b { color: var(--gold); font-weight: normal; }
+
+/* ---------- launch network: a logo-only switch at the right of the tab bar ---------- */
+/* a pill, not a slot: one rounded track holding both logos, set apart from the hotbar */
+.hud-row .net-switch { flex: none; margin-left: 4px; padding: 2px; border: 1px solid var(--line); border-radius: 14px; }
+.hud-row .net-switch button { border-radius: 11px; border-color: transparent; }
+/* in the Launch header: the same switch, smaller, before the pair chip */
+.launch-head .net-switch { margin-left: auto; margin-right: 6px; }
+.launch-head .net-switch button { width: 26px; height: 20px; }
+.launch-head .net-logo { width: 13px; height: 13px; }
+.net-switch { display: inline-flex; gap: 2px; }
+.net-switch button { display: grid; place-items: center; width: 30px; height: 24px; padding: 0; appearance: none; cursor: pointer;
+                     background: transparent; border: 1px solid var(--line); color: var(--dim); }
+.net-switch button[aria-checked="true"] { color: #04200e; background: var(--accent); border-color: var(--accent); }
+.net-switch button[disabled] { cursor: default; opacity: .6; }
+/* the logos are masks, so they take the button's text color: white on the picked chain, grey on the other */
+.net-logo { width: 15px; height: 15px; background: currentColor; -webkit-mask: center / contain no-repeat; mask: center / contain no-repeat; }
+.net-logo.sol { -webkit-mask-image: url(solana.svg); mask-image: url(solana.svg); }
+.net-logo.rh { -webkit-mask-image: url(robinhood.png); mask-image: url(robinhood.png); }
+.evm-wallet { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 14px/1.2 var(--mono); color: var(--dim); }
+.evm-wallet[hidden] { display: none; }
+.evm-wallet b { color: var(--text); font: 600 12px/1 var(--px); }
+.evm-wallet .linkish { margin-left: auto; }
+.evm-opt { flex: 1 1 140px; width: auto; margin: 0; }
+.chain-tag { color: #ccff00; }
+
+/* ---------- Robinhood: creator fee split (launch form), fee line + holder rewards (coin page), profile section ---------- */
+.fee-box { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: rgba(5, 12, 14, .45); border: 1px dashed var(--line); }
+.fee-box[hidden], .coin-fees[hidden] { display: none; }
+.fee-split { display: flex; align-items: center; gap: 8px; }
+.fee-split input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.fee-side { flex: none; min-width: 64px; font: 14px/1 var(--mono); color: var(--text); }
+.fee-side:last-child { text-align: right; min-width: 104px; }
+.coin-fees { display: flex; flex-direction: column; gap: 6px; }
+.coin-fees-line { font: 14px/1.2 var(--mono); color: var(--dim); }
+.coin-fees-line b { color: var(--text); font-weight: normal; }
+.net-sec { display: flex; align-items: center; gap: 6px; }
+.net-sec .net-logo { width: 13px; height: 13px; color: var(--text); }
+.fee-sub { display: block; margin-top: 3px; font: 13px/1.2 var(--mono); color: var(--dim); }
+.fee-sub a { color: inherit; text-decoration: underline; text-decoration-color: currentColor; text-underline-offset: 2px; }
+.fee-sub a:hover { color: var(--accent); }   /* quiet until you point at it */
+/* the split slider is a range, not a text field: none of the form's field box, focus ring or hover */
+.launch input[type=range], .launch input[type=range]:focus, .launch input[type=range]:hover {
+  width: auto; height: auto; padding: 0; background: none; border: 0; box-shadow: none; outline: none; }
+.coin-fees .rewards-label { flex: 1; }
+.coin-fees .rewards b { flex: none; overflow: visible; text-overflow: clip; }
+
+/* ---------- chains in one list: a badge on every coin image, a filter on the Tokens tab ---------- */
+.coin-ico { position: relative; display: inline-flex; flex: none; line-height: 0; }
+/* in a hotbar slot the image fills the slot; the badge sits bottom-left, clear of the number (bottom-right) and the up/down dot (top-right) */
+.slot .coin-ico { position: absolute; inset: 3px; }
+.slot .coin-ico img, .slot .coin-ico .ph { width: 100%; height: 100%; }
+.slot .chain-badge { left: -1px; bottom: -1px; right: auto; top: auto; width: 10px; height: 10px; min-width: 0; box-shadow: 0 0 0 1px rgba(0, 0, 0, .6); }
+.chain-badge { position: absolute; right: -3px; bottom: -3px; width: 42%; min-width: 11px; max-width: 18px; aspect-ratio: 1; display: grid; place-items: center;
+               border-radius: 50%; box-shadow: 0 0 0 1.5px var(--panel-lo); }
+.chain-badge.sol { background: #000; }
+/* Solana keeps its own gradient mark: a mono one reads as a plain "≡" */
+.chain-badge.sol .net-logo { background: url(solana.svg) center / contain no-repeat; -webkit-mask: none; mask: none; }
+.chain-badge.rh { background: #ccff00; color: #000; }
+.chain-badge .net-logo { width: 62%; height: 62%; }
+.coin-img-btn .chain-badge { right: auto; left: -4px; }   /* the zoom + sits bottom-right on the coin page */
+.chain-name { display: inline-flex; align-items: center; gap: 4px; }
+.chain-name .net-logo { width: 12px; height: 12px; }
+.chain-filter { display: flex; gap: 3px; margin: 6px 0 2px; }
+.chain-filter button { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; appearance: none; cursor: pointer; color: var(--dim); font: 14px/1 var(--mono);
+                       background: transparent; border: 1px solid var(--line); text-shadow: var(--shadow); }
+.chain-filter button:hover { color: var(--text); }
+.chain-filter button[aria-checked="true"] { color: #04200e; background: var(--accent); border-color: var(--accent); text-shadow: none; }
+.chain-filter .net-logo { width: 12px; height: 12px; }
+.chain-filter .n:empty { display: none; }
+
+/* ---------- trading on the coin page, and the Jito bundle option ---------- */
+.jito-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; cursor: pointer; font: 14px/1.2 var(--mono); color: var(--dim); }
+.jito-row[hidden] { display: none; }
+.jito-row input, .launch .jito-row input { flex: none; width: auto; height: auto; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; accent-color: var(--accent); }
+.jito-name { color: var(--text); }
+.jito-row input:not(:checked) ~ .jito-name { color: var(--dim); }
+.trade { display: flex; flex-direction: column; gap: 7px; margin: 8px 0; padding: 8px; background: rgba(5, 12, 14, .45); border: 1px solid var(--line); }
+.trade[hidden] { display: none; }
+.trade-top { display: flex; align-items: center; gap: 8px; }
+.trade-side { display: flex; gap: 3px; }
+.trade-side button { appearance: none; padding: 5px 14px; cursor: pointer; color: var(--dim); font: 16px/1 var(--mono); background: transparent; border: 1px solid var(--line); text-shadow: var(--shadow); }
+.trade-side .buy[aria-selected="true"] { color: #04200e; background: var(--ok); border-color: var(--ok); text-shadow: none; }
+.trade-side .sell[aria-selected="true"] { color: #2a0606; background: var(--bad); border-color: var(--bad); text-shadow: none; }
+.trade-slip { margin-left: auto; appearance: none; padding: 4px 6px; cursor: pointer; color: var(--dim); font: 13px/1 var(--mono); background: transparent; border: 1px dashed var(--line); }
+.trade-slip:hover:not([disabled]) { color: var(--text); }
+.trade-row { display: flex; gap: 6px; }
+.trade-amt { flex: 1; min-width: 80px; display: flex; align-items: center; background: rgba(5, 12, 14, .75); border: 2px solid var(--panel-lo); box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .4); }
+.trade-amt:focus-within { border-color: var(--accent); }
+.trade-amt input { flex: 1; min-width: 0; padding: 6px 4px 6px 8px; color: var(--text); font: 18px/1 var(--mono); background: transparent; border: 0; outline: none; }
+.trade-unit { flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; padding-right: 6px; font: 14px/1 var(--mono); color: var(--dim); }
+.trade-est { min-height: 16px; font: 15px/1.15 var(--mono); color: var(--text); }
+.trade-est b { color: var(--ok); font-weight: normal; }
+.trade-est .dim { color: var(--dim); } .trade-est .hold { color: var(--text); } .trade-est .bad { color: var(--bad); }
+.trade-btn { width: 100%; }
+.trade-btn.sell { background: var(--bad); border-color: var(--bad); }
+.trade-pick { display: flex; flex-wrap: wrap; gap: 4px; }
+.trade-status { font: 14px/1.25 var(--mono); }
+.trade-status.ok { color: var(--ok); } .trade-status.bad { color: var(--bad); } .trade-status.warn { color: var(--warn); }
+.trade-status a { color: inherit; }
+@media (max-width: 420px) { .trade-row { flex-direction: column; } .trade-row .buy-chips button { flex: 1; padding: 6px 0; } }

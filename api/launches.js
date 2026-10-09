@@ -8,7 +8,7 @@
 // GET ?curve=new: a fresh SOL curve's reserves and buy fee, so the form can estimate what a dev buy gets.
 // POST { signature, mint }: list a launch, but only after checking on chain that the transaction succeeded,
 // is a pump.fun create for that mint, was paid by the wallet that built it here, and was built here (pending).
-const { PUMP_PROGRAM, cors, readJson, isPubkey, b58decode, redis, rpc, connection, quoteConfig, pairQuote, marketData, rateLimit, fail } = require('./_lib');
+const { PUMP_PROGRAM, cors, readJson, isPubkey, isEvmAddress, isCoinId, b58decode, redis, rpc, connection, quoteConfig, pairQuote, marketData, rateLimit, fail } = require('./_lib');
 
 const PAGE = 24;
 
@@ -16,8 +16,8 @@ async function list(req, res) {
   const q = req.query || {};
   res.setHeader('cache-control', 'public, s-maxage=5, stale-while-revalidate=30');
   if (q.mint) {
-    if (!isPubkey(q.mint)) return fail(res, 400, 'invalid mint');
-    const [row] = await redis(['GET', 'launch:' + q.mint]);
+    if (!isCoinId(q.mint)) return fail(res, 400, 'invalid mint');
+    const [row] = await redis(['GET', 'launch:' + canonical(q.mint)]);
     return row ? res.status(200).json({ launch: JSON.parse(row) }) : fail(res, 404, 'not launched on tweetpad');
   }
   if (q.pair != null) {
@@ -28,8 +28,8 @@ async function list(req, res) {
   if (q.q != null) { if (!await rateLimit(req, res, 'search', 120, 600)) return; return search(String(q.q), res); }
   if (q.curve === 'new') return newCurve(res);
   if (q.creator) {
-    if (!isPubkey(q.creator)) return fail(res, 400, 'invalid creator');
-    const [mints] = await redis(['ZREVRANGE', 'creator:' + q.creator, 0, 49]);
+    if (!isCoinId(q.creator)) return fail(res, 400, 'invalid creator');
+    const [mints] = await redis(['ZREVRANGE', 'creator:' + canonical(q.creator), 0, 49]);
     const rows = mints.length ? (await redis(['MGET', ...mints.map(m => 'launch:' + m)]))[0] : [];
     return res.status(200).json({ launches: rows.filter(Boolean).map(r => JSON.parse(r)) });
   }
@@ -66,7 +66,7 @@ async function newCurve(res) {
 /* search reads a slim index (launchidx: mint → name, ticker, image link, pair, time), never the full records with their
    thumbnails, so it stays a few hundred bytes per coin however many launch; results are capped and carry no thumbs */
 const SEARCH_SHOW = 48;
-const slim = (l) => ({ mint: l.mint, name: l.name, symbol: l.symbol, image: l.image || '', quote: l.quote || null, time: l.time });
+const slim = (l) => ({ mint: l.mint, name: l.name, symbol: l.symbol, image: l.image || '', quote: l.quote || null, time: l.time, ...(l.chain && { chain: l.chain }) });
 async function searchIndex() {
   const [raw, count] = await redis(['HGETALL', 'launchidx'], ['ZCARD', 'launches']);
   const idx = {};
@@ -88,8 +88,8 @@ async function searchIndex() {
 async function search(text, res) {
   const raw = text.trim();
   const needle = raw.replace(/^\$/, '').toLowerCase().slice(0, 64);
-  if (isPubkey(raw)) {
-    const [row] = await redis(['GET', 'launch:' + raw]);
+  if (isCoinId(raw)) {
+    const [row] = await redis(['GET', 'launch:' + canonical(raw)]);
     return res.status(200).json({ launches: row ? [slim(JSON.parse(row))] : [], total: row ? 1 : 0 });
   }
   const hits = (await searchIndex())
@@ -123,8 +123,32 @@ async function fetchTx(signature) {
   return null;
 }
 
+/* EVM addresses are stored checksummed; Solana addresses are case-sensitive already */
+const canonical = (id) => (isEvmAddress(id) ? require('./_evm').getAddress(id) : id);
+
+/* a Robinhood launch: the transaction must be a successful launch through the gateway, built here (pending, by its metadata
+   link), by the wallet that built it */
+async function recordEvm(b, res) {
+  if (typeof b.hash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(b.hash)) return fail(res, 400, 'invalid transaction hash');
+  const evm = require('./_evm');
+  let v;
+  try { v = await evm.verifyLaunch(b.hash); }
+  catch (err) { return fail(res, err.status || 502, err.message); }
+  const [existing, pendingRaw] = await redis(['GET', 'launch:' + v.coin], ['GET', require('./evm-create').pendingKey(v.uri)]);
+  if (existing) return res.status(200).json({ ok: true, launch: JSON.parse(existing) });
+  if (!pendingRaw) return fail(res, 404, 'this coin was not built through tweetpad (or it expired)');
+  const pending = JSON.parse(pendingRaw);
+  if (pending.creator !== v.creator) return fail(res, 400, 'transaction was not sent by the wallet that built it');
+  const launch = { chain: 'robinhood', mint: v.coin, name: v.name, symbol: v.symbol, image: pending.image, thumb: pending.thumb || '', uri: v.uri,
+    creator: v.creator, devBuy: v.devBuy, quote: null, signature: b.hash, time: v.time, poolId: v.poolId, feeBps: v.feeBps, holdersBps: v.holdersBps };
+  await redis(['SET', 'launch:' + v.coin, JSON.stringify(launch)], ['ZADD', 'launches', v.time, v.coin], ['ZADD', 'creator:' + v.creator, v.time, v.coin],
+    ['HSET', 'launchidx', v.coin, JSON.stringify(slim(launch))], ['DEL', require('./evm-create').pendingKey(v.uri)]);
+  return res.status(200).json({ ok: true, launch });
+}
+
 async function record(req, res) {
   const b = await readJson(req);
+  if (b && b.chain === 'robinhood') return recordEvm(b, res);
   const signature = b && b.signature;
   const mint = b && b.mint;
   if (!isPubkey(mint) || typeof signature !== 'string' || !/^[1-9A-HJ-NP-Za-km-z]{64,90}$/.test(signature)) return fail(res, 400, 'invalid signature or mint');

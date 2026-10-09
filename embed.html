@@ -56,7 +56,13 @@
       </article>
       <!-- a div, not a form: X's card sandbox drops form submissions without firing submit -->
       <div class="pane panel launch" id="launch">
-        <div class="launch-head"><span>Launch</span><button class="pair-pick" id="pair-pick" type="button" aria-haspopup="dialog" aria-controls="pairs"></button></div>
+        <div class="launch-head"><span>Launch</span>
+          <span class="net-switch in-head" role="radiogroup" aria-label="Launch network">
+            <button type="button" role="radio" data-net="solana" aria-checked="true" aria-label="Solana" title="Launch on Solana (pump.fun)"><span class="net-logo sol" aria-hidden="true"></span></button>
+            <button type="button" role="radio" data-net="robinhood" aria-checked="false" aria-label="Robinhood Chain" title="Launch on Robinhood Chain"><span class="net-logo rh" aria-hidden="true"></span></button>
+          </span>
+          <button class="pair-pick" id="pair-pick" type="button" aria-haspopup="dialog" aria-controls="pairs"></button></div>
+        <div class="evm-wallet" id="evm-wallet" hidden></div>
         <div id="launch-banner" hidden></div>
         <div class="launch-grid">
           <label class="drop" id="drop" tabindex="0" title="Click, drop or paste an image">
@@ -82,6 +88,16 @@
             <label class="link-field"><span class="link-pre" aria-hidden="true">WEB</span><input id="tk-web" maxlength="200" placeholder="yoursite.com" autocomplete="off" spellcheck="false" inputmode="url" aria-label="Website"></label>
           </div>
         </details>
+        <!-- Robinhood only: every coin has a flat 1% trading fee; the creator splits their side with holders -->
+        <div class="fee-box" id="fee-box" hidden>
+          <div class="devbuy-head"><span class="field-label">Creator fees</span><span class="devbuy-hint">1% of every trade, for the coin's life</span></div>
+          <div class="fee-split">
+            <span class="fee-side" id="fee-creator">Creator 100%</span>
+            <input id="fee-holders" type="range" min="0" max="100" step="10" value="0" aria-label="Share of fees for holders">
+            <span class="fee-side" id="fee-holders-label">Holders 0%</span>
+          </div>
+          <div class="devbuy-est" id="fee-note"></div>
+        </div>
         <!-- dev buy: right above the button, with a live estimate of what it gets -->
         <div class="devbuy-box" id="devbuy-box">
           <div class="devbuy-head"><span class="field-label">Dev buy</span><span class="devbuy-hint">optional · bought in the launch transaction</span></div>
@@ -89,9 +105,12 @@
             <div class="buy-chips" role="group" aria-label="Dev buy presets">
               <button type="button" data-buy="0">None</button><button type="button" data-buy="0.1">0.1</button><button type="button" data-buy="0.5">0.5</button><button type="button" data-buy="1">1</button>
             </div>
-            <label class="devbuy"><input id="tk-buy" type="number" min="0" max="10" step="0.01" placeholder="0" inputmode="decimal" aria-label="Dev buy in SOL"><span>SOL</span></label>
+            <label class="devbuy"><input id="tk-buy" type="number" min="0" max="10" step="0.01" placeholder="0" inputmode="decimal" aria-label="Dev buy"><span id="devbuy-unit">SOL</span></label>
           </div>
           <div class="devbuy-est" id="devbuy-est" aria-live="polite"></div>
+          <!-- Jito: the launch (create + dev buy) goes to Jito's block engine as one bundle; the tip comes from the user's wallet -->
+          <label class="jito-row" id="jito-row"><input type="checkbox" id="tk-jito"><span class="jito-name">⚡ Bundle with Jito</span>
+            <span class="jito-hint">+0.0001 SOL tip · lands first in its block, out of the public mempool</span></label>
         </div>
         <button class="btn primary launch-btn" id="launch-btn" type="button">Connect wallet</button>
         <p class="note" id="launch-note">Launches on pump.fun · 0 pad fee · network fees apply</p>
@@ -103,6 +122,12 @@
       <div class="pane panel tokens">
         <div class="launch-head"><span>Launched on tweetpad</span>
           <span class="sort"><button data-sort="new" aria-pressed="true">New</button><button data-sort="hot" aria-pressed="false" title="Most 1h volume">Hot</button><button data-sort="mcap" aria-pressed="false">Mcap</button><button id="tokens-refresh" title="Refresh">↻</button></span></div>
+        <!-- every chain in one list; these only narrow it -->
+        <div class="chain-filter" role="radiogroup" aria-label="Show coins from">
+          <button type="button" role="radio" data-chain="all" aria-checked="true">All <span class="n" id="cf-all"></span></button>
+          <button type="button" role="radio" data-chain="solana" aria-checked="false" title="Solana"><span class="net-logo sol" aria-hidden="true"></span> <span class="n" id="cf-solana"></span></button>
+          <button type="button" role="radio" data-chain="robinhood" aria-checked="false" title="Robinhood Chain"><span class="net-logo rh" aria-hidden="true"></span> <span class="n" id="cf-robinhood"></span></button>
+        </div>
         <ul class="token-list" id="token-list"></ul>
       </div>
     </section>
@@ -112,8 +137,10 @@
           <button data-tf="1m">1m</button><button data-tf="5m" aria-pressed="true">5m</button><button data-tf="15m">15m</button><button data-tf="1h">1h</button></span></div>
         <div class="coin-head" id="coin-head"></div>
         <canvas id="coin-chart" aria-label="Price chart"></canvas>
+        <div class="trade" id="coin-trade" hidden></div>
         <div class="coin-links" id="coin-links"></div>
         <div id="coin-share"></div>
+        <div class="coin-fees" id="coin-fees" hidden></div>
         <div class="creator" id="coin-creator" hidden></div>
         <ul class="trades" id="coin-trades"></ul>
         <button class="linkish trades-more" id="trades-more" type="button" hidden></button>
@@ -302,6 +329,12 @@
     <button class="slot chat-slot" id="btn-chat" title="Chat (Enter)" aria-label="Open chat">
       <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M1 1h6v4H4L2 7V5H1z" fill="currentColor"/></svg></button>
     <div id="hotbar" role="toolbar" aria-label="Your coins (keys 1–9)"></div>
+    <!-- the chain switch, opposite chat: Solana (pump.fun) or Robinhood Chain (Launch Party's solo launcher), logos only -->
+    <span class="net-switch" role="radiogroup" aria-label="Network">
+      <button type="button" role="radio" data-net="solana" aria-checked="true" aria-label="Solana" title="Launch on Solana (pump.fun)"><span class="net-logo sol" aria-hidden="true"></span></button>
+      <button type="button" role="radio" data-net="robinhood" aria-checked="false" aria-label="Robinhood Chain" title="Launch on Robinhood Chain"><span class="net-logo rh" aria-hidden="true"></span></button>
+    </span>
+
   </div>
 </div>
 
