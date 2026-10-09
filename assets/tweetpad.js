@@ -760,6 +760,8 @@ async function onLaunch(ev) {
     setVerdict('ok', 'Token launched!', 'Share it: the link plays as its own card on X');
     tokens.loaded = false;
     loadTokens();
+    /* straight to the new coin's page: its chart, trades and share box */
+    openCoin(mint);
   } catch (err) {
     const text = errText(err).replace(/^Error /, '');
     check('bad', /rejected|declined|denied|cancel/i.test(text) ? 'Cancelled in wallet'
