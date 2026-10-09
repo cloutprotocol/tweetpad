@@ -23,13 +23,14 @@ function toUnits(s, decimals) {
 const percentOff = (bn, pct) => bn.muln(10000 - Math.round(pct * 100)).divn(10000);
 
 /* everything a trade on this coin needs to know, from one round of reads */
-async function curveState(mint, user, side) {
+async function curveState(mint, user, side, quoteOnly) {
   const conn = connection(), sdk = new OnlinePumpSdk(conn), mintPk = new PublicKey(mint);
   const info = await conn.getAccountInfo(mintPk);
   if (!info) throw Object.assign(new Error('coin not found'), { status: 404 });
   const tokenProgram = info.owner;
   const [global, feeConfig, state] = await Promise.all([sdk.fetchGlobal(), sdk.fetchFeeConfig(),
-    (side === 'buy' ? sdk.fetchBuyState(mintPk, user, tokenProgram) : sdk.fetchSellState(mintPk, user, tokenProgram))
+    /* a quote needs only the curve: the buy-side read doesn't require the wallet to hold the coin, so quotes use it for both sides */
+    (side === 'buy' || quoteOnly ? sdk.fetchBuyState(mintPk, user, tokenProgram) : sdk.fetchSellState(mintPk, user, tokenProgram))
       .catch((err) => { throw Object.assign(new Error(/token account not found/i.test(err.message) ? 'you hold none of this coin' : 'this coin has no pump.fun curve'), { status: 400 }); })]);
   const quoteMint = state.bondingCurve.quoteMint && state.bondingCurve.quoteMint.toBase58();
   const sol = !quoteMint || quoteMint === SOL_MINT || quoteMint === PublicKey.default.toBase58();
@@ -62,7 +63,7 @@ module.exports = async (req, res) => {
   const user = new PublicKey(post ? b.wallet : '11111111111111111111111111111111');
 
   try {
-    const s = await curveState(b.mint, user, b.side);
+    const s = await curveState(b.mint, user, b.side, !post);
     if (s.state.bondingCurve.complete) return res.status(200).json({ graduated: true });
     const amount = toUnits(b.amount, b.side === 'buy' ? s.quote.decimals : 6);
     if (!amount || amount.isZero()) return fail(res, 400, 'enter an amount');
