@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
   if (!mints.length || mints.length > MAX_MINTS || !mints.every(isPubkey)) return fail(res, 400, 'pass 1–' + MAX_MINTS + ' mint addresses');
   try {
     const market = await marketData(mints);
-    res.setHeader('cache-control', 'public, s-maxage=15, stale-while-revalidate=60');
+    res.setHeader('cache-control', 'public, s-maxage=5, stale-while-revalidate=30');
     return res.status(200).json({ market, at: Date.now() });
   } catch (err) {
     res.setHeader('cache-control', 'public, s-maxage=5');

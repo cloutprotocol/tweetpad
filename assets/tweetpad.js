@@ -5,7 +5,7 @@
 /* keep in step with package.json; `npm run check` fails when they drift */
 const VERSION = '0.1.0';
 /* the platform token's contract address, shown on About; empty until it launches */
-const TOKEN_CA = '';
+const TOKEN_CA = 'BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN';
 
 /* ---------- config (query params: ?cluster=devnet  ?rpc=https://…  ?mode=popup) ---------- */
 const qs = new URLSearchParams(location.search);
@@ -965,7 +965,12 @@ async function loadMarket(mints = tokens.list.map(l => l.mint)) {
   if (coin.mint) renderCoinHead();
 }
 /* refresh numbers every 30s, only while the token list is on screen */
-setInterval(() => { if (!document.hidden && !$('tab-tokens').hidden && tokens.list.length) loadMarket(); }, 30000);
+/* refresh numbers every 10s while the page is in view: the list when it's open, the hotbar's coins always */
+setInterval(() => {
+  if (document.hidden) return;
+  const mints = [...(!$('tab-tokens').hidden ? tokens.list.map(l => l.mint) : []), ...inventory().map(l => l.mint)];
+  if (mints.length) loadMarket(mints);
+}, 10000);
 /* IPFS links go through our cached gateway proxy; anything else is shown as is */
 const imageSrc = (url, w) => { const m = /\/ipfs\/([A-Za-z0-9]+)/.exec(url || ''); return m ? '/api/image?cid=' + m[1] + (w ? '&w=' + w : '') : url; };
 const coinImg = (l, cls) => (l.thumb || l.image)
@@ -1733,7 +1738,7 @@ async function loadTop() {
     if (res.ok) { top.list = out.launches.slice(0, 9); renderHud(); }
   } catch { /* keep the last ranking */ }
 }
-setInterval(() => { if (!document.hidden) loadTop(); }, 60000);
+setInterval(() => { if (!document.hidden) loadTop(); }, 20000);
 const mcapOf = (l) => (tokens.market[l.mint] && tokens.market[l.mint].mcap) || l.mcap || 0;
 function inventory() {
   if (top.list) return top.list;
@@ -2220,14 +2225,22 @@ function setSkin(name) {
   renderAbout();
   if (coin.mint && !$('tab-coin').hidden) drawChart();
 }
+/* the official $TP contract: short, copyable, and a link to its chart; "TBA" until TOKEN_CA is set */
+const caButton = () => (TOKEN_CA
+  ? h('button', { class: 'ca', title: 'Copy the $TP contract address', onclick: () => copyText(TOKEN_CA, '$TP contract address') },
+      shortAddr(TOKEN_CA), h('span', { class: 'copy-ico', 'aria-hidden': 'true', text: '⧉' }))
+  : h('span', { class: 'tag dim', text: 'TBA' }));
+function renderOfficial() {
+  $('official').hidden = !TOKEN_CA;
+  if (TOKEN_CA) $('official-ca').replaceChildren(caButton());
+}
+renderOfficial();
 const SKIN_NAMES = { 2012: '2012', tweetcraft: 'Tweetcraft' };
 function renderAbout() {
   $('about-ver').textContent = 'Version ' + VERSION + (CLUSTER === 'mainnet' ? '' : ' · ' + CLUSTER);
   $('about-skin').textContent = SKIN_NAMES[document.documentElement.dataset.skin] || document.documentElement.dataset.skin;
   $('about-net').textContent = 'Solana ' + CLUSTER;
-  $('about-ca').replaceChildren(TOKEN_CA
-    ? h('button', { class: 'ca', title: 'Copy contract address', onclick: () => copyText(TOKEN_CA, 'contract address') }, shortAddr(TOKEN_CA), h('span', { class: 'copy-ico', 'aria-hidden': 'true', text: '⧉' }))
-    : h('span', { class: 'tag dim', text: 'TBA' }));
+  $('about-ca').replaceChildren(caButton());
 }
 function renderSkins() {
   const cur = document.documentElement.dataset.skin;

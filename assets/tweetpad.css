@@ -478,6 +478,7 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 .link-pre { flex: none; width: 38px; text-align: center; font: 14px/1 var(--mono); color: var(--dim); border-right: 1px solid var(--line); }
 .launch .link-field input { border: 0; box-shadow: none; background: transparent; }
 .tab-ico { display: none; }   /* tab icons belong to the 2012 skin */
+.tab-ico.always { display: block; width: 12px; height: 12px; flex: none; fill: currentColor; }   /* the Feed tab is just its # in every skin */
 
 /* ---------- about: name, version, a small info table, and the links to come ---------- */
 #tab-about:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -694,3 +695,10 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .tweet-counts { display: flex; gap: 14px; font: 13px/1 var(--mono); letter-spacing: .04em; color: var(--dim); }
 .tweet-counts b { color: var(--text); font: 600 12px/1 var(--px); margin-right: 2px; }
 .posts-list.timeline { margin: 0; }
+
+/* ---------- the official $TP contract, on the launch screen ---------- */
+.official { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding: 6px 8px;
+            background: var(--panel); border: 2px solid var(--panel-lo); box-shadow: inset 0 2px 0 var(--panel-hi); }
+.official[hidden] { display: none; }
+.official-label { font: 15px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--dim); }
+.official-label b { color: var(--gold); font-weight: normal; }

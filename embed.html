@@ -28,7 +28,7 @@
   <nav class="views" role="tablist" aria-label="Views">
     <button class="ghost" role="tab" aria-selected="true" data-view="wallets" title="Launch a token (L)"><kbd>L</kbd><svg class="tab-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .8c2.7 1.7 3.9 4.6 3.5 7.8l1.9 2.4v3l-2.9-1.5h-5L3.6 14v-3l1.9-2.4C5.1 5.4 6.3 2.5 8 .8zm0 4.1a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM6.6 13.2h2.8L8 15.6z" fill-rule="evenodd"/></svg><span class="lbl">Launch</span></button>
     <button class="ghost" role="tab" aria-selected="false" data-view="tokens" title="Tokens launched here (T)"><kbd>T</kbd><svg class="tab-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" fill-rule="evenodd"/><path d="M7.3 3.6h1.4v1c.9.1 1.7.5 2.1 1.1l-1 .9c-.4-.4-.9-.7-1.6-.7-.6 0-1 .3-1 .7 0 .5.5.6 1.4.9 1.3.3 2.4.8 2.4 2.1 0 1-.8 1.8-2.3 2v1H7.3v-1c-1-.1-1.9-.6-2.4-1.3l1-.9c.5.5 1.1.9 1.9.9.7 0 1.1-.3 1.1-.7 0-.5-.5-.7-1.5-.9-1.2-.3-2.3-.7-2.3-2 0-.9.8-1.7 2.2-1.9z"/></svg><span class="lbl">Tokens</span><span class="count" id="token-count"></span></button>
-    <button class="ghost" role="tab" aria-selected="false" data-view="feed" title="Feed: what's happening on tweetpad (F)"><kbd>F</kbd><svg class="tab-ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 1h2l-.6 3.5h3L11 1h2l-.6 3.5H15v2h-2.95l-.5 3H14v2h-2.8L10.6 15h-2l.6-3.5h-3L5.6 15h-2l.6-3.5H1v-2h3.55l.5-3H2v-2h3.4zm1.05 5.5-.5 3h3l.5-3z" fill-rule="evenodd"/></svg><span class="lbl">Feed</span></button>
+    <button class="ghost" role="tab" aria-selected="false" data-view="feed" aria-label="Feed" title="Feed: what's happening on tweetpad (F)"><kbd>F</kbd><svg class="tab-ico always" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 1h2l-.6 3.5h3L11 1h2l-.6 3.5H15v2h-2.95l-.5 3H14v2h-2.8L10.6 15h-2l.6-3.5h-3L5.6 15h-2l.6-3.5H1v-2h3.55l.5-3H2v-2h3.4zm1.05 5.5-.5 3h3l.5-3z" fill-rule="evenodd"/></svg></button>
   </nav>
   <button class="ghost" id="btn-settings" aria-pressed="false" aria-label="Settings" title="Settings (,)"><kbd>,</kbd><svg class="gear" viewBox="0 0 8 8" aria-hidden="true"><path d="M3 0h2v1h1v1h1v1h1v2H7v1H6v1H5v1H3V7H2V6H1V5H0V3h1V2h1V1h1zm0 3v2h2V3z" fill="currentColor" fill-rule="evenodd"/></svg></button>
   <button class="ghost" id="btn-more" aria-pressed="false" title="More: profile, games, debug (M)"><kbd>M</kbd><span class="lbl">More</span></button>
@@ -40,6 +40,8 @@
 <div class="stage">
   <main>
     <section id="tab-wallets">
+      <!-- the official platform token, on the first screen -->
+      <div class="pane official" id="official" hidden><span class="official-label">Official <b>$TP</b> contract</span><span id="official-ca"></span></div>
       <!-- the 2012 skin's welcome post; Tweetcraft hides it -->
       <article class="pane tweet welcome" aria-label="Welcome post from Agent Inu">
         <img class="tweet-ava" src="assets/agent-inu.jpg" alt="" width="48" height="48">

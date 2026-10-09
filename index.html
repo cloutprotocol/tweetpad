@@ -40,6 +40,10 @@
   p { color: #777; margin: 0; }
   a { color: #0084b4; text-decoration: none; }
   a:hover { text-decoration: underline; }
+  .official { font-size: 14px; overflow-wrap: anywhere; }
+  .official code { padding: 2px 6px; font: 12px/1.6 Menlo, Monaco, monospace; color: #0084b4; background: #f2f8fc; border: 1px solid #cfe3f1; border-radius: 3px; }
+  #copy-ca { margin-left: 4px; padding: 3px 9px; cursor: pointer; color: #333; font: bold 12px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+             background: linear-gradient(#fff, #e6e6e6); border: 1px solid #bbb; border-radius: 4px; }
   .embed { padding: 12px 14px; background: #fff; border: 1px solid #c8c8c8; border-radius: 6px; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
   .embed h2 { margin: 0 0 6px; font: bold 16px/1.2 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #333; }
   .embed ol { margin: 0; padding-left: 20px; color: #555; }
@@ -64,12 +68,18 @@
         <li>Your post shows the card above. Anyone can open it and launch or trade right inside the post.</li>
       </ol>
     </section>
+    <p class="official">Official <b>$TP</b> contract: <code id="tp-ca">BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN</code> <button id="copy-ca" type="button">Copy</button></p>
     <p><a href="embed.html">Open full screen</a> · <a href="https://github.com/cloutprotocol/tweetpad">Source (MIT)</a></p>
   </main>
 <script>
   /* show the exact link to paste, and copy it in one click */
   const link = location.origin + '/';
   document.getElementById('page-link').textContent = link.replace(/^https?:\/\//, '');
+  document.getElementById('copy-ca').addEventListener('click', async (ev) => {
+    try { await navigator.clipboard.writeText(document.getElementById('tp-ca').textContent); ev.target.textContent = 'Copied!'; }
+    catch { getSelection().selectAllChildren(document.getElementById('tp-ca')); ev.target.textContent = 'Press ⌘C'; }
+    setTimeout(() => { ev.target.textContent = 'Copy'; }, 2000);
+  });
   document.getElementById('copy-link').addEventListener('click', async (ev) => {
     try { await navigator.clipboard.writeText(link); ev.target.textContent = 'Copied!'; }
     catch { getSelection().selectAllChildren(document.getElementById('page-link')); ev.target.textContent = 'Press ⌘C'; }
