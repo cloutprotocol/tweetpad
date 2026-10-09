@@ -4,6 +4,8 @@
 
 /* keep in step with package.json; `npm run check` fails when they drift */
 const VERSION = '0.1.0';
+/* the platform token's contract address, shown on About; empty until it launches */
+const TOKEN_CA = '';
 
 /* ---------- config (query params: ?cluster=devnet  ?rpc=https://…  ?mode=popup) ---------- */
 const qs = new URLSearchParams(location.search);
@@ -22,6 +24,10 @@ const PROBE_VERSION = '1.0.0';
 /* the probe URL without bridge params: what wallet in-app browsers and new tabs open */
 const STANDALONE = (() => { const u = new URL(location.href); u.searchParams.delete('mode'); u.searchParams.delete('session'); return u.href; })();
 const MOBILE = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+/* inside X's player on a phone, X floats its own close / address / reload controls over the bottom of the card:
+   lift the tab bar above them. A cross-origin parent means X (our own landing page embeds us same-origin). */
+const IN_X_PLAYER = MOBILE && window.self !== window.top && (() => { try { return !window.top.location.href; } catch { return true; } })();
+if (IN_X_PLAYER) document.documentElement.classList.add('in-x-player');
 const SESSION = Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(16).padStart(2, '0')).join('');
 
 /* ---------- tiny helpers ---------- */
@@ -624,9 +630,15 @@ function renderLaunch() {
     : problem || 'Launch $' + $('tk-ticker').value.trim() + (!currentPair() && devBuy() > 0 ? ' · buy ' + devBuy() + ' SOL' : '');
   /* coins paired with the platform token: show the pairing, hide the SOL dev buy (it would need a SOL → quote swap) */
   const pair = currentPair();
+  /* after a launch, the next move is sharing it: its link plays as its own card on X */
+  const done = launch.done && launch.result;
+  $('launch-share').hidden = !done;
+  if (done) $('launch-share').replaceChildren(shareBox(launch.result, 'Share $' + launch.result.symbol + ' on X'),
+    h('button', { class: 'linkish open-coin', onclick: () => openCoin(launch.result.mint) }, 'Open $' + launch.result.symbol + ' →'));
   renderDevBuy(pair);
   renderPairPick();
-  if (posts.mint) renderPosts();   // the composer follows the wallet too
+  if (posts.mint) renderPosts();   // the composers follow the wallet too
+  renderFeed();
   btn.classList.toggle('primary', !active || !problem || launch.done);
   $('launch-note').hidden = launch.checks.length > 0;
   const banner = $('launch-banner');
@@ -745,8 +757,11 @@ async function onLaunch(ev) {
     const rec = await api('/api/launches', { json: { signature, mint } });
     check('ok', '$' + meta.symbol + ' is live', 'https://pump.fun/coin/' + mint, 'pump.fun ↗');
     Object.assign(launch, { done: true, result: rec.launch });
+    setVerdict('ok', 'Token launched!', 'Share it: the link plays as its own card on X');
     tokens.loaded = false;
     loadTokens();
+    /* straight to the new coin's page: its chart, trades and share box */
+    openCoin(mint);
   } catch (err) {
     const text = errText(err).replace(/^Error /, '');
     check('bad', /rejected|declined|denied|cancel/i.test(text) ? 'Cancelled in wallet'
@@ -798,7 +813,9 @@ async function loadCurve() {
 function estimateBuy(sol) {
   const c = curve.data;
   if (!c || !(sol > 0)) return null;
-  const input = (BigInt(Math.floor(sol * 1e9)) - 1n) * 10000n / BigInt(c.feeBps + 10000);
+  const lamports = BigInt(Math.floor(sol * 1e9));
+  if (lamports < 1n) return null;
+  const input = (lamports - 1n) * 10000n / BigInt(c.feeBps + 10000);
   let tokens = input * BigInt(c.virtualTokens) / (BigInt(c.virtualSol) + input);
   if (tokens > BigInt(c.realTokens)) tokens = BigInt(c.realTokens);
   return { tokens: Number(tokens) / 10 ** c.decimals, pct: Number(tokens * 1000000n / BigInt(c.supply)) / 1e4, feePct: c.feeBps / 100 };
@@ -825,7 +842,8 @@ function renderDevBuy(pair) {
 }
 
 /* ---------- crafting: pair the new coin with SOL or any coin launched here; the server checks pump.fun admits it ---------- */
-const pairs = { list: [], total: 0, q: '', loading: false, error: null, checking: null, bad: {}, seq: 0, cache: new Map() };
+/* the same grid also tags a coin in a feed post: mode 'pair' (the launch form) or 'tag' (the feed composer) */
+const pairs = { mode: 'pair', list: [], total: 0, q: '', loading: false, error: null, checking: null, bad: {}, seq: 0, cache: new Map() };
 /* undefined until someone picks, so a QUOTE_MINT default still applies; null = SOL */
 const currentPair = () => (launch.pair !== undefined ? launch.pair : pad.quote);
 const solIcon = (cls) => h('span', { class: 'sol-ico ' + (cls || ''), role: 'img', 'aria-label': 'Solana' });
@@ -838,8 +856,11 @@ function renderPairPick() {
   $('pair-pick').title = 'Paired with ' + (pair ? '$' + pair.symbol + ' (' + (known.name || 'tweetpad coin') + ')' : 'SOL') + ' · click to change';
   $('pair-pick').disabled = launch.busy;
 }
-function openPairs() {
-  if (launch.busy) return;
+function openPairs(mode) {
+  pairs.mode = mode === 'tag' ? 'tag' : 'pair';
+  if (pairs.mode === 'pair' && launch.busy) return;
+  $('pairs-title').textContent = pairs.mode === 'tag' ? 'Tag a coin' : 'Pair with';
+  $('pairs-note').textContent = pairs.mode === 'tag' ? 'Any coin launched on tweetpad. It shows as a card in your post.' : 'SOL or any tweetpad coin.';
   $('pairs').hidden = false;
   $('pairs-status').textContent = '';
   $('pairs-search').value = pairs.q;
@@ -849,7 +870,7 @@ function openPairs() {
 function closePairs() {
   if ($('pairs').hidden) return false;
   $('pairs').hidden = true;
-  $('pair-pick').focus();
+  $(pairs.mode === 'tag' ? 'feed-tag' : 'pair-pick').focus();
   return true;
 }
 /* empty search = the newest coins; a contract address is a direct lookup on the server */
@@ -875,14 +896,15 @@ async function loadPairs() {
   }
 }
 function renderPairs() {
-  const pair = currentPair();
+  const tagging = pairs.mode === 'tag';
+  const pair = tagging ? feed.coin : currentPair();
   const q = pairs.q.trim().toLowerCase().replace(/^\$/, '');
   /* compact tiles: image, ticker, one line of detail; the full name rides in the tooltip */
   const tile = (pressed, img, title, tip, detail, onclick, bad) => h('li', {},
     h('button', { class: 'pair-tile' + (bad ? ' bad' : ''), role: 'option', 'aria-selected': String(pressed), title: bad || tip,
                   disabled: pairs.checking != null, onclick }, img, h('b', { text: title }), detail));
   const tiles = [];
-  if (!q || 'sol solana'.includes(q)) tiles.push(tile(!pair, solIcon('pair-tile-img'), 'SOL', 'SOL · the default pair', h('small', { text: 'Default' }), () => pickPair(null)));
+  if (!tagging && (!q || 'sol solana'.includes(q))) tiles.push(tile(!pair, solIcon('pair-tile-img'), 'SOL', 'SOL · the default pair', h('small', { text: 'Default' }), () => pickPair(null)));
   for (const l of pairs.list) {
     const detail = pairs.checking === l.mint ? h('small', { text: 'Checking…' })
       : pairs.bad[l.mint] ? h('small', { class: 'no', text: 'Can’t pair' })
@@ -897,6 +919,8 @@ function renderPairs() {
     : 'No tweetpad coin matches “' + pairs.q.trim() + '”.';
 }
 async function pickPair(l) {
+  /* tagging needs no pump.fun check: any listed coin can be embedded */
+  if (pairs.mode === 'tag') { feed.coin = l; closePairs(); return renderFeed(); }
   if (!l) { launch.pair = null; closePairs(); return renderLaunch(); }
   pairs.checking = l.mint; renderPairs();
   try {
@@ -1064,7 +1088,7 @@ async function openCoin(mint) {
 }
 
 /* ---------- posts: a coin page's comments, tweet-sized, in the chat backend's post:<mint> room ---------- */
-const POST_LEN = 120;
+const POST_LEN = 140;
 const posts = { mint: null, list: [], loaded: false, error: null, sending: false, timer: null };
 async function loadPosts() {
   clearTimeout(posts.timer);
@@ -1094,39 +1118,284 @@ function renderPosts() {
   $('post-send').disabled = posts.sending || (!!state.active && !input.value.trim());
   $('post-send').textContent = !state.active ? 'Connect' : posts.sending ? 'Posting…' : 'Post';
   $('posts-count').textContent = posts.list.length ? String(posts.list.length) : '';
-  const me = state.active && state.active.account && state.active.account.address;
-  const rows = posts.list.map(m => {
-    const p = profiles[m.wallet];
-    return h('li', { class: 'post' + (m.wallet === me ? ' mine' : '') },
-      avatarOf(p || (m.avatar ? { avatar: m.avatar } : null), m.wallet, 'post-ava'),
-      h('div', { class: 'post-body' },
-        h('div', { class: 'post-head' },
-          h('b', { text: m.handle ? '@' + m.handle : shortAddr(m.wallet) }),
-          m.handle ? h('span', { class: 'check-badge', 'aria-label': 'verified', text: '✓' }) : null,
-          h('span', { class: 'post-time', text: ago(m.t) })),
-        h('p', { class: 'post-text', text: m.text })));
-  });
+  const rows = posts.list.map(postItem);
   $('coin-posts').replaceChildren(...(rows.length ? rows : [h('li', { class: 'note' },
     posts.error ? 'Posts are offline: ' + posts.error : posts.loaded ? 'No posts yet. Be the first.' : 'Loading posts…')]));
 }
+/* one post, tweet-style: avatar, name, time, text with $TICKERs linked, and the tagged coin as a card.
+   Feed posts and replies also get the 2012 action row (reply · retweet · like) and open their thread when tapped. */
+const isTweet = (m) => m.room === 'feed' || /^reply:/.test(m.room || '');
+function postItem(m, opts = {}) {
+  const me = state.active && state.active.account && state.active.account.address;
+  const p = profiles[m.wallet];
+  const c = m.coin;
+  const tweet = isTweet(m);
+  const who = (w, handle) => (handle ? '@' + handle : shortAddr(w));
+  return h('li', { class: 'post' + (m.wallet === me ? ' mine' : '') + (tweet ? ' tweet' : ''),
+      onclick: tweet && !opts.big ? (ev) => { if (!ev.target.closest('button, a')) openThread(m); } : null },
+    m.retweetedAt ? h('div', { class: 'rt-label' }, retweetIcon(), ' Retweeted by ' + (opts.owner || 'them')) : null,
+    h('button', { class: 'post-ava-btn', title: 'View profile', onclick: () => openUser(m.wallet) },
+      avatarOf(p || (m.avatar ? { avatar: m.avatar } : null), m.wallet, 'post-ava')),
+    h('div', { class: 'post-body' },
+      h('div', { class: 'post-head' },
+        h('button', { class: 'post-name', onclick: () => openUser(m.wallet) }, m.handle ? '@' + m.handle : shortAddr(m.wallet)),
+        m.handle ? h('span', { class: 'check-badge', 'aria-label': 'verified', text: '✓' }) : null,
+        h('span', { class: 'post-time', text: ago(m.t) })),
+      m.replyTo ? h('div', { class: 'reply-label' }, 'in reply to ',
+        h('button', { class: 'cashtag', onclick: () => openUser(m.replyTo.wallet) }, who(m.replyTo.wallet, m.replyTo.handle))) : null,
+      h('p', { class: 'post-text' }, ...richText(m.text)),
+      c ? h('button', { class: 'post-coin', title: 'Open $' + c.symbol, onclick: () => openCoin(c.mint) },
+        coinImg(c, 'post-coin-img'),
+        h('span', { class: 'post-coin-main' }, h('b', { text: '$' + c.symbol }), h('small', { text: c.name })),
+        mcapOf(c) ? h('span', { class: 'post-coin-mcap', text: fmtUsd(mcapOf(c)) }) : null) : null,
+      tweet && !opts.big ? actionRow(m) : null));
+}
+/* ---------- likes, retweets, replies (api/social.js) ---------- */
+const social = { stats: {} };
+const svgIcon = (d) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 16 16');
+  s.setAttribute('aria-hidden', 'true'); const p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); s.append(p); return s; };
+const replyIcon = () => svgIcon('M6.5 3 1 7.5 6.5 12V9.2c3.6 0 6 .9 8 3.8-.6-4.3-3.2-7.2-8-7.6z');
+const retweetIcon = () => svgIcon('M4 2 .8 5.5H3V12h7v-2H5V5.5h2.2zm8 12 3.2-3.5H13V4H6v2h5v4.5H8.8z');
+const likeIcon = () => svgIcon('m8 1.5 1.9 4.1 4.5.5-3.4 3 1 4.4L8 11.2 4 13.5l1-4.4-3.4-3 4.5-.5z');
+const statOf = (m) => social.stats[m.id] || { likes: 0, retweets: 0, replies: 0, liked: false, retweeted: false };
+const countText = (n) => (n ? fmtCount(n) : '');
+function actionRow(m, big) {
+  const s = statOf(m);
+  const me = state.active && state.active.account && state.active.account.address;
+  return h('div', { class: 'tweet-acts' + (big ? ' big' : '') },
+    h('button', { class: 'tw-act reply', title: 'Reply', 'aria-label': 'Reply', onclick: () => openThread(m, true) }, replyIcon(), h('span', { text: big ? 'Reply' : countText(s.replies) })),
+    h('button', { class: 'tw-act rt', title: m.wallet === me ? 'You can’t retweet your own tweet' : s.retweeted ? 'Undo retweet' : 'Retweet',
+      'aria-label': 'Retweet', 'aria-pressed': String(s.retweeted), disabled: m.wallet === me, onclick: () => reactTweet('retweet', m) },
+      retweetIcon(), h('span', { text: big ? (s.retweeted ? 'Retweeted' : 'Retweet') : countText(s.retweets) })),
+    h('button', { class: 'tw-act like', title: s.liked ? 'Unlike' : 'Like', 'aria-label': 'Like', 'aria-pressed': String(s.liked), onclick: () => reactTweet('like', m) },
+      likeIcon(), h('span', { text: big ? (s.liked ? 'Liked' : 'Like') : countText(s.likes) })));
+}
+async function loadStats(list) {
+  const ids = [...new Set(list.filter(isTweet).map(m => m.id))];
+  if (!ids.length) return;
+  const me = state.active && state.active.account && state.active.account.address;
+  for (let i = 0; i < ids.length; i += 60) {
+    try {
+      const res = await fetch('/api/social?ids=' + ids.slice(i, i + 60).join(',') + (me ? '&wallet=' + me : ''));
+      if (res.ok) Object.assign(social.stats, (await res.json()).stats);
+    } catch { /* counts stay where they are */ }
+  }
+  rerenderTweets();
+}
+const rerenderTweets = () => { if (!$('tab-feed').hidden) renderFeed(); if (!$('tab-thread').hidden) renderThread(); if (!$('tab-user').hidden) renderUser(); };
+/* like / retweet: flip it now, then take the server's numbers; the first one signs the free chat session */
+async function reactTweet(action, m) {
+  const wallet = state.active;
+  if (!wallet) return openMenu();
+  const s = { ...statOf(m) };
+  const key = action === 'like' ? 'liked' : 'retweeted', count = action === 'like' ? 'likes' : 'retweets';
+  const on = !s[key];
+  social.stats[m.id] = { ...s, [key]: on, [count]: Math.max(0, s[count] + (on ? 1 : -1)) };
+  rerenderTweets();
+  try {
+    const body = (token) => ({ json: { action, token, id: m.id, on } });
+    let out;
+    try { out = await api('/api/social', body(await chatSession(wallet))); }
+    catch (err) {
+      if (!/session expired/.test(err.message)) throw err;
+      delete chat.tokens[wallet.account.address];
+      out = await api('/api/social', body(await chatSession(wallet)));
+    }
+    social.stats[m.id] = out;
+    if (action === 'retweet' && on) setVerdict('ok', 'Retweeted!', 'It’s on your profile now');
+    timelines[wallet.account.address] = null;
+    loadTimeline(wallet.account.address, true);
+  } catch (err) {
+    social.stats[m.id] = s;
+    const msg = errText(err).replace(/^Error /, '');
+    setVerdict('bad', action === 'like' ? 'Like failed' : 'Retweet failed', /rejected|declined|denied|cancel/i.test(msg) ? 'Sign-in cancelled' : msg);
+  }
+  rerenderTweets();
+}
+
+/* ---------- one tweet, opened: big, with its numbers, a reply box and the replies ---------- */
+const thread = { post: null, replies: [], loaded: false, error: null, from: 'feed', sending: false, timer: null };
+function openThread(m, reply) {
+  Object.assign(thread, { post: m, replies: [], loaded: false, error: null, from: mainView === 'thread' ? thread.from : mainView });
+  selectTab('thread');
+  const input = $('reply-input');
+  input.value = (m.handle ? '@' + m.handle + ' ' : '');
+  if (reply) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  loadThread();
+}
+async function loadThread() {
+  clearTimeout(thread.timer);
+  const m = thread.post;
+  if (!m) return;
+  try {
+    const res = await fetch('/api/chat?room=reply:' + m.id);
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    if (thread.post !== m) return;
+    Object.assign(thread, { replies: out.messages, loaded: true, error: null });   // oldest first, as a conversation reads
+    loadProfiles([m.wallet, ...thread.replies.map(r => r.wallet)]).then(renderThread);
+    loadStats([m, ...thread.replies]);
+  } catch (err) { thread.error = errText(err); }
+  renderThread();
+  if (!$('tab-thread').hidden) thread.timer = setTimeout(loadThread, 15000);
+}
+function renderThread() {
+  const m = thread.post;
+  if (!m) return;
+  const s = statOf(m);
+  const when = new Date(m.t);
+  const stamp = when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' · ' + when.toLocaleDateString([], { day: 'numeric', month: 'short', year: '2-digit' });
+  $('thread-post').replaceChildren(...[h('ul', { class: 'posts-list big' }, postItem(m, { big: true })),
+    h('div', { class: 'tweet-stamp', text: stamp }),
+    s.retweets || s.likes ? h('div', { class: 'tweet-counts' },
+      s.retweets ? h('span', {}, h('b', { text: fmtCount(s.retweets) }), s.retweets === 1 ? ' RETWEET' : ' RETWEETS') : null,
+      s.likes ? h('span', {}, h('b', { text: fmtCount(s.likes) }), s.likes === 1 ? ' LIKE' : ' LIKES') : null) : null,
+    actionRow(m, true)].filter(Boolean));   // replaceChildren would print a null
+  const input = $('reply-input');
+  const left = POST_LEN - input.value.length;
+  $('reply-left').textContent = left;
+  $('reply-left').className = 'post-left' + (left <= 10 ? ' warn' : '');
+  input.placeholder = state.active ? 'Reply to ' + (m.handle ? '@' + m.handle : shortAddr(m.wallet)) : 'Connect a wallet to reply';
+  $('reply-send').disabled = thread.sending || (!!state.active && !input.value.trim());
+  $('reply-send').textContent = !state.active ? 'Connect' : thread.sending ? 'Replying…' : 'Reply';
+  $('replies-count').textContent = thread.replies.length ? String(thread.replies.length) : '';
+  $('thread-replies').replaceChildren(...(thread.replies.length ? thread.replies.map(r => postItem(r)) : [h('li', { class: 'note' },
+    thread.error ? 'Replies are offline: ' + thread.error : thread.loaded ? 'No replies yet.' : 'Loading…')]));
+}
+async function sendReply() {
+  const wallet = state.active;
+  if (!wallet) return openMenu();
+  const text = $('reply-input').value.trim();
+  const m = thread.post;
+  if (!text || thread.sending || !m) return;
+  thread.sending = true; renderThread();
+  try {
+    const message = await publish(wallet, 'reply:' + m.id, text);
+    thread.replies = [...thread.replies.filter(r => r.id !== message.id), message];
+    social.stats[m.id] = { ...statOf(m), replies: statOf(m).replies + 1 };
+    $('reply-input').value = '';
+    setVerdict('ok', 'Replied!', 'to ' + (m.handle ? '@' + m.handle : shortAddr(m.wallet)));
+  } catch (err) {
+    const msg = errText(err).replace(/^Error /, '');
+    setVerdict('bad', 'Reply failed', /rejected|declined|denied|cancel/i.test(msg) ? 'Sign-in cancelled' : msg);
+  } finally {
+    thread.sending = false;
+    renderThread();
+  }
+}
+
+/* ---------- a profile's tweets: their posts, replies and retweets ---------- */
+const timelines = {};   // wallet → { posts, error } (dropped after your own like / retweet so it refetches)
+async function loadTimeline(wallet, fresh) {
+  try {
+    const res = await fetch('/api/social?user=' + wallet + (fresh ? '&fresh=1' : ''));
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    timelines[wallet] = { posts: out.posts, error: null };
+    loadProfiles(out.posts.map(m => m.wallet)).then(rerenderTweets);
+    loadStats(out.posts);
+  } catch (err) { timelines[wallet] = { posts: [], error: errText(err) }; }
+  if (!$('tab-user').hidden) renderUser();
+  if (!$('tab-profile').hidden) renderProfile();
+}
+function tweetsSection(wallet, ownerName) {
+  if (!(wallet in timelines)) { timelines[wallet] = null; loadTimeline(wallet); }   // null = on its way
+  const tl = timelines[wallet];
+  return [h('div', { class: 'menu-sec', text: 'Tweets' + (tl && tl.posts.length ? ' · ' + tl.posts.length : '') }),
+    h('ul', { class: 'posts-list timeline' }, ...(tl && tl.posts.length ? tl.posts.map(m => postItem(m, { owner: ownerName }))
+      : [h('li', { class: 'note' }, !tl ? 'Loading…' : tl.error ? 'Could not load: ' + tl.error : 'No tweets yet.')]))];
+}
+/* in a post, $TICKER links to that coin (if launched here); #hashtags and @mentions are blue, as on the old site */
+function richText(text) {
+  return text.split(/([$#@][A-Za-z_][A-Za-z0-9_]{0,29})\b/).map((part, i) => {
+    if (!(i % 2)) return part;
+    if (part[0] === '$' && /^\$[A-Za-z][A-Za-z0-9]{1,9}$/.test(part)) return h('button', { class: 'cashtag', onclick: () => openCashtag(part.slice(1)) }, part);
+    return h('span', { class: part[0] === '#' ? 'hashtag' : 'mention', text: part });
+  });
+}
+async function openCashtag(symbol) {
+  const sym = symbol.toUpperCase();
+  const known = [...tokens.list, ...(top.list || []), ...pairs.list].find(l => l.symbol === sym);
+  if (known) return openCoin(known.mint);
+  try {
+    const out = await (await fetch('/api/launches?q=' + encodeURIComponent(sym))).json();
+    const hit = (out.launches || []).find(l => l.symbol === sym);
+    if (hit) return openCoin(hit.mint);
+  } catch { /* fall through */ }
+  setVerdict('bad', '$' + sym, 'not launched on tweetpad');
+}
+/* post to a chat-backend room as the connected wallet, signing a session first (and again if it expired) */
+async function publish(wallet, room, text, extra) {
+  const body = (token) => ({ json: { action: 'send', token, room, text, ...extra } });
+  try { return (await api('/api/chat', body(await chatSession(wallet)))).message; }
+  catch (err) {
+    if (!/session expired/.test(err.message)) throw err;
+    delete chat.tokens[wallet.account.address];
+    return (await api('/api/chat', body(await chatSession(wallet)))).message;
+  }
+}
+
+/* ---------- feed: the pad-wide timeline, "What's happening?" with an optional coin embedded ---------- */
+const feed = { list: [], loaded: false, error: null, sending: false, coin: null, timer: null };
+async function loadFeed() {
+  clearTimeout(feed.timer);
+  try {
+    const res = await fetch('/api/chat?room=feed');
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    Object.assign(feed, { list: out.messages.reverse(), loaded: true, error: null });
+    loadProfiles([...new Set(feed.list.map(m => m.wallet))]).then(renderFeed);
+    loadStats(feed.list);
+  } catch (err) { feed.error = errText(err); }
+  renderFeed();
+  if (!$('tab-feed').hidden) feed.timer = setTimeout(loadFeed, 15000);
+}
+function renderFeed() {
+  const input = $('feed-input');
+  const left = POST_LEN - input.value.length;
+  $('feed-left').textContent = left;
+  $('feed-left').className = 'post-left' + (left <= 10 ? ' warn' : '');
+  $('feed-send').disabled = feed.sending || (!!state.active && !input.value.trim());
+  $('feed-send').textContent = !state.active ? 'Connect' : feed.sending ? 'Tweeting…' : 'Tweet';
+  input.placeholder = state.active ? 'What’s happening?' : 'What’s happening? Connect a wallet to tweet';
+  const c = feed.coin;
+  $('feed-attach').hidden = !c;
+  $('feed-attach').replaceChildren(...(c ? [h('span', { class: 'attach-chip' }, coinImg(c, 'attach-img'), '$' + c.symbol,
+    h('button', { class: 'attach-x', 'aria-label': 'Remove $' + c.symbol, title: 'Remove', onclick: () => { feed.coin = null; renderFeed(); } }, '×'))] : []));
+  $('feed-tag').textContent = c ? '$ Change coin' : '$ Tag a coin';
+  $('feed-list').replaceChildren(...(feed.list.length ? feed.list.map(postItem) : [h('li', { class: 'note' },
+    feed.error ? 'The feed is offline: ' + feed.error : feed.loaded ? 'Nothing yet. Say what’s happening.' : 'Loading…')]));
+}
+async function sendFeed() {
+  const wallet = state.active;
+  if (!wallet) return openMenu();
+  const text = $('feed-input').value.trim();
+  if (!text || feed.sending) return;
+  feed.sending = true; renderFeed();
+  try {
+    const message = await publish(wallet, 'feed', text, feed.coin ? { coin: feed.coin.mint } : {});
+    feed.list = [message, ...feed.list.filter(m => m.id !== message.id)];
+    $('feed-input').value = '';
+    feed.coin = null;
+    setVerdict('ok', 'Tweeted!', message.coin ? 'with $' + message.coin.symbol : 'on the tweetpad feed');
+  } catch (err) {
+    const msg = errText(err).replace(/^Error /, '');
+    setVerdict('bad', 'Tweet failed', /rejected|declined|denied|cancel/i.test(msg) ? 'Sign-in cancelled' : msg);
+  } finally {
+    feed.sending = false;
+    renderFeed();
+  }
+}
+
 async function sendPost() {
   const wallet = state.active;
   if (!wallet) return openMenu();
   const text = $('post-input').value.trim();
   if (!text || posts.sending || !posts.mint) return;
   posts.sending = true; renderPosts();
-  const room = 'post:' + posts.mint;
   try {
-    let token = await chatSession(wallet);
-    let out;
-    try { out = await api('/api/chat', { json: { action: 'send', token, room, text } }); }
-    catch (err) {
-      if (!/session expired/.test(err.message)) throw err;
-      delete chat.tokens[wallet.account.address];
-      token = await chatSession(wallet);
-      out = await api('/api/chat', { json: { action: 'send', token, room, text } });
-    }
-    posts.list = [out.message, ...posts.list.filter(m => m.id !== out.message.id)];
+    const message = await publish(wallet, 'post:' + posts.mint, text);
+    posts.list = [message, ...posts.list.filter(m => m.id !== message.id)];
     $('post-input').value = '';
     setVerdict('ok', 'Posted!', '$' + (coin.launch ? coin.launch.symbol : 'coin'));
   } catch (err) {
@@ -1220,10 +1489,25 @@ function closeImage() {
   return true;
 }
 function renderCoin() { renderCoinHead(); renderCreator(); renderCoinBody(); }
+/* ---------- sharing: every coin's /c/<mint> link plays in a post as its own card (api/card.js + api/card-image.js) ---------- */
+const shareUrlOf = (mint) => location.origin + '/c/' + mint;
+const shareIntent = (l) => 'https://x.com/intent/post?text=' + encodeURIComponent('$' + l.symbol + ' is live on tweetpad. Trade it right inside this tweet')
+  + '&url=' + encodeURIComponent(shareUrlOf(l.mint));
+function shareBox(l, title) {
+  const url = shareUrlOf(l.mint);
+  return h('div', { class: 'share-box' },
+    title ? h('b', { class: 'share-title', text: title }) : null,
+    h('div', { class: 'share-row' },
+      h('code', { class: 'share-url', title: url, text: url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/c\/(.{4}).*(.{4})$/, '/c/$1…$2') }),
+      h('button', { class: 'btn sm', onclick: () => copyText(url, 'share link') }, 'Copy'),
+      h('a', { class: 'btn sm primary', href: shareIntent(l), target: '_blank', rel: 'noopener' }, 'Post on X')));
+}
+/* a coin row in a profile, with its share link beside it */
+const shareRow = (row, l) => h('li', { class: 'with-share' }, row,
+  h('a', { class: 'share-mini', href: shareIntent(l), target: '_blank', rel: 'noopener', title: 'Share $' + l.symbol + ' on X', 'aria-label': 'Share $' + l.symbol + ' on X' }, 'Share'));
 function renderCoinHead() {
   const l = coin.launch;
   const m = tokens.market[coin.mint] || {};
-  const shareUrl = location.origin + '/c/' + coin.mint;
   $('coin-head').replaceChildren(...(!l ? [h('span', { class: 'note', text: coin.error || 'Loading…' })] : [
     h('button', { class: 'coin-img-btn', title: 'View image', 'aria-label': 'View ' + l.name + ' image', onclick: (ev) => openImage(l, ev.currentTarget) },
       coinImg(l, 'coin-img'), h('span', { class: 'zoom', 'aria-hidden': 'true', text: '+' })),
@@ -1241,12 +1525,8 @@ function renderCoinHead() {
   $('coin-links').replaceChildren(...(!l ? [] : [
     h('span', { class: 'live' + (coin.live ? ' on' : ''), title: coin.live ? 'Live trades connected' : 'Live trades offline' }, coin.live ? 'LIVE' : 'OFFLINE'),
     h('a', { class: 'chiplink', href: 'https://pump.fun/coin/' + coin.mint, target: '_blank', rel: 'noopener' }, 'Trade on pump.fun ↗'),
-    h('a', { class: 'chiplink', href: 'https://x.com/intent/post?text=' + encodeURIComponent('$' + l.symbol + ' launched on tweetpad') + '&url=' + encodeURIComponent(shareUrl),
-      target: '_blank', rel: 'noopener' }, 'Share ↗'),
-    h('button', { class: 'chiplink', onclick: async () => {
-      try { await navigator.clipboard.writeText(shareUrl); log('ok', 'coin link copied'); } catch { log('warn', 'clipboard blocked: ' + shareUrl); }
-    } }, 'Copy link'),
   ]));
+  $('coin-share').replaceChildren(...(l ? [shareBox(l)] : []));
 }
 /* ---------- who launched it, as the old tweet view showed its author ---------- */
 async function loadCreatorCoins(wallet) {
@@ -1298,10 +1578,10 @@ function renderUser() {
   if (!w || root.hidden) return;
   const p = profiles[w], coins = viewed.coins;
   const mk = (l) => tokens.market[l.mint] || {};
-  const rows = (coins || []).map(l => h('li', {}, h('button', { class: 'tok', title: 'Open $' + l.symbol, onclick: () => openCoin(l.mint) },
+  const rows = (coins || []).map(l => shareRow(h('button', { class: 'tok', title: 'Open $' + l.symbol, onclick: () => openCoin(l.mint) },
     coinImg(l), h('span', { class: 'tok-main' }, h('b', { text: l.name }), h('span', { class: 'tok-sub', text: '$' + l.symbol + ' · ' + ago(l.time) })),
     h('span', { class: 'tok-mkt' }, h('b', { text: fmtUsd(mk(l).mcap) }),
-      mk(l).change1h != null ? h('span', { class: mk(l).change1h >= 0 ? 'up' : 'down', text: fmtPct(mk(l).change1h) }) : null))));
+      mk(l).change1h != null ? h('span', { class: mk(l).change1h >= 0 ? 'up' : 'down', text: fmtPct(mk(l).change1h) }) : null)), l));
   root.replaceChildren(h('div', { class: 'pane panel profile user' },
     h('div', { class: 'launch-head' }, h('span', { text: 'Profile' }),
       h('button', { class: 'menu-x', 'aria-label': 'Back', title: 'Back (Esc)', onclick: () => selectTab(viewed.from) }, '×')),
@@ -1316,7 +1596,8 @@ function renderUser() {
       p ? h('a', { class: 'btn sm primary creator-follow', href: 'https://x.com/intent/follow?screen_name=' + encodeURIComponent(p.handle), target: '_blank', rel: 'noopener' }, 'Follow') : null),
     h('div', { class: 'menu-sec', text: 'Launched on tweetpad' }),
     h('ul', { class: 'token-list' }, ...(rows.length ? rows : [h('li', { class: 'note', style: 'padding:10px 4px;text-align:center',
-      text: viewed.error ? 'Could not load: ' + viewed.error : coins ? 'No coins yet.' : 'Loading…' })]))));
+      text: viewed.error ? 'Could not load: ' + viewed.error : coins ? 'No coins yet.' : 'Loading…' })])),
+    ...tweetsSection(w, p ? '@' + p.handle : shortAddr(w))));
 }
 function renderCoinBody() {
   for (const b of document.querySelectorAll('.tf [data-tf]')) b.setAttribute('aria-pressed', String(b.dataset.tf === coin.tf));
@@ -1592,13 +1873,14 @@ function renderProfile() {
     me.status ? h('div', { class: 'status ' + me.status.tone }, me.status.text,
       me.status.href ? h('a', { class: 'chiplink', style: 'margin-left:6px', href: me.status.href, target: '_blank', rel: 'noopener' }, 'Tx ↗') : null) : null,
     h('div', { class: 'menu-sec', text: 'Your coins · ' + me.coins.length }),
-    h('ul', { class: 'token-list' }, ...(me.coins.length ? me.coins.map(l => h('li', {},
+    h('ul', { class: 'token-list' }, ...(me.coins.length ? me.coins.map(l => shareRow(
       h('button', { class: 'tok', onclick: () => openCoin(l.mint) }, coinImg(l),
         h('span', { class: 'tok-main' }, h('b', { text: l.name }), h('span', { class: 'tok-sub', text: '$' + l.symbol + ' · ' + ago(l.time) })),
         h('span', { class: 'tok-mkt' }, h('b', { text: fmtUsd(mk(l).mcap) }),
-          mk(l).change1h != null ? h('span', { class: mk(l).change1h >= 0 ? 'up' : 'down', text: fmtPct(mk(l).change1h) }) : null))))
+          mk(l).change1h != null ? h('span', { class: mk(l).change1h >= 0 ? 'up' : 'down', text: fmtPct(mk(l).change1h) }) : null)), l))
       : [h('li', { class: 'note', style: 'padding:10px 2px' }, me.loading ? 'Loading…' : 'No coins yet. ',
-          me.loading ? null : h('button', { class: 'linkish', onclick: () => selectTab('wallets') }, 'Launch one')) ]))));
+          me.loading ? null : h('button', { class: 'linkish', onclick: () => selectTab('wallets') }, 'Launch one')) ])),
+    ...tweetsSection(me.wallet, 'you')));
 }
 
 /* ---------- verify with X: tweet a one-time code, paste the link, sign with the wallet ---------- */
@@ -1808,8 +2090,9 @@ async function sendChat() {
 }
 
 /* ---------- wiring ---------- */
-/* main views: 'wallets' (the launch form), 'tokens', 'coin', 'more' (profile, games, debug) and 'settings'; sign / env / report / fallbacks live inside the debug panel */
-const MAIN_VIEWS = ['wallets', 'tokens', 'coin', 'user', 'more', 'profile', 'games', 'about', 'settings'];
+/* main views: 'wallets' (the launch form), 'tokens' (+ 'coin', 'user'), 'feed' (+ 'thread'), 'more' (profile, games, about, debug)
+   and 'settings'; sign / env / report / fallbacks live inside the debug panel */
+const MAIN_VIEWS = ['wallets', 'tokens', 'feed', 'thread', 'coin', 'user', 'more', 'profile', 'games', 'about', 'settings'];
 const UNDER_MORE = ['more', 'profile', 'games', 'about'];   // the More button stays lit on these and on debug
 let debugTab = 'sign';
 let mainView = 'wallets';
@@ -1818,7 +2101,7 @@ function selectTab(name) {
   if (name === 'settings' && mainView !== 'settings') settingsFrom = mainView;
   const debug = !MAIN_VIEWS.includes(name);
   for (const v of MAIN_VIEWS) $('tab-' + v).hidden = debug || v !== name;
-  for (const t of document.querySelectorAll('.views [role="tab"]')) t.setAttribute('aria-selected', String(!debug && t.dataset.view === (name === 'coin' || name === 'user' ? 'tokens' : name)));
+  for (const t of document.querySelectorAll('.views [role="tab"]')) t.setAttribute('aria-selected', String(!debug && t.dataset.view === (name === 'coin' || name === 'user' ? 'tokens' : name === 'thread' ? 'feed' : name)));
   if (!debug) mainView = name;
   if (name !== 'coin') closeLive();
   if (name === 'tokens' && !tokens.loaded) loadTokens();
@@ -1826,6 +2109,7 @@ function selectTab(name) {
   if (name === 'profile') loadMe();
   if (name === 'about') renderAbout();
   if (name === 'user') renderUser();
+  if (name === 'feed') loadFeed();
   if (MAIN_VIEWS.includes(name)) loadChat();
   renderHud();
   $('debug').hidden = !debug;
@@ -1885,13 +2169,14 @@ $('btn-debug-close').addEventListener('click', () => selectTab(mainView));
 $('wc-btn').addEventListener('click', toggleMenu);
 document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.wc')) closeMenu(); });
 $('verdict').addEventListener('click', () => { clearTimeout(setVerdict.hide); $('verdict').classList.add('gone'); });
-/* game-style hotkeys: Enter chat, C wallet menu, L launch, T tokens, P profile, M more, G games, A about, comma settings, D debug, S/E/R/B debug tabs, 1-9 inventory, H feed, Esc goes back */
+/* game-style hotkeys: Enter chat, C wallet menu, L launch, T tokens, F feed, P profile, M more, G games, A about, comma settings, D debug, S/E/R/B debug tabs, 1-9 inventory, H feed, Esc goes back */
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
     if (closePairs() || closeImage() || closeVerify() || closeChat()) return;
     if (!$('wc-menu').hidden) { closeMenu(); $('wc-btn').focus(); } else if (!$('debug').hidden) selectTab(mainView);
     else if (mainView === 'coin') selectTab('tokens');
     else if (mainView === 'user') selectTab(viewed.from);
+    else if (mainView === 'thread') selectTab(thread.from);
     else if (mainView === 'settings') selectTab(settingsFrom);
     else if (mainView === 'profile' || mainView === 'games' || mainView === 'about') selectTab('more');
     return;
@@ -1904,6 +2189,7 @@ document.addEventListener('keydown', (ev) => {
   else if (k === 'd') toggleDebug();
   else if (k === 'l' || k === 'w') selectTab('wallets');
   else if (k === 't') selectTab('tokens');
+  else if (k === 'f') selectTab('feed');
   else if (k === 'p') selectTab('profile');
   else if (k === 'm') toggleMore();
   else if (k === 'g') selectTab('games');
@@ -1929,6 +2215,9 @@ function renderAbout() {
   $('about-ver').textContent = 'Version ' + VERSION + (CLUSTER === 'mainnet' ? '' : ' · ' + CLUSTER);
   $('about-skin').textContent = SKIN_NAMES[document.documentElement.dataset.skin] || document.documentElement.dataset.skin;
   $('about-net').textContent = 'Solana ' + CLUSTER;
+  $('about-ca').replaceChildren(TOKEN_CA
+    ? h('button', { class: 'ca', title: 'Copy contract address', onclick: () => copyText(TOKEN_CA, 'contract address') }, shortAddr(TOKEN_CA), h('span', { class: 'copy-ico', 'aria-hidden': 'true', text: '⧉' }))
+    : h('span', { class: 'tag dim', text: 'TBA' }));
 }
 function renderSkins() {
   const cur = document.documentElement.dataset.skin;
@@ -1953,7 +2242,7 @@ async function loadReacts() {
   } catch { /* counts stay where they are */ }
   renderReacts();
 }
-async function react(action) {
+async function reactWelcome(action) {
   const on = action === 'share' ? true : !reacts.mine[action];
   if (action === 'share') {
     window.open('https://x.com/intent/post?text=' + encodeURIComponent('Launching coins without leaving the post on tweetpad. Such launch. Very wow.') +
@@ -1971,7 +2260,7 @@ async function react(action) {
   catch (err) { log('warn', action + ' not counted: ' + errText(err)); }
   renderReacts();
 }
-for (const b of document.querySelectorAll('.tweet-act')) b.addEventListener('click', () => react(b.dataset.act));
+for (const b of document.querySelectorAll('.tweet-act')) b.addEventListener('click', () => reactWelcome(b.dataset.act));
 renderReacts();
 loadReacts();
 /* blocky ground texture, painted once and tiled behind the HUD */
@@ -2002,18 +2291,27 @@ if (bc) bc.addEventListener('message', (ev) => onBridgeMessage('BroadcastChannel
 $('link-newtab').href = STANDALONE;
 
 $('launch-btn').addEventListener('click', onLaunch);
-$('pair-pick').addEventListener('click', openPairs);
+$('pair-pick').addEventListener('click', () => openPairs('pair'));
+$('feed-tag').addEventListener('click', () => openPairs('tag'));
+$('feed-input').addEventListener('input', renderFeed);
+$('feed-input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendFeed(); } });
+$('feed-send').addEventListener('click', sendFeed);
+$('feed-refresh').addEventListener('click', () => loadFeed());
+$('thread-close').addEventListener('click', () => selectTab(thread.from));
+$('reply-input').addEventListener('input', renderThread);
+$('reply-input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendReply(); } });
+$('reply-send').addEventListener('click', sendReply);
 $('trades-more').addEventListener('click', () => { coin.allTrades = !coin.allTrades; renderTrades(); });
 $('post-input').addEventListener('input', renderPosts);
 $('post-input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendPost(); } });
 $('post-send').addEventListener('click', sendPost);
 const renderDescLeft = () => {
-  const left = 120 - $('tk-desc').value.length;
+  const left = 140 - $('tk-desc').value.length;
   $('desc-left').textContent = left;
   $('desc-left').className = 'desc-left' + (left <= 10 ? ' warn' : '');
 };
 $('tk-desc').addEventListener('input', renderDescLeft);
-renderDescLeft();   // the prefilled description already uses some of the 120
+renderDescLeft();   // the prefilled description already uses some of the 140
 for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => {
   $('tk-buy').value = b.dataset.buy === '0' ? '' : b.dataset.buy;
   $('tk-buy').dispatchEvent(new Event('input'));

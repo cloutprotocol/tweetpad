@@ -4,21 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>tweetpad</title>
-<link rel="icon" type="image/svg+xml" href="assets/twitter-2012-bird.svg">
+<link rel="icon" href="assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/tweetpad-hash-32.png">
+<link rel="apple-touch-icon" href="assets/brand/tweetpad-hash-180.png">
+<!-- wallets show these when asking to connect: the app's name, and its icon at a size that stays sharp -->
+<link rel="icon" type="image/png" sizes="512x512" href="assets/brand/tweetpad-hash-512.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="application-name" content="tweetpad">
+<meta name="apple-mobile-web-app-title" content="tweetpad">
+<meta name="theme-color" content="#1da1f2">
 
 <!-- Every URL must be absolute HTTPS. -->
 <meta name="twitter:card" content="player">
 <meta name="twitter:site" content="@Prawnsfamily">
 <meta name="twitter:title" content="tweetpad">
 <meta name="twitter:description" content="Launch a token without leaving the tweet.">
-<meta name="twitter:player" content="https://twitterpad.vercel.app/embed.html">
+<meta name="twitter:player" content="https://www.tweetpad.io/embed.html">
 <meta name="twitter:player:width" content="480">
 <meta name="twitter:player:height" content="480">
-<meta name="twitter:image" content="https://twitterpad.vercel.app/preview.png">
+<meta name="twitter:image" content="https://www.tweetpad.io/preview.png?v=6">
 <meta name="twitter:image:alt" content="tweetpad">
 <meta property="og:title" content="tweetpad">
 <meta property="og:description" content="Launch a token without leaving the tweet.">
-<meta property="og:image" content="https://twitterpad.vercel.app/preview.png">
+<meta property="og:image" content="https://www.tweetpad.io/preview.png?v=6">
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&display=swap">
 <style>
@@ -28,7 +36,7 @@
   .wrap { width: 100%; max-width: 480px; display: grid; gap: 12px; }
   h1 { margin: 0; display: flex; align-items: center; gap: 8px; font: 600 34px/1 "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif;
        letter-spacing: -.02em; color: #333; }
-  h1 .bird { width: 40px; height: 40px; flex: none; }
+  h1 .app-icon { width: 48px; height: 48px; flex: none; }
   p { color: #777; margin: 0; }
   a { color: #0084b4; text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -45,7 +53,7 @@
 </head>
 <body>
   <main class="wrap">
-    <h1><img class="bird" src="assets/twitter-2012-bird.svg" alt="">tweetpad</h1>
+    <h1><img class="app-icon" src="assets/brand/tweetpad-hash-256.png" alt="">tweetpad</h1>
     <p>Launch a token without leaving the tweet.</p>
     <iframe src="embed.html" title="tweetpad" allow="clipboard-write"></iframe>
     <section class="embed">

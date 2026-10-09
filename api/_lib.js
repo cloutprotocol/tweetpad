@@ -165,9 +165,26 @@ async function marketData(mints) {
       dex: p.dexId, pair: p.pairAddress,
     };
   }
-  const caps = Object.entries(market).filter(([, v]) => v.mcap).flatMap(([k, v]) => [k, String(v.mcap)]);
-  if (caps.length) await redis(['HSET', 'mcaps', ...caps]).catch(() => {});   // a bonus: never fail market data over it
+  /* only coins launched here are kept, so the hash can't be grown with arbitrary mints */
+  try {
+    const known = Object.keys(market).filter(k => market[k].mcap);
+    const [listed] = known.length ? await redis(['HMGET', 'launchidx', ...known]) : [[]];
+    const caps = known.filter((k, i) => listed[i]).flatMap(k => [k, String(market[k].mcap)]);
+    if (caps.length) await redis(['HSET', 'mcaps', ...caps]);
+  } catch { /* a bonus: never fail market data over it */ }
   return market;
+}
+
+/* a feed post or reply by id (msg:<id>). Posts made before posts were kept by id are found in the feed list once,
+   then stored by id and put on their author's timeline, so they can be liked, retweeted and replied to too. */
+async function loadPost(id) {
+  const [raw] = await redis(['GET', 'msg:' + id]);
+  if (raw) return JSON.parse(raw);
+  const [rows] = await redis(['LRANGE', 'chat:feed', 0, -1]);
+  const hit = rows.map(r => JSON.parse(r)).find(m => String(m.id) === String(id));
+  if (!hit) return null;
+  await redis(['SET', 'msg:' + id, JSON.stringify(hit)], ['ZADD', 'user:posts:' + hit.wallet, hit.t, 'p:' + id]);
+  return hit;
 }
 
 let conn = null;
@@ -206,5 +223,5 @@ function fail(res, status, error) {
 
 module.exports = {
   PUMP_PROGRAM, MAX_IMAGE_BYTES, cors, sniffImage, readBody, readJson, sha256,
-  b58encode, b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, cleanThumb, rateLimit, fail,
+  b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, fail,
 };

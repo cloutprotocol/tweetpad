@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- Source for docs/brand/lockup-{light,dark}.png, the README header: the # app icon beside the lowercase wordmark.
+     Render from the repo root (?theme=dark for white text on dark backgrounds):
+     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --window-size=1200,320 \
+       --default-background-color=00000000 --virtual-time-budget=4000 --screenshot=docs/brand/lockup-light.png "scripts/lockup.html"
+     …and the same with "scripts/lockup.html?theme=dark" → docs/brand/lockup-dark.png -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tweetpad lockup</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&display=swap">
+<style>
+  html, body { margin: 0; width: 1200px; height: 320px; overflow: hidden; background: transparent; }
+  body { display: flex; align-items: center; justify-content: center; gap: 36px; }
+  img { width: 200px; height: 200px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .22)); }
+  h1 { margin: 0; font: 600 180px/1 "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif; letter-spacing: -.03em; color: #14171a; }
+  .dark h1 { color: #ffffff; }
+</style>
+</head>
+<body>
+  <img src="../assets/brand/tweetpad-hash-512.png" alt=""><h1>tweetpad</h1>
+  <script>if (new URLSearchParams(location.search).get('theme') === 'dark') document.body.classList.add('dark');</script>
+</body>
+</html>

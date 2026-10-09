@@ -1,14 +1,27 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/c/:mint", "destination": "/api/card?mint=:mint" }
+    {
+      "source": "/c/:mint",
+      "destination": "/api/card?mint=:mint"
+    },
+    {
+      "source": "/preview",
+      "destination": "/preview.html"
+    }
   ],
   "headers": [
     {
       "source": "/embed.html",
       "headers": [
-        { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://x.com https://*.x.com https://twitter.com https://*.twitter.com" },
-        { "key": "Cache-Control", "value": "no-store" }
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://x.com https://*.x.com https://twitter.com https://*.twitter.com"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
       ]
     }
   ]

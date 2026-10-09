@@ -6,15 +6,15 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 
 module.exports = async (req, res) => {
   const mint = String((req.query && req.query.mint) || '');
-  const origin = 'https://' + (req.headers['x-forwarded-host'] || req.headers.host || 'twitterpad.vercel.app');
+  const origin = 'https://' + (req.headers['x-forwarded-host'] || req.headers.host || 'www.tweetpad.io');
   let launch = null;
   if (isPubkey(mint)) {
     try { const [row] = await redis(['GET', 'launch:' + mint]); launch = row ? JSON.parse(row) : null; } catch { /* plain card */ }
   }
-  const cid = launch && /\/ipfs\/([A-Za-z0-9]+)/.exec(launch.image || '');
   const title = launch ? '$' + launch.symbol + ' · ' + launch.name + ' on tweetpad' : 'tweetpad';
   const description = launch ? 'Chart, live trades and launches, inside the post.' : 'Launch a token without leaving the tweet.';
-  const image = cid ? origin + '/api/image?cid=' + cid[1] : origin + '/preview.png';
+  /* each coin gets its own card image (api/card-image): its picture, ticker, market cap and creator around X's play button */
+  const image = launch ? origin + '/api/card-image?mint=' + mint : origin + '/preview.png';
   const player = origin + '/embed.html' + (launch ? '?coin=' + mint : '');
 
   res.setHeader('content-type', 'text/html; charset=utf-8');
@@ -25,7 +25,8 @@ module.exports = async (req, res) => {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
-<link rel="icon" type="image/svg+xml" href="${esc(origin)}/assets/twitter-2012-bird.svg">
+<link rel="icon" href="${esc(origin)}/assets/brand/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="${esc(origin)}/assets/brand/tweetpad-hash-180.png">
 <meta name="twitter:card" content="player">
 <meta name="twitter:site" content="@Prawnsfamily">
 <meta name="twitter:title" content="${esc(title)}">

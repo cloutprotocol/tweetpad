@@ -8,7 +8,7 @@
 // GET ?curve=new: a fresh SOL curve's reserves and buy fee, so the form can estimate what a dev buy gets.
 // POST { signature, mint }: list a launch, but only after checking on chain that the transaction succeeded,
 // is a pump.fun create for that mint, was paid by the wallet that built it here, and was built here (pending).
-const { PUMP_PROGRAM, cors, readJson, isPubkey, redis, rpc, connection, quoteConfig, pairQuote, marketData, rateLimit, fail } = require('./_lib');
+const { PUMP_PROGRAM, cors, readJson, isPubkey, b58decode, redis, rpc, connection, quoteConfig, pairQuote, marketData, rateLimit, fail } = require('./_lib');
 
 const PAGE = 24;
 
@@ -25,7 +25,7 @@ async function list(req, res) {
     try { const p = await pairQuote(String(q.pair)); return res.status(200).json({ ok: true, mint: p.mint, symbol: p.symbol }); }
     catch (err) { return fail(res, err.status || 502, err.message); }
   }
-  if (q.q != null) return search(String(q.q), res);
+  if (q.q != null) { if (!await rateLimit(req, res, 'search', 120, 600)) return; return search(String(q.q), res); }
   if (q.curve === 'new') return newCurve(res);
   if (q.creator) {
     if (!isPubkey(q.creator)) return fail(res, 400, 'invalid creator');
@@ -96,9 +96,11 @@ async function search(text, res) {
     .filter(l => !needle || [l.name, l.symbol, l.mint].some(v => String(v || '').toLowerCase().includes(needle)));
   /* rank by market cap: caps come from the mcaps hash every market lookup fills; the newest coins without one yet get a
      DexScreener call (30 at most) so a fresh launch can still climb */
-  const [capRows] = await redis(['HGETALL', 'mcaps']);
   const caps = {};
-  for (let i = 0; i < capRows.length; i += 2) caps[capRows[i]] = Number(capRows[i + 1]);
+  if (hits.length) {
+    const [capRows] = await redis(['HMGET', 'mcaps', ...hits.map(l => l.mint)]);
+    hits.forEach((l, i) => { if (capRows[i] != null) caps[l.mint] = Number(capRows[i]); });
+  }
   /* ...and the current leaders are re-checked too, so a coin that has since dumped can't hold a top spot on an old cap */
   const unknown = hits.filter(l => !(l.mint in caps)).sort((a, b) => b.time - a.time).slice(0, 30).map(l => l.mint);
   const leaders = hits.filter(l => l.mint in caps).sort((a, b) => caps[b.mint] - caps[a.mint]).slice(0, 30).map(l => l.mint);
@@ -143,6 +145,10 @@ async function record(req, res) {
   if (!signers.includes(mint)) return fail(res, 400, 'transaction did not create this mint');
   if (!keys.includes(PUMP_PROGRAM)) return fail(res, 400, 'not a pump.fun transaction');
   if (pending.quote && !keys.includes(pending.quote.mint)) return fail(res, 400, 'transaction is not paired with $' + pending.quote.symbol);
+  /* the pump.fun create itself carries name, symbol and uri: they must be what was built here */
+  const pumpData = msg.instructions.filter(ix => keys[ix.programIdIndex] === PUMP_PROGRAM).map(ix => Buffer.from(b58decode(ix.data) || []));
+  const carries = (text) => pumpData.some(d => d.includes(Buffer.from(String(text), 'utf8')));
+  if (!carries(pending.uri) || !carries(pending.name) || !carries(pending.symbol)) return fail(res, 400, 'transaction metadata does not match what was built here');
 
   const time = tx.blockTime ? tx.blockTime * 1000 : Date.now();
   const launch = { mint, name: pending.name, symbol: pending.symbol, image: pending.image, thumb: pending.thumb || '', uri: pending.uri,
