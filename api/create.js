@@ -7,7 +7,21 @@
 // Body JSON: { publicKey, mint, name, symbol, uri, image, thumb, devBuy, quote }
 const { PublicKey, TransactionMessage, VersionedTransaction, ComputeBudgetProgram } = require('@solana/web3.js');
 const { OnlinePumpSdk, PUMP_SDK } = require('@pump-fun/pump-sdk');
-const { PUMP_PROGRAM, cors, readJson, isPubkey, signerKeys, redis, connection, quoteConfig, pairQuote, cleanThumb, rateLimit, fail } = require('./_lib');
+const { PUMP_PROGRAM, cors, readJson, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, cleanThumb, rateLimit, fail } = require('./_lib');
+
+/* Phantom flags dApps whose transactions fail on chain, so a build that would fail never reaches the wallet: simulate it
+   unsigned first (sigVerify off, fresh blockhash). Only a real program error stops the launch; an RPC hiccup does not. */
+async function simulationError(tx) {
+  let sim;
+  try {
+    sim = await rpc('simulateTransaction', [tx.toString('base64'), { encoding: 'base64', sigVerify: false, replaceRecentBlockhash: true, commitment: 'confirmed' }]);
+  } catch { return null; }
+  const v = sim && sim.value;
+  if (!v || !v.err) return null;
+  const hint = (v.logs || []).reverse().find(l => /insufficient|error|failed/i.test(l));
+  if ((v.logs || []).some(l => /insufficient lamports|insufficient funds/i.test(l)) || /InsufficientFunds|AccountNotFound/.test(JSON.stringify(v.err))) return 'not enough SOL in this wallet for the launch and fees';
+  return 'the launch would fail on chain' + (hint ? ': ' + hint.replace(/^Program log: /, '').slice(0, 160) : '');
+}
 
 const PENDING_TTL = 60 * 60; // seconds a built launch may wait to be signed and sent
 const MAX_DEV_BUY = 10;      // SOL
@@ -80,6 +94,9 @@ module.exports = async (req, res) => {
   } catch (err) {
     return fail(res, 502, 'could not build the transaction: ' + err.message);
   }
+
+  const simErr = await simulationError(tx);
+  if (simErr) return fail(res, 400, simErr);
 
   /* never hand the wallet something other than what was asked for */
   let parsed;
