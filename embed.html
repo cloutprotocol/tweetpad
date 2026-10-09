@@ -190,6 +190,7 @@
     <div class="actions">
       <a class="btn" id="link-newtab" target="_blank" rel="noopener">Open in new tab</a>
       <a class="btn" id="link-phantom" target="_blank" rel="noopener">Open in Phantom app (mobile)</a>
+      <a class="btn" id="link-solflare" target="_blank" rel="noopener">Open in Solflare app (mobile)</a>
     </div>
   </section>
   <section id="tab-env" hidden><table id="env-table"></table></section>
@@ -210,13 +211,15 @@
 (() => {
 'use strict';
 
-/* ---------- config (query params: ?cluster=mainnet  ?rpc=https://…  ?mode=popup) ---------- */
+/* ---------- config (query params: ?cluster=devnet  ?rpc=https://…  ?mode=popup) ---------- */
 const qs = new URLSearchParams(location.search);
 const MODE = qs.get('mode') === 'popup' ? 'popup' : 'embed';
-const CLUSTER = qs.get('cluster') === 'mainnet' ? 'mainnet' : 'devnet';
+/* mainnet by default: it is what real wallets are set to, and the probe transaction is never broadcast */
+const CLUSTER = qs.get('cluster') === 'devnet' ? 'devnet' : 'mainnet';
 const CHAIN = 'solana:' + CLUSTER;
 const RPC = (() => {
-  const fallback = CLUSTER === 'mainnet' ? 'https://api.mainnet-beta.solana.com' : 'https://api.devnet.solana.com';
+  /* api.mainnet-beta.solana.com answers browser requests with 403, so mainnet uses a CORS-friendly public RPC */
+  const fallback = CLUSTER === 'mainnet' ? 'https://solana-rpc.publicnode.com' : 'https://api.devnet.solana.com';
   const v = qs.get('rpc');
   if (!v) return fallback;
   try { const u = new URL(v); return u.protocol === 'https:' ? u.href : fallback; } catch { return fallback; }
@@ -242,6 +245,9 @@ const short = (s) => (s && s.length > 14 ? s.slice(0, 6) + '…' + s.slice(-6) :
 const errText = (e) => {
   const parts = [e && e.name, e && e.code != null ? '(' + e.code + ')' : '', e && e.message ? e.message : String(e)];
   /* wallets hide the useful part of a generic -32603 in data or cause */
+  const known = new Set(['name', 'code', 'message', 'stack', 'data', 'cause']);
+  const own = e && typeof e === 'object' ? Object.getOwnPropertyNames(e).filter(k => !known.has(k)) : [];
+  if (own.length) try { parts.push('· ' + JSON.stringify(Object.fromEntries(own.map(k => [k, e[k]])))); } catch { /* ignore */ }
   for (const extra of [e && e.data, e && e.cause]) {
     if (extra == null) continue;
     try { parts.push('· ' + (typeof extra === 'string' ? extra : extra.message || JSON.stringify(extra))); } catch { /* unserialisable */ }
@@ -343,6 +349,8 @@ function snapshotGlobals() {
   const w = window;
   return {
     'window.phantom.solana': !!(w.phantom && w.phantom.solana),
+    'window.phantom.solana.isConnected': !!(w.phantom && w.phantom.solana && w.phantom.solana.isConnected),
+    'window.phantom.ethereum': !!(w.phantom && w.phantom.ethereum),
     'window.solana': !!w.solana,
     'window.solflare': !!w.solflare,
     'window.backpack': !!w.backpack,
@@ -634,11 +642,17 @@ function renderWallets() {
       'Now check that connect and both signing prompts actually open.');
   } else if (settled) {
     setVerdict('bad', 'No wallet spawned', 'No Solana wallet visible ' + where,
-      other.length ? 'An EVM wallet did inject, so the frame is not blocking all extensions.' : 'Try the Fallbacks tab to test the popup bridge.');
+      other.length ? 'An EVM wallet did inject, so the frame is not blocking all extensions.' : 'Open it in your wallet app below, or try the popup bridge.');
   }
   const kids = [];
   if (sol.length) kids.push(h('div', { class: 'group-title', text: 'Solana' }), sol.map(walletRow));
   if (other.length) kids.push(h('div', { class: 'group-title', text: 'Other chains (comparison)' }), other.map(walletRow));
+  if (!sol.length && settled) kids.unshift(
+    h('div', { class: 'group-title', text: 'Open in your wallet' }),
+    h('p', { class: 'note', text: 'No wallet can reach this frame (the X app has none). Reopen the probe inside your wallet\'s browser:' }),
+    h('div', { class: 'actions', style: 'margin-bottom:10px' },
+      h('a', { class: 'btn primary', href: $('link-phantom').href, target: '_blank', rel: 'noopener' }, 'Open in Phantom'),
+      h('a', { class: 'btn', href: $('link-solflare').href, target: '_blank', rel: 'noopener' }, 'Open in Solflare')));
   if (!kids.length) kids.push(h('p', { class: 'note', text: settled
     ? 'Nothing registered through Wallet Standard, window.phantom.solana, window.solflare, window.backpack, or EIP-6963.'
     : 'Scanning…' }));
@@ -743,6 +757,7 @@ const standalone = new URL(location.href);
 standalone.searchParams.delete('mode'); standalone.searchParams.delete('session');
 $('link-newtab').href = standalone.href;
 $('link-phantom').href = 'https://phantom.app/ul/browse/' + encodeURIComponent(standalone.href) + '?ref=' + encodeURIComponent(location.origin);
+$('link-solflare').href = 'https://solflare.com/ul/v1/browse/' + encodeURIComponent(standalone.href) + '?ref=' + encodeURIComponent(location.origin);
 $('cluster-chip').textContent = CLUSTER;
 
 (async () => {

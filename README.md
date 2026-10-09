@@ -40,5 +40,5 @@ Repeat row 3 with each wallet extension you care about (Phantom, Solflare, Backp
 - Detects wallets through Wallet Standard, legacy globals (`window.phantom.solana`, `window.solflare`, `window.backpack`) and EIP-6963 (EVM, for comparison).
 - **Sign message** verifies the returned Ed25519 signature in the browser.
 - **Sign transaction** builds a 0-lamport transfer from the wallet to itself, asks the wallet to sign it, verifies the signature, and **never broadcasts it**.
-- Defaults to devnet. A wallet set to mainnet will still sign but may warn that it cannot simulate. Options: `embed.html?cluster=mainnet`, `embed.html?rpc=https://your-rpc`.
+- Defaults to mainnet (the probe transaction is never broadcast) using the publicnode RPC, since `api.mainnet-beta.solana.com` rejects browser requests. Options: `embed.html?cluster=devnet`, `embed.html?rpc=https://your-rpc`.
 - Does not test the WalletConnect (Reown) protocol; that needs a project ID and their SDK.
