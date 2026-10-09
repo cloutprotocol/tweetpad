@@ -249,7 +249,13 @@ const solAccount = (w) => (w.accounts || []).find(a => (a.chains || []).some(c =
 async function stdConnect(wallet) {
   const feature = wallet.ref.features['standard:connect'];
   if (!feature) throw new Error('wallet has no standard:connect feature');
-  const res = await feature.connect();
+  let res;
+  try { res = await feature.connect(); }
+  catch (err) {
+    /* some wallets reject the call even though the person approved and the account is now exposed: use it if it's there */
+    if (!solAccount(wallet.ref)) throw err;
+    log('warn', wallet.name + ' → connect threw (' + errText(err) + ') but exposed an account; using it');
+  }
   const account = (res && res.accounts && res.accounts[0] && solAccount({ accounts: res.accounts })) || solAccount(wallet.ref);
   if (!account) throw new Error('connect resolved but returned no account');
   wallet.account = { address: account.address, publicKey: new Uint8Array(account.publicKey), raw: account };
@@ -404,7 +410,11 @@ const shortAddr = (a) => a.slice(0, 4) + '…' + a.slice(-4);
 async function connectWallet(wallet) {
   closeMenu();
   const ok = await run(wallet, 'connect', () => ACTIONS[wallet.kind].connect(wallet));
-  if (!ok) return;
+  if (!ok) {
+    /* say why, in words: the wallet's own message, or that it was declined */
+    const why = String(wallet.status && wallet.status.text || '').replace(/^connect failed: /, '');
+    return setVerdict('bad', wallet.name + ' didn’t connect', /reject|declin|denied|cancel/i.test(why) ? 'The request was declined in the wallet' : why || 'No reason given');
+  }
   if (state.active && state.active !== wallet) { state.active.account = null; state.active.status = null; }
   state.active = wallet;
   store.set(LAST_KEY, wallet.name);
@@ -478,7 +488,7 @@ const toggleMenu = () => ($('wc-menu').hidden ? openMenu() : closeMenu());
 /* shared by the center picker and the dropdown */
 const walletOptions = (wallets, last) => wallets.map(w =>
   h('button', { class: 'opt', role: 'menuitem', onclick: () => connectWallet(w) }, walletIcon(w), h('span', { class: 'opt-name', text: w.name }),
-    w.status && w.status.tone === 'bad' ? h('span', { class: 'tag bad', text: 'FAILED' })
+    w.status && w.status.tone === 'bad' ? h('span', { class: 'tag bad', title: w.status.text, text: 'FAILED' })
     : w.name === last ? h('span', { class: 'tag gold', text: 'LAST USED' }) : h('span', { class: 'tag', text: 'DETECTED' })));
 const missingWallets = (list) => CATALOG.filter(c => !list.some(w => baseName(w.name) === c.name.toLowerCase()));
 const catalogHref = (c) => (MOBILE && c.open ? c.open(STANDALONE) : c.install);
