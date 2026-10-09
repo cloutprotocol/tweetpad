@@ -246,6 +246,15 @@
   .tok-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .tok-main b { font: 600 13px/1.1 var(--px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tok-sub, .tok-time { font: 14px/1 var(--mono); color: var(--dim); }
+  .tok-mkt { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 58px; }
+  .tok-mkt b { font: 600 12px/1 var(--px); color: var(--gold); }
+  .tok-mkt .up, .tok-mkt .down { font: 14px/1 var(--mono); }
+  .tok-mkt .up { color: var(--ok); } .tok-mkt .down { color: var(--bad); }
+  .sort { display: inline-flex; gap: 2px; }
+  .sort button { appearance: none; padding: 2px 6px; cursor: pointer; color: var(--dim); font: 14px/1 var(--mono); letter-spacing: .04em;
+                 text-transform: uppercase; background: transparent; border: 1px solid var(--line); text-shadow: var(--shadow); }
+  .sort button:hover { color: var(--text); }
+  .sort button[aria-pressed="true"] { color: #04200e; background: var(--accent); border-color: var(--accent); text-shadow: none; }
   .views { display: flex; gap: 2px; }
   .views .count { font: 14px/1 var(--mono); color: var(--accent); }
   .views .count:empty { display: none; }
@@ -319,7 +328,8 @@
     </section>
     <section id="tab-tokens" hidden>
       <div class="pane panel tokens">
-        <div class="launch-head"><span>Launched on Tweetpad</span><button class="linkish" id="tokens-refresh">Refresh</button></div>
+        <div class="launch-head"><span>Launched on Tweetpad</span>
+          <span class="sort"><button data-sort="new" aria-pressed="true">New</button><button data-sort="mcap" aria-pressed="false">Mcap</button><button id="tokens-refresh" title="Refresh">↻</button></span></div>
         <ul class="token-list" id="token-list"></ul>
       </div>
     </section>
@@ -1081,7 +1091,21 @@ async function onDryRun() {
 }
 
 /* ---------- tokens launched through the pad ---------- */
-const tokens = { list: [], loaded: false, loading: false, error: null };
+const tokens = { list: [], loaded: false, loading: false, error: null, market: {}, sort: 'new' };
+const fmtUsd = (n) => n == null ? '—' : '$' + (n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : Math.round(n));
+/* market caps come from /api/market in batches of 30; sorted so identical sets hit the same CDN cache entry */
+async function loadMarket() {
+  const mints = tokens.list.map(l => l.mint).sort();
+  for (let i = 0; i < mints.length; i += 30) {
+    try {
+      const res = await fetch('/api/market?mints=' + mints.slice(i, i + 30).join(','));
+      if (res.ok) Object.assign(tokens.market, (await res.json()).market);
+    } catch { /* keep the last numbers */ }
+  }
+  renderTokens();
+}
+/* refresh numbers every 30s, only while the token list is on screen */
+setInterval(() => { if (!document.hidden && !$('tab-tokens').hidden && tokens.list.length) loadMarket(); }, 30000);
 /* IPFS links go through our cached gateway proxy; anything else is shown as is */
 const imageSrc = (url) => { const m = /\/ipfs\/([A-Za-z0-9]+)/.exec(url || ''); return m ? '/api/image?cid=' + m[1] : url; };
 const ago = (t) => {
@@ -1097,6 +1121,7 @@ async function loadTokens() {
     const out = await res.json();
     if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
     Object.assign(tokens, { list: out.launches, loaded: true, error: null });
+    loadMarket();
   } catch (err) {
     tokens.error = errText(err);
   } finally {
@@ -1107,13 +1132,20 @@ async function loadTokens() {
 function renderTokens() {
   $('token-count').textContent = tokens.loaded ? tokens.list.length : '';
   const me = state.active && state.active.account && state.active.account.address;
-  const rows = tokens.list.map(l => h('li', {},
+  const mk = (l) => tokens.market[l.mint] || {};
+  const sorted = tokens.sort === 'mcap' ? [...tokens.list].sort((a, b) => (mk(b).mcap || 0) - (mk(a).mcap || 0)) : tokens.list;
+  for (const b of document.querySelectorAll('.sort button')) b.setAttribute('aria-pressed', String(b.dataset.sort === tokens.sort));
+  const rows = sorted.map(l => h('li', {},
     h('a', { class: 'tok', href: 'https://pump.fun/coin/' + l.mint, target: '_blank', rel: 'noopener', title: l.name + ' on pump.fun' },
       l.image ? h('img', { src: imageSrc(l.image), alt: '', loading: 'lazy', onerror: (ev) => ev.target.replaceWith(h('span', { class: 'ph', text: l.symbol.slice(0, 1) })) })
         : h('span', { class: 'ph', text: l.symbol.slice(0, 1) }),
       h('span', { class: 'tok-main' }, h('b', { text: l.name }), h('span', { class: 'tok-sub', text: '$' + l.symbol + ' · ' + shortAddr(l.mint) })),
       l.creator === me ? h('span', { class: 'tag gold', text: 'YOURS' }) : null,
-      h('span', { class: 'tok-time', text: ago(l.time) }))));
+      h('span', { class: 'tok-mkt' },
+        h('b', { text: fmtUsd(mk(l).mcap) }),
+        mk(l).change1h != null
+          ? h('span', { class: mk(l).change1h >= 0 ? 'up' : 'down', text: (mk(l).change1h >= 0 ? '▲' : '▼') + Math.abs(mk(l).change1h).toFixed(1) + '%' })
+          : h('span', { class: 'tok-time', text: ago(l.time) })))));
   $('token-list').replaceChildren(...(rows.length ? rows : [h('li', { class: 'note', style: 'padding:14px 4px;text-align:center',
     text: tokens.error ? 'Could not load: ' + tokens.error : tokens.loading ? 'Loading…' : 'Nothing launched yet. Be the first.' })]));
 }
@@ -1223,6 +1255,7 @@ for (const tab of document.querySelectorAll('.subnav [role="tab"]')) tab.addEven
 const toggleDebug = () => selectTab($('debug').hidden ? debugTab : mainView);
 for (const tab of document.querySelectorAll('.views [role="tab"]')) tab.addEventListener('click', () => selectTab(tab.dataset.view));
 $('tokens-refresh').addEventListener('click', loadTokens);
+for (const b of document.querySelectorAll('.sort [data-sort]')) b.addEventListener('click', () => { tokens.sort = b.dataset.sort; renderTokens(); });
 const toggleFeed = () => { $('feed-lines').hidden = !$('feed-lines').hidden; };
 $('btn-debug').addEventListener('click', toggleDebug);
 $('btn-debug-close').addEventListener('click', () => selectTab(mainView));
