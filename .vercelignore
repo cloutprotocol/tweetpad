@@ -1,0 +1,4 @@
+# repo-only files; nothing here is part of the site
+docs
+scripts
+.env*

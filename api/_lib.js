@@ -103,11 +103,51 @@ async function rpc(method, params) {
   return out.result;
 }
 
+/* what new coins are paired with: QUOTE_MINT=<pump coin mint> (default $JACK, standing in for the
+   platform token), or QUOTE_MINT=sol for plain SOL pairs */
+const DEFAULT_QUOTE = { mint: 'DC4RxGX9otgsXu9AQ8KCFG5T8vKGa4FLd35uJuJrsUG', symbol: 'JACK' };
+function quoteConfig() {
+  const env = (process.env.QUOTE_MINT || '').trim();
+  if (env.toLowerCase() === 'sol') return { mint: null, symbol: 'SOL' };
+  if (isPubkey(env)) return { mint: env, symbol: (process.env.QUOTE_SYMBOL || '').trim() || 'QUOTE' };
+  return DEFAULT_QUOTE;
+}
+
+let conn = null;
+function connection() {
+  const { Connection } = require('@solana/web3.js');
+  if (!conn) conn = new Connection(RPC_URL, 'confirmed');
+  return conn;
+}
+
+/* a small thumbnail the browser makes at launch, so the list needs no image requests */
+const MAX_THUMB_BYTES = 16 * 1024;
+function cleanThumb(v) {
+  const m = /^data:image\/(webp|png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(typeof v === 'string' ? v : '');
+  if (!m) return '';
+  const bytes = Buffer.from(m[2], 'base64');
+  return bytes.length <= MAX_THUMB_BYTES && sniffImage(bytes) ? v : '';
+}
+
+/* fixed-window rate limit per client IP, kept in Redis: `limit` requests per `windowSec` for each bucket.
+   Returns true when the request may go ahead; otherwise it has already answered 429. */
+async function rateLimit(req, res, bucket, limit, windowSec) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  const key = 'rl:' + bucket + ':' + ip + ':' + Math.floor(Date.now() / 1000 / windowSec);
+  try {
+    const [count] = await redis(['INCR', key], ['EXPIRE', key, windowSec]);
+    if (count <= limit) return true;
+  } catch { return true; } // never block launches because the limiter itself is down
+  res.setHeader('retry-after', String(windowSec));
+  fail(res, 429, 'slow down: too many requests, try again in a minute');
+  return false;
+}
+
 function fail(res, status, error) {
   return res.status(status).json({ error });
 }
 
 module.exports = {
   PUMP_PROGRAM, MAX_IMAGE_BYTES, cors, sniffImage, readBody, readJson, sha256,
-  b58encode, b58decode, isPubkey, signerKeys, redis, rpc, fail,
+  b58encode, b58decode, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, cleanThumb, rateLimit, fail,
 };

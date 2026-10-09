@@ -1,0 +1,23 @@
+{
+  "name": "tweetpad",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Launch a pump.fun token without leaving the post: an X player card with a pixel HUD.",
+  "license": "MIT",
+  "repository": "github:cloutprotocol/twitterpad",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "local": "vercel dev --listen 3000",
+    "check": "node scripts/check.js",
+    "deploy": "vercel deploy --prod"
+  },
+  "dependencies": {
+    "@pump-fun/pump-sdk": "4.0.0",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.2",
+    "bn.js": "^5.2.2",
+    "sharp": "^0.33.5"
+  }
+}

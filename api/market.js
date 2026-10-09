@@ -23,10 +23,12 @@ module.exports = async (req, res) => {
       market[mint] = {
         mcap: p.marketCap || p.fdv || null,
         price: p.priceUsd ? Number(p.priceUsd) : null,
+        priceNative: p.priceNative ? Number(p.priceNative) : null,
         change1h: p.priceChange ? p.priceChange.h1 ?? null : null,
         change24h: p.priceChange ? p.priceChange.h24 ?? null : null,
         buys1h: p.txns && p.txns.h1 ? p.txns.h1.buys : 0,
         sells1h: p.txns && p.txns.h1 ? p.txns.h1.sells : 0,
+        volume1h: p.volume ? p.volume.h1 ?? 0 : 0,
         volume24h: p.volume ? p.volume.h24 ?? 0 : 0,
         liquidity: liq,
         dex: p.dexId, pair: p.pairAddress,

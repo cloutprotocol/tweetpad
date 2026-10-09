@@ -2,7 +2,7 @@
 // pump.fun's own IPFS endpoint answers servers but not browsers (no CORS), so the upload goes through here.
 // Pinata (PINATA_JWT) is a fallback in case pump.fun's endpoint fails or goes away.
 // Body: the raw image bytes. Header x-meta: URI-encoded JSON { name, symbol, description, twitter, website }.
-const { MAX_IMAGE_BYTES, cors, sniffImage, readBody, sha256, fail } = require('./_lib');
+const { MAX_IMAGE_BYTES, cors, sniffImage, readBody, sha256, rateLimit, fail } = require('./_lib');
 
 const GATEWAY = 'https://ipfs.io/ipfs/';
 
@@ -56,6 +56,7 @@ module.exports = async (req, res) => {
   res.setHeader('cache-control', 'no-store');
   if (cors(req, res, 'POST')) return;
   if (req.method !== 'POST') return fail(res, 405, 'POST the image bytes');
+  if (!await rateLimit(req, res, 'ipfs', 10, 600)) return;
   const meta = cleanMeta(req.headers['x-meta']);
   if (meta.error) return fail(res, 400, meta.error);
   const body = await readBody(req, MAX_IMAGE_BYTES);

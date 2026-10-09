@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/c/:mint", "destination": "/api/card?mint=:mint" }
+  ],
   "headers": [
     {
       "source": "/embed.html",

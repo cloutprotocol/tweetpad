@@ -1,46 +1,110 @@
-# Tweetpad
+# Tweetpad ◆
 
-Launch a pump.fun token from inside an X post. It started as a wallet embed probe; the probe lives on in the Debug panel.
+**Launch a pump.fun token without leaving the post.**
 
-Answers one question before you build the launchpad: **can a Solana wallet connect and sign from inside an X Player Card iframe?**
+Tweetpad is an X player card with a pixel HUD. Expand the tweet, connect a Solana wallet, drop an image, pick a ticker,
+press **Launch**. The coin goes live on pump.fun, gets listed on Tweetpad, and has its own chart, live trades and a
+shareable card that plays inside X again. No app to install and no tab to open.
 
-| File | Role |
+> Every launch is paired with the platform token (today `$JACK`, a stand-in), so every trade on every Tweetpad coin
+> buys the platform token first.
+
+![Tweetpad preview](preview.png)
+
+## What it does
+
+| | |
 | --- | --- |
-| `index.html` | The page you post. Carries the Player Card meta tags; also frames the probe same-origin as a control. |
-| `embed.html` | The probe X loads in the iframe (`twitter:player`). No dependencies, no build step. |
-| `preview.png` | `twitter:image` (1080x1080). |
+| **Launch** | Image (pick, drop or paste), name, ticker, description. One wallet approval. Live on pump.fun in seconds. |
+| **Pairing** | New coins are quoted in a pump coin (`QUOTE_MINT`) through pump.fun's `create_v2`, or in SOL. |
+| **Tokens** | Every coin launched here, with market cap and 1h move. New / Hot / Mcap, 24 at a time. |
+| **Coin screen** | Pixel candle chart, recent trades, live trades over a websocket, copyable contract address, share card. |
+| **Inventory** | The hotbar holds your coins, then the newest. `1`–`9` opens them. |
+| **Profile** | Link your wallet to your X account with one tweet, see the coins you launched, claim creator rewards. |
+| **Debug** | The original wallet-in-an-iframe probe: sign tests, environment, report, popup bridge. |
 
-## Deploy
+Keys: `C` wallet · `L` launch · `T` tokens · `P` profile · `D` debug · `1`–`9` inventory · `H` chat · `Esc` back.
 
-1. In `index.html`, the card URLs point at `twitterpad.vercel.app`, and `twitter:site` is `@Prawnsfamily`; change them if you deploy elsewhere.
-2. Upload the three files to the root of any HTTPS static host.
-3. Make sure the host does **not** send `X-Frame-Options` for `embed.html`. To restrict framing to X instead of leaving it open, send:
+## How it works
 
-   ```
-   Content-Security-Policy: frame-ancestors 'self' https://x.com https://*.x.com https://twitter.com https://*.twitter.com
-   Cache-Control: no-store
-   ```
+```
+X post ── player card (embed.html, sandboxed iframe) ──┬── wallet (Wallet Standard)
+                                                       └── /api/* on Vercel ── Upstash Redis
+                                                                  │
+                         pump.fun IPFS · PumpPortal · pump SDK ───┤
+                         DexScreener · GeckoTerminal · Solana RPC ┘
+```
 
-4. Post `https://YOUR_DOMAIN/?v=1`. X caches cards per URL, so bump `v` whenever you change the tags.
+A launch, end to end:
 
-## Test matrix
+1. **IPFS**: `/api/ipfs` checks the image bytes and pins image + metadata through pump.fun's IPFS endpoint
+   (it answers servers, not browsers). Pinata is the fallback.
+2. **Build**: the page makes a fresh mint keypair (it never leaves the page). `/api/create` builds the create
+   transaction with pump.fun's SDK (paired) or PumpPortal (SOL), checks its signers and program, and records it as
+   pending.
+3. **Sign**: the wallet signs first (it may add instructions), then the mint signs the exact message the wallet returned.
+4. **Send**: straight to Solana, then wait for confirmation.
+5. **List**: `/api/launches` re-reads the transaction on chain (success, pump.fun program, payer, mint, pairing) before
+   the coin goes on the list. A coin that was not built here cannot be listed.
 
-Run each row, do Connect → Sign message → Sign transaction, then copy the Report tab.
+### Things we learned the hard way
 
-| # | Where | What it tells you |
-| --- | --- | --- |
-| 1 | `embed.html` opened directly | Baseline. Wallets must appear here or the setup is wrong. |
-| 2 | `index.html` | Same-origin iframe. Separates "iframes in general" from "cross-origin iframes". |
-| 3 | The post on desktop x.com, expanded | The real answer. Check the Environment tab for `ancestorOrigins` and `sandboxedOpaqueOrigin`. |
-| 4 | Row 3, Fallbacks tab → Open popup bridge | Whether a popup on your origin can connect and report back into the frame. |
-| 5 | The post in the X mobile app | Expected to open a browser rather than play inline. The report shows which context you landed in. |
+- **X's card iframe is sandboxed without `allow-forms`.** A `<form>` submit is dropped silently, with no `submit`
+  event. Every action is a click handler.
+- **Its origin can be opaque (`null`)**, so even our own API is cross-origin: every function answers CORS.
+- **Wallets do reach the card on desktop**: Phantom and other Wallet Standard wallets register inside the frame.
+  In the X mobile app there are no wallets, so the card offers "Open in Phantom / Solflare" instead.
+- **ipfs.io rate-limits (429)**, so images go through `/api/image`, which races several gateways, resizes with sharp
+  and caches forever (a CID never changes).
+- **Solana v1 transactions exist now**: on-chain checks ask for `maxSupportedTransactionVersion: 1`.
+- **Free reads only**: market data from DexScreener, candles and trades from GeckoTerminal, live trades from
+  PumpPortal's websocket, X verification from the public tweet behind a link. No paid APIs.
 
-Repeat row 3 with each wallet extension you care about (Phantom, Solflare, Backpack): they do not all inject into iframes the same way.
+### Profiles and X verification
 
-## What the probe does
+Tweet a one-time code, paste the link, sign a message with the wallet. The server reads the public tweet
+(X's syndication endpoint, no login or API key), checks the code and the date, and links `@handle` to the wallet.
+Both halves are required, so nobody can claim someone else's wallet or handle.
 
-- Detects wallets through Wallet Standard, legacy globals (`window.phantom.solana`, `window.solflare`, `window.backpack`) and EIP-6963 (EVM, for comparison).
-- **Sign message** verifies the returned Ed25519 signature in the browser.
-- **Sign transaction** builds a 0-lamport transfer from the wallet to itself, asks the wallet to sign it, verifies the signature, and **never broadcasts it**.
-- Defaults to mainnet (the probe transaction is never broadcast) using the publicnode RPC, since `api.mainnet-beta.solana.com` rejects browser requests. Options: `embed.html?cluster=devnet`, `embed.html?rpc=https://your-rpc`.
-- Does not test the WalletConnect (Reown) protocol; that needs a project ID and their SDK.
+## Layout
+
+```
+index.html            landing page, carries the X card tags
+embed.html            the card: markup only
+assets/tweetpad.css   pixel HUD styles
+assets/tweetpad.js    the card app (plain JS, no build step)
+api/                  Vercel functions, one per route; _lib.js is shared and not a route
+  ipfs · create · launches · market · chart · image · card · profile · rewards · upload
+scripts/check.js      `npm run check`: syntax and wiring smoke test
+docs/CHECKLIST.md     what's next: critical fixes, quick wins, quality of life
+```
+
+## Run it
+
+```sh
+npm install
+vercel link                      # once
+vercel integration add upstash   # Redis; then `vercel env pull`
+npm run local                    # http://localhost:3000/embed.html
+npm run check
+```
+
+Settings live in [`.env.example`](.env.example): `QUOTE_MINT` (pairing token, or `sol`), `RPC_URL`, `PINATA_JWT`.
+
+### Put it in a tweet
+
+1. Deploy (`npm run deploy`) and point `index.html`'s `twitter:*` tags at your domain.
+2. `embed.html` must not send `X-Frame-Options`; `vercel.json` sends `frame-ancestors` for X instead.
+3. Post the domain. X caches cards per URL, so add `?v=2` after any change to the tags.
+4. Share a single coin with `/c/<mint>`: its card opens straight to that coin.
+
+## Safety notes
+
+- Launches create real tokens on mainnet and cost real SOL. The card says so; the wallet shows the cost.
+- The page never holds a user's keys. The only key it creates is the new coin's mint key, used once and discarded.
+- Write endpoints are rate-limited per IP (Redis, fixed window).
+- Fresh `*.vercel.app` domains get phishing warnings in MetaMask. Use your own domain before going public.
+
+## License
+
+[MIT](LICENSE). Build your own pad, pair it with your own token, have fun.

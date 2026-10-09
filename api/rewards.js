@@ -1,0 +1,61 @@
+// Creator rewards: the fees pump.fun has set aside for a coin creator, per quote token (SOL, and the pairing token).
+// GET ?wallet=<w>            → claimable amounts
+// POST { wallet }            → an unsigned claim transaction for the wallet to sign and send; it only includes the
+//                              quotes that hold fees (collecting from a quote vault that does not exist fails).
+const { PublicKey, TransactionMessage, VersionedTransaction, ComputeBudgetProgram } = require('@solana/web3.js');
+const { OnlinePumpSdk, creatorVaultPda } = require('@pump-fun/pump-sdk');
+const { NATIVE_MINT, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } = require('@solana/spl-token');
+const { cors, readJson, isPubkey, connection, quoteConfig, rateLimit, fail } = require('./_lib');
+
+async function balances(wallet) {
+  const conn = connection();
+  const creator = new PublicKey(wallet);
+  const sol = await new OnlinePumpSdk(conn).getCreatorVaultBalanceBothPrograms(creator);
+  const out = { wallet, sol: Math.max(0, sol.toNumber()) / 1e9, quotes: [] };
+  const quote = quoteConfig();
+  if (quote.mint) {
+    const ata = getAssociatedTokenAddressSync(new PublicKey(quote.mint), creatorVaultPda(creator), true, TOKEN_2022_PROGRAM_ID);
+    const bal = await conn.getTokenAccountBalance(ata).then(r => r.value).catch(() => null);
+    out.quotes.push({ mint: quote.mint, symbol: quote.symbol, amount: bal ? Number(bal.uiAmountString) : 0, exists: !!bal });
+  }
+  return out;
+}
+
+async function claimTx(wallet) {
+  const conn = connection();
+  const sdk = new OnlinePumpSdk(conn);
+  const me = new PublicKey(wallet);
+  const b = await balances(wallet);
+  const ixs = [];
+  if (b.sol > 0) ixs.push(...await sdk.collectCoinCreatorFeeV2Instructions(me, NATIVE_MINT, TOKEN_PROGRAM_ID, me));
+  for (const q of b.quotes.filter(q => q.exists && q.amount > 0)) {
+    const mint = new PublicKey(q.mint);
+    ixs.push(createAssociatedTokenAccountIdempotentInstruction(me, getAssociatedTokenAddressSync(mint, me, false, TOKEN_2022_PROGRAM_ID), me, mint, TOKEN_2022_PROGRAM_ID));
+    ixs.push(...await sdk.collectCoinCreatorFeeV2Instructions(me, mint, TOKEN_2022_PROGRAM_ID, me));
+  }
+  if (!ixs.length) return null;
+  const { blockhash } = await conn.getLatestBlockhash('confirmed');
+  const message = new TransactionMessage({ payerKey: me, recentBlockhash: blockhash,
+    instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 300000 }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 200000 }), ...ixs] }).compileToV0Message();
+  return Buffer.from(new VersionedTransaction(message).serialize()).toString('base64');
+}
+
+module.exports = async (req, res) => {
+  if (cors(req, res, 'GET, POST')) return;
+  res.setHeader('cache-control', 'no-store');
+  try {
+    if (req.method === 'GET') {
+      const wallet = String((req.query && req.query.wallet) || '');
+      if (!isPubkey(wallet)) return fail(res, 400, 'invalid wallet');
+      return res.status(200).json(await balances(wallet));
+    }
+    if (req.method !== 'POST') return fail(res, 405, 'GET or POST');
+    if (!await rateLimit(req, res, 'claim', 20, 600)) return;
+    const b = await readJson(req);
+    if (!b || !isPubkey(b.wallet)) return fail(res, 400, 'invalid wallet');
+    const tx = await claimTx(b.wallet);
+    return tx ? res.status(200).json({ ok: true, tx }) : fail(res, 400, 'nothing to claim yet');
+  } catch (err) {
+    return fail(res, err.status || 502, err.message);
+  }
+};
