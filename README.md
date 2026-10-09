@@ -1,4 +1,6 @@
-# Wallet Embed Probe
+# Tweetpad
+
+Launch a pump.fun token from inside an X post. It started as a wallet embed probe; the probe lives on in the Debug panel.
 
 Answers one question before you build the launchpad: **can a Solana wallet connect and sign from inside an X Player Card iframe?**
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Wallet Embed Probe</title>
+<title>Tweetpad</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
@@ -223,6 +223,34 @@
   .launch .quests li.bad .check { border-color: var(--bad); }
   .launch .more { margin: 0; justify-content: flex-start; }
 
+  .row2 { display: flex; gap: 6px; }
+  .row2 > * { min-width: 0; }
+  #tk-ticker { flex: 1.3; }
+  .devbuy { flex: 1; display: flex; align-items: center; background: rgba(5, 12, 14, .75); border: 2px solid var(--panel-lo);
+            box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .4); }
+  .devbuy:focus-within { border-color: var(--accent); }
+  .launch .devbuy input { border: 0; box-shadow: none; background: transparent; padding-right: 2px; -moz-appearance: textfield; }
+  .devbuy input::-webkit-outer-spin-button, .devbuy input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .devbuy span { flex: none; padding-right: 6px; font: 14px/1 var(--mono); color: var(--dim); }
+  #launch-note { margin: -2px 0 0; font-size: 14px; text-align: center; }
+  .launch .quests li .chiplink { flex: none; }
+
+  /* ---------- tokens launched through the pad ---------- */
+  #tab-tokens:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; align-items: center; }
+  .tokens { padding: 10px; border-top: 2px solid var(--gold); }
+  .token-list { list-style: none; margin: 6px 0 0; padding: 0; }
+  .tok { display: flex; align-items: center; gap: 9px; padding: 6px 4px; color: var(--text); text-decoration: none;
+         border-top: 1px dashed var(--line); }
+  .tok:hover { background: rgba(60, 110, 120, .35); }
+  .tok img, .tok .ph { width: 30px; height: 30px; flex: none; object-fit: cover; border: 1px solid #000; image-rendering: auto; background: var(--panel-lo); }
+  .tok-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .tok-main b { font: 600 13px/1.1 var(--px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tok-sub, .tok-time { font: 14px/1 var(--mono); color: var(--dim); }
+  .views { display: flex; gap: 2px; }
+  .views .count { font: 14px/1 var(--mono); color: var(--accent); }
+  .views .count:empty { display: none; }
+  @media (max-width: 420px) { .views .lbl, #btn-debug .lbl { display: none; } }
+
   /* ---------- hud: xp bar + hotbar ---------- */
   .hud { padding: 0 10px 7px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
   #xp { position: relative; width: min(300px, 100%); height: 6px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
@@ -250,7 +278,11 @@
 </head>
 <body>
 <header>
-  <h1><span class="gem" aria-hidden="true"></span>Wallet Probe</h1>
+  <h1><span class="gem" aria-hidden="true"></span>Tweetpad</h1>
+  <nav class="views" role="tablist" aria-label="Views">
+    <button class="ghost" role="tab" aria-selected="true" data-view="wallets" title="Launch a token (L)"><kbd>L</kbd><span class="lbl">Launch</span></button>
+    <button class="ghost" role="tab" aria-selected="false" data-view="tokens" title="Tokens launched here (T)"><kbd>T</kbd><span class="lbl">Tokens</span><span class="count" id="token-count"></span></button>
+  </nav>
   <button class="ghost" id="btn-debug" aria-pressed="false" title="Debug: environment, report, popup bridge (D)"><kbd>D</kbd><span class="lbl">Debug</span></button>
   <div class="wc">
     <button class="btn primary wc-btn" id="wc-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="wc-menu" title="Wallet (C)">Connect<span class="caret">▾</span></button>
@@ -262,7 +294,7 @@
     <section id="tab-wallets">
       <!-- a div, not a form: X's card sandbox drops form submissions without firing submit -->
       <div class="pane panel launch" id="launch">
-        <div class="launch-head"><span>Launch a token</span><span class="tag dim">TEST · NOTHING DEPLOYS</span></div>
+        <div class="launch-head"><span>Launch on pump.fun</span><span class="tag dim">MAINNET · 0 PAD FEE</span></div>
         <div id="launch-banner" hidden></div>
         <div class="launch-grid">
           <label class="drop" id="drop" tabindex="0" title="Click, drop or paste an image">
@@ -272,13 +304,23 @@
           </label>
           <div class="fields">
             <input id="tk-name" maxlength="32" placeholder="Name" autocomplete="off" spellcheck="false" aria-label="Token name">
-            <input id="tk-ticker" maxlength="10" placeholder="Ticker" autocomplete="off" spellcheck="false" aria-label="Ticker">
+            <div class="row2">
+              <input id="tk-ticker" maxlength="10" placeholder="Ticker" autocomplete="off" spellcheck="false" aria-label="Ticker">
+              <label class="devbuy" title="Optional: buy your own token in the same transaction"><input id="tk-buy" type="number" min="0" max="10" step="0.01" placeholder="0" inputmode="decimal" aria-label="Dev buy in SOL"><span>SOL buy</span></label>
+            </div>
             <div class="img-meta" id="img-meta">PNG, JPG, GIF or WebP · up to 4 MB · drop or paste</div>
           </div>
         </div>
         <textarea id="tk-desc" rows="2" maxlength="500" placeholder="Description (optional)" aria-label="Description"></textarea>
         <button class="btn primary launch-btn" id="launch-btn" type="button">Connect wallet</button>
+        <p class="note" id="launch-note">Creates a real token. Your wallet shows the cost before you approve.</p>
         <ul class="quests" id="launch-checks" hidden></ul>
+      </div>
+    </section>
+    <section id="tab-tokens" hidden>
+      <div class="pane panel tokens">
+        <div class="launch-head"><span>Launched on Tweetpad</span><button class="linkish" id="tokens-refresh">Refresh</button></div>
+        <ul class="token-list" id="token-list"></ul>
       </div>
     </section>
     <section id="debug" hidden>
@@ -288,7 +330,7 @@
         <button role="tab" aria-selected="false" data-tab="report" data-key="r"><kbd>R</kbd>Report</button>
         <button role="tab" aria-selected="false" data-tab="fallbacks" data-key="b"><kbd>B</kbd>Bridge</button>
         <span class="spacer"></span>
-        <button class="menu-x" id="btn-debug-close" aria-label="Back to wallet" title="Back (W)">×</button>
+        <button class="menu-x" id="btn-debug-close" aria-label="Back" title="Back (Esc)">×</button>
       </div>
       <section id="tab-sign"></section>
       <section id="tab-env" hidden><table id="env-table"></table></section>
@@ -807,15 +849,20 @@ function signPanel(wallet) {
       actions.signTransaction
         ? quest(wallet.txSigned, 'Transaction signed · ' + CLUSTER,
             h('button', { class: 'btn sm' + (wallet.msgSigned && !wallet.txSigned ? ' primary' : ''), onclick: () => run(wallet, 'sign transaction', () => actions.signTransaction(wallet)) }, 'Sign'))
-        : null),
+        : null,
+      quest(launch.dryDone, 'Launch dry run · upload + sign, no deploy',
+        h('button', { class: 'btn sm', disabled: !launch.file, title: launch.file ? '' : 'Add an image on the launch form first', onclick: onDryRun }, 'Run'))),
     wallet.status ? h('div', { class: 'status ' + wallet.status.tone, text: wallet.status.text }) : null);
 }
 
-/* ---------- launch form: the image upload is the part of a token launch still to prove inside the frame ---------- */
+/* ---------- launch form: a real pump.fun launch from inside the card ---------- */
 const MAX_IMAGE = 4 * 1024 * 1024;   // Vercel function bodies cap at 4.5 MB
+const MAX_DEV_BUY = 10;              // SOL; the server enforces the same cap
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
-const launch = { file: null, bytes: null, url: null, sha: null, dims: null, busy: false, done: false, checks: [] };
+const launch = { file: null, bytes: null, url: null, sha: null, dims: null, busy: false, done: false, dryDone: false, result: null, checks: [] };
 const fmtSize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
+const b64enc = (bytes) => { let s = ''; for (const b of bytes) s += String.fromCharCode(b); return btoa(s); };
+const b64dec = (str) => Uint8Array.from(atob(str), c => c.charCodeAt(0));
 
 function imgMeta(text, bad) {
   $('img-meta').textContent = text;
@@ -842,7 +889,7 @@ async function takeImage(file, via) {
     });
   } catch (err) { URL.revokeObjectURL(url); return imgMeta(err.message, true); }
   if (launch.url) URL.revokeObjectURL(launch.url);
-  Object.assign(launch, { file, bytes, url, sha, dims, done: false, checks: [] });
+  Object.assign(launch, { file, bytes, url, sha, dims, done: false, result: null, checks: [] });
   $('img-preview').src = url;
   $('img-preview').hidden = false;
   $('drop-hint').hidden = true;
@@ -850,11 +897,25 @@ async function takeImage(file, via) {
   imgMeta(dims[0] + '×' + dims[1] + ' · ' + fmtSize(file.size) + (dims[0] !== dims[1] ? ' · square looks best' : ''));
   renderLaunch();
 }
+function resetLaunch() {
+  if (launch.url) URL.revokeObjectURL(launch.url);
+  Object.assign(launch, { file: null, bytes: null, url: null, sha: null, dims: null, done: false, result: null, checks: [] });
+  for (const id of ['tk-name', 'tk-ticker', 'tk-desc', 'tk-buy']) $(id).value = '';
+  $('img').value = '';
+  $('img-preview').hidden = true;
+  $('drop-hint').hidden = false;
+  $('drop').classList.remove('has');
+  imgMeta('PNG, JPG, GIF or WebP · up to 4 MB · drop or paste');
+  renderLaunch();
+}
 
+const devBuy = () => Number($('tk-buy').value || 0);
 function launchProblem() {
+  if (CLUSTER !== 'mainnet') return 'pump.fun is mainnet only';
   if (!launch.file) return 'Add an image';
   if (!$('tk-name').value.trim()) return 'Add a name';
   if (!/^[A-Z0-9]{2,10}$/.test($('tk-ticker').value.trim())) return 'Ticker: 2–10 letters or numbers';
+  if (!(devBuy() >= 0 && devBuy() <= MAX_DEV_BUY)) return 'Dev buy: 0–' + MAX_DEV_BUY + ' SOL';
   return null;
 }
 function renderLaunch() {
@@ -863,10 +924,12 @@ function renderLaunch() {
   const problem = launchProblem();
   const btn = $('launch-btn');
   btn.disabled = launch.busy;
-  btn.textContent = launch.busy ? 'Testing…'
+  btn.textContent = launch.busy ? 'Launching…'
+    : launch.done ? 'Launch another'
     : !active ? (list.length || !settled ? 'Connect wallet' : 'Get a wallet')
-    : problem || (launch.done ? 'Test again' : 'Test launch');
-  btn.classList.toggle('primary', !active || !problem);
+    : problem || 'Launch $' + $('tk-ticker').value.trim() + (devBuy() > 0 ? ' · buy ' + devBuy() + ' SOL' : '');
+  btn.classList.toggle('primary', !active || !problem || launch.done);
+  $('launch-note').hidden = launch.checks.length > 0;
   const banner = $('launch-banner');
   banner.hidden = !!active || !settled || list.length > 0;
   if (!banner.hidden) banner.replaceChildren(h('div', { class: 'more' }, h('span', { text: MOBILE ? 'No wallet here. Open in:' : 'No wallet here. Get:' }),
@@ -875,50 +938,184 @@ function renderLaunch() {
   const checks = $('launch-checks');
   checks.hidden = !launch.checks.length;
   checks.replaceChildren(...launch.checks.map(c =>
-    h('li', { class: c.tone === 'ok' ? 'done' : c.tone === 'bad' ? 'bad' : '' }, h('i', { class: 'check' }), h('span', { text: c.text }))));
+    h('li', { class: c.tone === 'ok' ? 'done' : c.tone === 'bad' ? 'bad' : '' }, h('i', { class: 'check' }),
+      h('span', { text: c.text }), c.href ? h('a', { class: 'chiplink', href: c.href, target: '_blank', rel: 'noopener' }, c.link || 'View ↗') : null)));
 }
-function check(tone, text) {
-  launch.checks.push({ tone, text });
-  log(tone, 'launch test · ' + text);
+/* adds a check line, or updates the last one when it was still pending */
+function check(tone, text, href, link) {
+  const last = launch.checks[launch.checks.length - 1];
+  if (last && last.tone === 'warn') launch.checks.pop();
+  launch.checks.push({ tone, text, href, link });
+  log(tone, 'launch · ' + text);
   renderLaunch();
 }
+
+async function api(path, { json, body, headers } = {}) {
+  const res = await fetch(path, { method: 'POST', headers: json ? { 'content-type': 'application/json' } : headers, body: json ? JSON.stringify(json) : body });
+  const out = await res.json().catch(() => null);
+  if (!res.ok || !out) throw new Error((out && out.error) || 'HTTP ' + res.status);
+  return out;
+}
+async function rpcCall(method, params) {
+  const res = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+  const out = await res.json();
+  if (out.error) throw new Error(out.error.message);
+  return out.result;
+}
+/* the new token's mint keypair lives only in this page: WebCrypto Ed25519, or noble-ed25519 where the browser lacks it */
+async function newKeypair() {
+  try {
+    const k = await crypto.subtle.generateKey({ name: 'Ed25519' }, false, ['sign']);
+    const publicKey = new Uint8Array(await crypto.subtle.exportKey('raw', k.publicKey));
+    return { publicKey, sign: async (m) => new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, k.privateKey, m)) };
+  } catch {
+    const ed = await import('https://cdn.jsdelivr.net/npm/@noble/ed25519@2.1.0/+esm');
+    const secret = ed.utils.randomPrivateKey();
+    return { publicKey: await ed.getPublicKeyAsync(secret), sign: (m) => ed.signAsync(m, secret) };
+  }
+}
+/* signer keys of a serialized v0 / legacy transaction (counts here stay under 128, so compact-u16 is one byte) */
+function txParts(tx) {
+  const sigCount = tx[0];
+  const message = tx.subarray(1 + 64 * sigCount);
+  const o = (message[0] & 0x80) ? 1 : 0;
+  const signers = [];
+  for (let i = 0; i < message[o]; i++) signers.push(b58encode(message.subarray(o + 4 + 32 * i, o + 36 + 32 * i)));
+  return { sigCount, message, signers };
+}
+async function confirm(signature) {
+  for (let i = 0; i < 50; i++) {
+    const [st] = (await rpcCall('getSignatureStatuses', [[signature]])).value;
+    if (st && st.err) throw new Error('failed on chain: ' + JSON.stringify(st.err));
+    if (st && (st.confirmationStatus === 'confirmed' || st.confirmationStatus === 'finalized')) return;
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  throw new Error('not confirmed after 75s; check Solscan before retrying');
+}
+
 async function onLaunch(ev) {
   ev.preventDefault();
   if (launch.busy) return;
-  log('warn', 'test launch pressed');
+  if (launch.done) return resetLaunch();
   if (!state.active) return openMenu();
   if (launchProblem()) return renderLaunch();
   const wallet = state.active;
+  const feature = wallet.kind === 'standard' && wallet.ref.features['solana:signTransaction'];
+  Object.assign(launch, { busy: true, done: false, result: null, checks: [] });
+  if (!feature) { launch.busy = false; return check('bad', wallet.name + ' cannot sign transactions here. Use Phantom, Solflare or Backpack.'); }
   const meta = { name: $('tk-name').value.trim(), symbol: $('tk-ticker').value.trim(), description: $('tk-desc').value.trim() };
-  Object.assign(launch, { busy: true, done: false, checks: [] });
-  check('ok', 'Image read in frame · sha ' + launch.sha.slice(0, 10));
-
-  /* 1. upload: the endpoint sniffs the bytes, hashes them and stores nothing */
+  let signature = null;
   try {
-    const res = await fetch('/api/upload', { method: 'POST', body: launch.bytes,
-      headers: { 'content-type': 'application/octet-stream', 'x-file-type': launch.file.type } });
-    const out = await res.json().catch(() => null);
-    if (!res.ok || !out) throw new Error((out && out.error) || 'HTTP ' + res.status + (res.status === 404 ? ' (no upload endpoint here)' : ''));
-    if (out.sha256 !== launch.sha) throw new Error('server hash does not match the file');
-    check('ok', 'Uploaded · server verified ' + out.detectedType.replace('image/', '').toUpperCase() + ', ' + fmtSize(out.bytes));
-  } catch (err) {
-    check('bad', 'Upload failed: ' + errText(err));
-    launch.busy = false;
-    return renderLaunch();
-  }
+    /* 1. image + metadata to IPFS (through our function: Pinata needs a secret) */
+    check('warn', 'Uploading image and metadata to IPFS…');
+    const ipfs = await api('/api/ipfs', { body: launch.bytes, headers: {
+      'content-type': 'application/octet-stream', 'x-file-type': launch.file.type, 'x-meta': encodeURIComponent(JSON.stringify(meta)) } });
+    if (ipfs.sha256 !== launch.sha) throw new Error('IPFS step hashed a different image');
+    check('ok', 'Image and metadata on IPFS', ipfs.uri, 'JSON ↗');
 
-  /* 2. the wallet signs the exact metadata a real launch would put on chain */
-  const message = new TextEncoder().encode([
-    'Token launch test. Nothing is deployed and this authorizes nothing.',
-    'name: ' + meta.name, 'symbol: ' + meta.symbol, 'description: ' + (meta.description || '(none)'),
-    'image sha256: ' + launch.sha, 'cluster: ' + CLUSTER, 'origin: ' + location.origin,
-    'nonce: ' + hex(crypto.getRandomValues(new Uint8Array(8))), 'time: ' + new Date().toISOString(),
-  ].join('\n'));
-  const signed = await run(wallet, 'sign launch', () => ACTIONS[wallet.kind].signMessage(wallet, message));
-  check(signed ? 'ok' : 'bad', signed ? 'Metadata signed by ' + shortAddr(wallet.account.address)
-    : 'Signing failed: ' + wallet.status.text.replace(/^sign launch failed: /, ''));
-  Object.assign(launch, { busy: false, done: signed });
-  renderWallets();
+    /* 2. a fresh mint, and the create transaction built by PumpPortal (checked server side) */
+    check('warn', 'Building the pump.fun transaction…');
+    const mintKeys = await newKeypair();
+    const mint = b58encode(mintKeys.publicKey);
+    const built = await api('/api/create', { json: { publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image, devBuy: devBuy() } });
+    check('ok', 'Transaction built · mint ' + shortAddr(mint));
+
+    /* 3. wallet signs first (it may add instructions), then the mint signs whatever the wallet returned */
+    check('warn', 'Approve in ' + wallet.name + '…');
+    log('warn', wallet.name + ' → sign launch transaction requested');
+    const [out] = await feature.signTransaction({ account: wallet.account.raw, transaction: b64dec(built.tx), chain: CHAIN });
+    const tx = new Uint8Array(out.signedTransaction);
+    const parts = txParts(tx);
+    const payerSlot = parts.signers.indexOf(wallet.account.address);
+    const mintSlot = parts.signers.indexOf(mint);
+    if (payerSlot < 0 || mintSlot < 0 || parts.sigCount !== parts.signers.length) throw new Error('the wallet returned a transaction with different signers');
+    if (tx.subarray(1 + 64 * payerSlot, 65 + 64 * payerSlot).every(b => b === 0)) throw new Error('the wallet returned the transaction unsigned');
+    tx.set(await mintKeys.sign(parts.message), 1 + 64 * mintSlot);
+    check('ok', 'Signed by ' + wallet.name + ' and the new mint');
+
+    /* 4. send and wait for confirmation */
+    check('warn', 'Sending to Solana…');
+    signature = await rpcCall('sendTransaction', [b64enc(tx), { encoding: 'base64', preflightCommitment: 'confirmed', maxRetries: 5 }]);
+    check('warn', 'Confirming…', 'https://solscan.io/tx/' + signature, 'Tx ↗');
+    await confirm(signature);
+    check('ok', 'Confirmed on mainnet', 'https://solscan.io/tx/' + signature, 'Tx ↗');
+
+    /* 5. list it: the server re-checks the transaction on chain before it goes in the list */
+    const rec = await api('/api/launches', { json: { signature, mint } });
+    check('ok', '$' + meta.symbol + ' is live', 'https://pump.fun/coin/' + mint, 'pump.fun ↗');
+    Object.assign(launch, { done: true, result: rec.launch });
+    loadTokens();
+  } catch (err) {
+    const text = errText(err).replace(/^Error /, '');
+    check('bad', /rejected|declined|denied|cancel/i.test(text) ? 'Cancelled in wallet'
+      : /no record of a prior credit|insufficient (funds|lamports)/i.test(text) ? 'Not enough SOL in ' + wallet.name + ' for this launch'
+      : /blockhash not found|block height exceeded/i.test(text) ? 'Took too long to approve; launch again'
+      : 'Failed: ' + text,
+      signature ? 'https://solscan.io/tx/' + signature : undefined, signature ? 'Tx ↗' : undefined);
+  } finally {
+    launch.busy = false;
+    renderWallets();
+  }
+}
+
+/* debug → Sign: the earlier dry run (upload to the hashing endpoint + sign the metadata), which deploys nothing */
+async function onDryRun() {
+  if (launch.busy || !state.active) return;
+  if (!launch.file) return log('warn', 'dry run: add an image on the launch form first');
+  const wallet = state.active;
+  launch.busy = true;
+  try {
+    const out = await api('/api/upload', { body: launch.bytes, headers: { 'content-type': 'application/octet-stream', 'x-file-type': launch.file.type } });
+    if (out.sha256 !== launch.sha) throw new Error('server hash does not match the file');
+    log('ok', 'dry run · upload verified ' + out.detectedType + ', ' + fmtSize(out.bytes));
+    const message = new TextEncoder().encode(['Token launch dry run. Nothing is deployed and this authorizes nothing.',
+      'name: ' + $('tk-name').value.trim(), 'symbol: ' + $('tk-ticker').value.trim(), 'image sha256: ' + launch.sha,
+      'origin: ' + location.origin, 'nonce: ' + hex(crypto.getRandomValues(new Uint8Array(8))), 'time: ' + new Date().toISOString()].join('\n'));
+    launch.dryDone = await run(wallet, 'dry run sign', () => ACTIONS[wallet.kind].signMessage(wallet, message));
+  } catch (err) {
+    log('bad', 'dry run failed: ' + errText(err));
+  } finally {
+    launch.busy = false;
+    renderWallets();
+  }
+}
+
+/* ---------- tokens launched through the pad ---------- */
+const tokens = { list: [], loaded: false, loading: false, error: null };
+/* IPFS links go through our cached gateway proxy; anything else is shown as is */
+const imageSrc = (url) => { const m = /\/ipfs\/([A-Za-z0-9]+)/.exec(url || ''); return m ? '/api/image?cid=' + m[1] : url; };
+const ago = (t) => {
+  const s = Math.max(1, Math.round((Date.now() - t) / 1000));
+  return s < 60 ? s + 's' : s < 3600 ? Math.round(s / 60) + 'm' : s < 86400 ? Math.round(s / 3600) + 'h' : Math.round(s / 86400) + 'd';
+};
+async function loadTokens() {
+  if (tokens.loading) return;
+  tokens.loading = true;
+  renderTokens();
+  try {
+    const res = await fetch('/api/launches');
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    Object.assign(tokens, { list: out.launches, loaded: true, error: null });
+  } catch (err) {
+    tokens.error = errText(err);
+  } finally {
+    tokens.loading = false;
+    renderTokens();
+  }
+}
+function renderTokens() {
+  $('token-count').textContent = tokens.loaded ? tokens.list.length : '';
+  const me = state.active && state.active.account && state.active.account.address;
+  const rows = tokens.list.map(l => h('li', {},
+    h('a', { class: 'tok', href: 'https://pump.fun/coin/' + l.mint, target: '_blank', rel: 'noopener', title: l.name + ' on pump.fun' },
+      l.image ? h('img', { src: imageSrc(l.image), alt: '', loading: 'lazy', onerror: (ev) => ev.target.replaceWith(h('span', { class: 'ph', text: l.symbol.slice(0, 1) })) })
+        : h('span', { class: 'ph', text: l.symbol.slice(0, 1) }),
+      h('span', { class: 'tok-main' }, h('b', { text: l.name }), h('span', { class: 'tok-sub', text: '$' + l.symbol + ' · ' + shortAddr(l.mint) })),
+      l.creator === me ? h('span', { class: 'tag gold', text: 'YOURS' }) : null,
+      h('span', { class: 'tok-time', text: ago(l.time) }))));
+  $('token-list').replaceChildren(...(rows.length ? rows : [h('li', { class: 'note', style: 'padding:14px 4px;text-align:center',
+    text: tokens.error ? 'Could not load: ' + tokens.error : tokens.loading ? 'Loading…' : 'Nothing launched yet. Be the first.' })]));
 }
 let settled = false;
 function setVerdict(tone, title, text, sub) {
@@ -937,8 +1134,8 @@ function renderWallets() {
   const list = visibleWallets();
   const active = state.active;
   const where = 'in this ' + (state.env.context === 'top-level' ? 'page' : state.env.context || 'context');
-  if (active && launch.done) {
-    setVerdict('ok', 'Challenge complete!', 'Image uploaded and launch signed ' + where);
+  if (active && launch.done && launch.result) {
+    setVerdict('ok', 'Token launched!', '$' + launch.result.symbol + ' is live on pump.fun');
   } else if (active) {
     setVerdict('ok', 'Connected!', active.name + ' · ' + shortAddr(active.account.address));
   } else if (list.length) {
@@ -1004,11 +1201,16 @@ function renderReport() {
 }
 
 /* ---------- wiring ---------- */
-/* 'wallets' is the main view; env / report / fallbacks live inside the debug panel */
+/* main views: 'wallets' (the launch form) and 'tokens'; sign / env / report / fallbacks live inside the debug panel */
+const MAIN_VIEWS = ['wallets', 'tokens'];
 let debugTab = 'sign';
+let mainView = 'wallets';
 function selectTab(name) {
-  const debug = name !== 'wallets';
-  $('tab-wallets').hidden = debug;
+  const debug = !MAIN_VIEWS.includes(name);
+  for (const v of MAIN_VIEWS) $('tab-' + v).hidden = debug || v !== name;
+  for (const t of document.querySelectorAll('.views [role="tab"]')) t.setAttribute('aria-selected', String(!debug && t.dataset.view === name));
+  if (!debug) mainView = name;
+  if (name === 'tokens') loadTokens();
   $('debug').hidden = !debug;
   $('btn-debug').setAttribute('aria-pressed', String(debug));
   document.body.classList.toggle('debugging', debug);
@@ -1018,17 +1220,19 @@ function selectTab(name) {
   for (const s of $('debug').querySelectorAll(':scope > section')) s.hidden = s.id !== 'tab-' + name;
 }
 for (const tab of document.querySelectorAll('.subnav [role="tab"]')) tab.addEventListener('click', () => selectTab(tab.dataset.tab));
-const toggleDebug = () => selectTab($('debug').hidden ? debugTab : 'wallets');
+const toggleDebug = () => selectTab($('debug').hidden ? debugTab : mainView);
+for (const tab of document.querySelectorAll('.views [role="tab"]')) tab.addEventListener('click', () => selectTab(tab.dataset.view));
+$('tokens-refresh').addEventListener('click', loadTokens);
 const toggleFeed = () => { $('feed-lines').hidden = !$('feed-lines').hidden; };
 $('btn-debug').addEventListener('click', toggleDebug);
-$('btn-debug-close').addEventListener('click', () => selectTab('wallets'));
+$('btn-debug-close').addEventListener('click', () => selectTab(mainView));
 $('wc-btn').addEventListener('click', toggleMenu);
 document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.wc')) closeMenu(); });
 $('verdict').addEventListener('click', () => { clearTimeout(setVerdict.hide); $('verdict').classList.add('gone'); });
-/* game-style hotkeys: C wallet menu, D debug, W main view, S/E/R/B debug tabs, 1-9 hotbar, H feed, Esc closes */
+/* game-style hotkeys: C wallet menu, L launch, T tokens, D debug, S/E/R/B debug tabs, 1-9 hotbar, H feed, Esc closes */
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
-    if (!$('wc-menu').hidden) { closeMenu(); $('wc-btn').focus(); } else if ($('tab-wallets').hidden) selectTab('wallets');
+    if (!$('wc-menu').hidden) { closeMenu(); $('wc-btn').focus(); } else if (!$('debug').hidden) selectTab(mainView);
     return;
   }
   if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.target.closest('textarea, input')) return;
@@ -1036,7 +1240,8 @@ document.addEventListener('keydown', (ev) => {
   const tab = document.querySelector('.subnav [data-key="' + k + '"]');
   if (k === 'c') toggleMenu();
   else if (k === 'd') toggleDebug();
-  else if (k === 'w') selectTab('wallets');
+  else if (k === 'l' || k === 'w') selectTab('wallets');
+  else if (k === 't') selectTab('tokens');
   else if (tab) selectTab(tab.dataset.tab);
   else if (k >= '1' && k <= '9') selectSlot(Number(k));
   else if (k === 'h') toggleFeed();
@@ -1080,12 +1285,17 @@ document.addEventListener('paste', (ev) => {
   if (file) { ev.preventDefault(); takeImage(file, 'paste'); }
 });
 $('tk-ticker').addEventListener('input', () => { $('tk-ticker').value = $('tk-ticker').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
-for (const id of ['tk-name', 'tk-ticker', 'tk-desc']) $(id).addEventListener('input', () => { launch.done = false; launch.checks = []; renderLaunch(); });
+for (const id of ['tk-name', 'tk-ticker', 'tk-desc', 'tk-buy']) $(id).addEventListener('input', () => {
+  if (launch.busy) return;
+  if (launch.done) launch.result = null;
+  launch.done = false; launch.checks = []; renderLaunch();
+});
 
 (async () => {
   await probeEnv();
   log('ok', 'probe started in ' + state.env.context + (state.env.ancestorOrigins instanceof Array && state.env.ancestorOrigins.length ? ' under ' + state.env.ancestorOrigins.join(' > ') : ''));
   discoverStandard(); discoverLegacy();
+  loadTokens();
   renderWallets();
   for (const delay of [300, 1000, 2500]) setTimeout(discoverLegacy, delay);
   setTimeout(() => {
