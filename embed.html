@@ -72,6 +72,14 @@
   #verdict.ok .toast-title { color: var(--pink); } #verdict.bad .toast-title { color: var(--bad); }
   .toast-text { display: block; font: 17px/1.05 var(--mono); }
   .toast-text small { display: block; color: var(--dim); font-size: 15px; }
+  /* after a few seconds the toast folds to one line to give the wallet list room; click to expand */
+  #verdict { cursor: pointer; }
+  #verdict.compact { padding-top: 4px; padding-bottom: 4px; }
+  #verdict.compact .toast-icon { width: 18px; height: 18px; }
+  #verdict.compact .toast-body { display: flex; align-items: baseline; gap: 8px; }
+  #verdict.compact .toast-title { flex: none; }
+  #verdict.compact .toast-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #verdict.compact .toast-text small, #verdict.compact::after { display: none; }
   @keyframes toast-in { from { transform: translateX(105%); } }
 
   main { flex: 1; min-height: 0; overflow: auto; padding: 4px 10px 8px; overscroll-behavior: contain;
@@ -141,7 +149,11 @@
   .slot:hover { background: rgba(60, 110, 120, .8); }
   .slot img { width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
   .slot .n { position: absolute; right: 2px; bottom: 0; font: 14px/1 var(--mono); }
-  .slot .dot { position: absolute; left: 3px; top: 3px; width: 5px; height: 5px; background: var(--dim); }
+  .slot .dot { position: absolute; right: 3px; top: 3px; width: 5px; height: 5px; background: var(--dim); }
+  .tag { font: 13px/1 var(--mono); letter-spacing: .04em; padding: 1px 3px 0; color: #04200e; background: var(--accent); text-shadow: none; }
+  .tag.evm { background: #b9a6ff; }
+  .slot .tag { position: absolute; left: 1px; top: 1px; font-size: 11px; padding: 0 2px; }
+  .wallet-slot .tag { margin-left: 6px; }
   .slot .dot.ok { background: var(--ok); } .slot .dot.bad { background: var(--bad); } .slot .dot.warn { background: var(--warn); }
   .slot[aria-pressed="true"] { z-index: 1; outline: 3px solid #e9fffb; outline-offset: -1px;
                                box-shadow: 0 0 0 5px rgba(111, 231, 216, .35), inset 2px 2px 0 rgba(0, 0, 0, .45); }
@@ -227,7 +239,15 @@ function h(tag, props, ...kids) {
 }
 const hex = (bytes, n = bytes.length) => Array.from(bytes.slice(0, n), b => b.toString(16).padStart(2, '0')).join('');
 const short = (s) => (s && s.length > 14 ? s.slice(0, 6) + '…' + s.slice(-6) : s);
-const errText = (e) => [e && e.name, e && e.code != null ? '(' + e.code + ')' : '', e && e.message ? e.message : String(e)].filter(Boolean).join(' ');
+const errText = (e) => {
+  const parts = [e && e.name, e && e.code != null ? '(' + e.code + ')' : '', e && e.message ? e.message : String(e)];
+  /* wallets hide the useful part of a generic -32603 in data or cause */
+  for (const extra of [e && e.data, e && e.cause]) {
+    if (extra == null) continue;
+    try { parts.push('· ' + (typeof extra === 'string' ? extra : extra.message || JSON.stringify(extra))); } catch { /* unserialisable */ }
+  }
+  return parts.filter(Boolean).join(' ');
+};
 
 const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 function b58decode(str) {
@@ -364,7 +384,8 @@ function discoverStandard() {
   catch (err) { log('bad', 'could not dispatch app-ready: ' + errText(err)); }
 }
 
-/* Legacy injected Solana providers, only listed when the same wallet did not register via Wallet Standard. */
+/* Legacy injected Solana providers. Listed even when the same wallet registered via Wallet Standard,
+   so the two code paths can be compared when one of them fails. */
 const seenLegacy = new Set();
 function discoverLegacy() {
   const candidates = [
@@ -373,9 +394,10 @@ function discoverLegacy() {
     ['Backpack', 'window.backpack', window.backpack],
   ];
   for (const [name, path, provider] of candidates) {
-    if (!provider || seenLegacy.has(provider) || hasWalletNamed(name)) continue;
+    if (!provider || seenLegacy.has(provider)) continue;
     seenLegacy.add(provider);
-    addWallet({ kind: 'legacy', source: path, ref: provider, name, icon: null, solana: true, chains: [], features: [], account: null, status: null });
+    const label = hasWalletNamed(name) ? name + ' (legacy API)' : name;
+    addWallet({ kind: 'legacy', source: path, ref: provider, name: label, icon: null, solana: true, chains: [], features: [], account: null, status: null });
   }
   state.env.injected = snapshotGlobals();
   renderEnv();
@@ -566,8 +588,9 @@ function onBridgeMessage(channel, data) {
 }
 
 /* ---------- rendering ---------- */
-const iconOf = (wallet, fallback) => typeof wallet.icon === 'string' && wallet.icon.startsWith('data:image/')
+const iconOf = (wallet, fallback) => typeof wallet.icon === 'string' && /^(data:image\/|https:)/.test(wallet.icon)
   ? h('img', { src: wallet.icon, alt: '' }) : fallback;
+const chainTag = (wallet) => h('span', { class: 'tag' + (wallet.solana ? '' : ' evm'), text: wallet.solana ? 'SOL' : 'EVM' });
 function walletRow(wallet) {
   const actions = ACTIONS[wallet.kind];
   const connected = !!wallet.account;
@@ -580,7 +603,7 @@ function walletRow(wallet) {
       : null,
   ];
   return h('div', { class: 'wallet', id: 'wallet-' + wallet.slot },
-    h('div', { class: 'wallet-slot' }, h('span', { text: 'Slot ' + wallet.slot }), h('span', { text: wallet.source })),
+    h('div', { class: 'wallet-slot' }, h('span', {}, 'Slot ' + wallet.slot, chainTag(wallet)), h('span', { text: wallet.source })),
     h('div', { class: 'wallet-head' }, icon, h('span', { class: 'wallet-name', text: wallet.name })),
     connected ? h('div', { class: 'acct', text: wallet.account.address }) : null,
     h('div', { class: 'actions' }, buttons),
@@ -592,10 +615,13 @@ function setVerdict(tone, title, text, sub) {
   const verdict = $('verdict');
   const changed = verdict.dataset.tone !== tone;
   verdict.dataset.tone = tone;
-  verdict.className = tone;
   $('verdict-title').textContent = title;
   $('verdict-text').replaceChildren(text, h('small', { text: sub }));
-  if (changed) { verdict.classList.remove('pop'); void verdict.offsetWidth; verdict.classList.add('pop'); }
+  if (!changed) return;
+  verdict.classList.remove('ok', 'bad', 'warn', 'compact', 'pop'); void verdict.offsetWidth;
+  verdict.classList.add(tone, 'pop');
+  clearTimeout(setVerdict.fold);
+  setVerdict.fold = setTimeout(() => verdict.classList.add('compact'), 3500);
 }
 function renderWallets() {
   const root = $('tab-wallets');
@@ -630,7 +656,7 @@ function renderHud(ordered, sol) {
     slots.push(w
       ? h('button', { class: 'slot', title: n + ': ' + w.name, 'aria-label': 'Slot ' + n + ': ' + w.name, 'aria-pressed': String(n === selectedSlot),
                       onclick: () => selectSlot(n) },
-          iconOf(w, w.name.slice(0, 1).toUpperCase()), h('span', { class: 'dot' + (w.status ? ' ' + w.status.tone : '') }), h('span', { class: 'n', text: n }))
+          iconOf(w, w.name.slice(0, 1).toUpperCase()), chainTag(w), h('span', { class: 'dot' + (w.status ? ' ' + w.status.tone : '') }), h('span', { class: 'n', text: n }))
       : h('button', { class: 'slot', disabled: true, 'aria-label': 'Empty slot ' + n }));
   }
   $('hotbar').replaceChildren(...slots);
@@ -678,6 +704,7 @@ function toggleFeed() {
   $('btn-hide').setAttribute('aria-pressed', String(collapsed));
 }
 $('btn-hide').addEventListener('click', toggleFeed);
+$('verdict').addEventListener('click', () => { clearTimeout(setVerdict.fold); $('verdict').classList.toggle('compact'); });
 /* game-style hotkeys: W/F/E/R tabs, 1-9 hotbar slots, H feed */
 document.addEventListener('keydown', (ev) => {
   if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.target.closest('textarea, input')) return;
