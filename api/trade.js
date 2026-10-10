@@ -4,11 +4,12 @@
 // A coin that has left its curve (graduated to PumpSwap) answers { graduated: true }, and the page trades it through Jupiter.
 // GET  ?mint&side=buy|sell&amount                               → { expected, quote: { symbol, decimals }, decimals }   (a live quote)
 // POST { wallet, mint, side, amount, slippage (%), jito }        → { tx (unsigned, base64), expected, minimum, ... }
+//      jito: false, true (Fast) or 'fast' | 'turbo' | 'ultra' (the tip, api/_jito.js)
 // Amounts are decimal strings: what you pay for a buy (SOL, or the pair coin), coins for a sell. Returned amounts are base units.
 const { PublicKey, TransactionMessage, VersionedTransaction, ComputeBudgetProgram } = require('@solana/web3.js');
 const { OnlinePumpSdk, PUMP_SDK, getBuyV3TokenAmountFromQuoteAmount, getSellSolAmountFromTokenAmount } = require('@pump-fun/pump-sdk');
 const BN = require('bn.js');
-const { tipInstruction } = require('./_jito');
+const { tipInstruction, tipOf } = require('./_jito');
 const { cors, readJson, isPubkey, connection, rpc, redis, rateLimit, fail } = require('./_lib');
 
 const TRADE_CU = 150000;   // a curve trade uses ~80k
@@ -81,7 +82,7 @@ module.exports = async (req, res) => {
     const { blockhash } = await connection().getLatestBlockhash('confirmed');
     const message = new TransactionMessage({ payerKey: user, recentBlockhash: blockhash, instructions: [
       ComputeBudgetProgram.setComputeUnitLimit({ units: TRADE_CU }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: CU_PRICE }),
-      ...ixs, ...(b.jito === true ? [tipInstruction(b.wallet)] : []),
+      ...ixs, ...(tipOf(b.jito) ? [tipInstruction(b.wallet, tipOf(b.jito))] : []),
     ] }).compileToV0Message();
     const tx = Buffer.from(new VersionedTransaction(message).serialize());
 

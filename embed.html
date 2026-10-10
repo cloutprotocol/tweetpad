@@ -45,7 +45,7 @@
       <article class="pane tweet welcome" aria-label="Welcome post from Agent Inu">
         <img class="tweet-ava" src="assets/agent-inu.jpg" alt="" width="48" height="48">
         <div class="tweet-body">
-          <div class="tweet-head"><b>Agent Inu</b><span class="tweet-handle">@tweetpad</span><span class="tweet-time">2m</span></div>
+          <div class="tweet-head"><b>Agent Inu</b><span class="tweet-handle">@tweetpad_io</span><span class="tweet-time">2m</span></div>
           <p class="tweet-copy">Welcome to <span class="hashtag">#tweetpad</span>. Drop an image, pick a ticker, hit Launch, and your coin goes live without leaving the tweet. Such launch. Very wow.</p>
           <div class="tweet-actions">
             <button class="tweet-act share" data-act="share" aria-pressed="false" aria-label="Share on X" title="Share on X"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 3 1 7.5 6.5 12V9.2c3.6 0 6 .9 8 3.8-.6-4.3-3.2-7.2-8-7.6z"/></svg><span class="lbl">Share</span><span class="n" data-count="share"></span></button>
@@ -111,8 +111,8 @@
           </div>
           <div class="devbuy-est" id="devbuy-est" aria-live="polite"></div>
           <!-- Jito: the launch (create + dev buy) goes to Jito's block engine as one bundle; the tip comes from the user's wallet -->
-          <label class="jito-row" id="jito-row"><input type="checkbox" id="tk-jito"><span class="jito-name">⚡ Bundle with Jito</span>
-            <span class="jito-hint">+0.0001 SOL tip · lands first in its block, out of the public mempool</span></label>
+          <div class="jito-row" id="jito-row"><label class="jito-check"><input type="checkbox" id="tk-jito"><span class="jito-name">⚡ Bundle with Jito</span></label>
+            <span id="jito-speed"></span><span class="jito-hint" id="jito-hint"></span></div>
         </div>
         <button class="btn primary launch-btn" id="launch-btn" type="button">Connect wallet</button>
         <p class="note" id="launch-note">Launches on pump.fun · 0 pad fee · network fees apply</p>
@@ -234,11 +234,14 @@
           <tr><td>$TP contract</td><td id="about-ca"></td></tr>
           <tr><td>Skin</td><td id="about-skin"></td></tr>
           <tr><td>Network</td><td id="about-net"></td></tr>
-          <tr><td>Launches on</td><td>pump.fun</td></tr>
+          <tr><td>Launches on</td><td>pump.fun (Solana) · Launch Party (Robinhood, BNB, Base)</td></tr>
           <tr><td>License</td><td>MIT</td></tr>
         </table>
         <div class="menu-sec">Contact</div>
         <ul class="about-links">
+          <li class="about-contact"><span class="about-link-name">X</span>
+            <a class="about-link-sub" href="https://x.com/tweetpad_io" target="_blank" rel="noopener">@tweetpad_io</a>
+            <span class="ext" aria-hidden="true">↗</span></li>
           <li class="about-contact"><span class="about-link-name">Email</span>
             <a class="about-link-sub" href="mailto:tweetpad@proton.me">tweetpad@proton.me</a>
             <button class="copy" id="about-copy-email" title="Copy email" aria-label="Copy email">⧉</button></li>

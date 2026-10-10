@@ -7,7 +7,7 @@
 
 <p align="center"><b>Launch a token without leaving the tweet.</b></p>
 
-<p align="center"><a href="https://www.tweetpad.io">tweetpad.io</a> · <a href="https://github.com/cloutprotocol/tweetpad">github.com/cloutprotocol/tweetpad</a></p>
+<p align="center"><a href="https://www.tweetpad.io">tweetpad.io</a> · <a href="https://x.com/tweetpad_io">@tweetpad_io</a> · <a href="https://github.com/cloutprotocol/tweetpad">github.com/cloutprotocol/tweetpad</a></p>
 
 tweetpad is an X player card dressed as the 2012 bird app (or a pixel HUD, if you pick that skin). Expand the tweet, connect a Solana wallet, drop an image, pick a ticker,
 press **Launch**. The coin goes live on pump.fun, gets listed on tweetpad, and has its own chart, live trades and a

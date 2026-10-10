@@ -541,6 +541,18 @@ html[data-skin="2012"] .trade-btn.sell { color: #fff; background: linear-gradien
 html[data-skin="2012"] .trade-status { font: 12px/1.35 var(--px); }
 html[data-skin="2012"] .trade-status.ok { color: #3e8a3e; } html[data-skin="2012"] .trade-status.bad { color: #bd362f; } html[data-skin="2012"] .trade-status.warn { color: #c09853; }
 
+/* trade extras, 2012 style */
+html[data-skin="2012"] .trade-bal { font: 12px/1.3 var(--px); color: #999; }
+html[data-skin="2012"] .trade-bal b { color: #333; font-weight: bold; }
+html[data-skin="2012"] .trade-est .gap { color: #999; } html[data-skin="2012"] .trade-est .gap.warn { color: #c09853; font-weight: bold; }
+html[data-skin="2012"] .jito-speed { gap: 0; }
+html[data-skin="2012"] .jito-speed button { margin-left: -1px; padding: 3px 8px; color: #555; font: bold 11px/1 var(--px); text-shadow: 0 1px 0 #fff;
+  background: linear-gradient(#fff, #e6e6e6); border: 1px solid #bbb; }
+html[data-skin="2012"] .jito-speed button:first-child { margin-left: 0; border-radius: 4px 0 0 4px; }
+html[data-skin="2012"] .jito-speed button:last-child { border-radius: 0 4px 4px 0; }
+html[data-skin="2012"] .jito-speed button[aria-checked="true"] { color: #fff; text-shadow: 0 -1px 0 rgba(0, 0, 0, .25);
+  background: linear-gradient(#2c8fd6, #4aa9e9); border-color: #1d6aa5; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .3); }
+
 /* ---------- welcome post: an old-style tweet above the launch form ---------- */
 html[data-skin="2012"] .welcome { display: flex; gap: 10px; margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #c8c8c8;
   border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }

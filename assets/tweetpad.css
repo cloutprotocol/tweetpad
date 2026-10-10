@@ -763,7 +763,7 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 /* Solana keeps its own gradient mark: a mono one reads as a plain "≡" */
 .chain-badge.sol .net-logo { background: url(solana.svg) center / contain no-repeat; -webkit-mask: none; mask: none; }
 .chain-badge.rh { background: #ccff00; color: #000; }
-.chain-badge.bnb { background: #f0b90b; color: #1e2026; }
+.chain-badge.bnb { background: #f0b90b; color: #fff; }   /* BNB yellow, white mark: the coin icon wallets show */
 .chain-badge.base { background: #0000ff; color: #fff; }
 .chain-badge.base .net-logo { width: 46%; height: 46%; }
 .chain-badge .net-logo { width: 62%; height: 62%; }
@@ -781,6 +781,7 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 /* ---------- trading on the coin page, and the Jito bundle option ---------- */
 .jito-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; cursor: pointer; font: 14px/1.2 var(--mono); color: var(--dim); }
 .jito-row[hidden] { display: none; }
+.jito-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .jito-row input, .launch .jito-row input { flex: none; width: auto; height: auto; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; accent-color: var(--accent); }
 .jito-name { color: var(--text); }
 .jito-row input:not(:checked) ~ .jito-name { color: var(--dim); }
@@ -808,3 +809,13 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .trade-status.ok { color: var(--ok); } .trade-status.bad { color: var(--bad); } .trade-status.warn { color: var(--warn); }
 .trade-status a { color: inherit; }
 @media (max-width: 420px) { .trade-row { flex-direction: column; } .trade-row .buy-chips button { flex: 1; padding: 6px 0; } }
+
+/* trade box extras: the balance line, the quote's distance from market, and the Jito speed picker */
+.trade-bal { margin-top: -3px; font: 13px/1.2 var(--mono); color: var(--dim); }
+.trade-bal b { color: var(--text); font-weight: normal; }
+.trade-est .gap { color: var(--dim); } .trade-est .gap.warn { color: var(--warn); }
+.jito-speed { display: inline-flex; gap: 2px; }
+.jito-speed button { appearance: none; padding: 2px 6px; cursor: pointer; color: var(--dim); font: 12px/1 var(--mono); background: transparent; border: 1px solid var(--line); }
+.jito-speed button[aria-checked="true"] { color: #04200e; background: var(--accent); border-color: var(--accent); }
+.jito-speed button[disabled] { cursor: default; opacity: .45; }
+.jito-row .jito-hint { flex-basis: 100%; }

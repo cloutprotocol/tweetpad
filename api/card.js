@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
 <link rel="icon" href="${esc(origin)}/assets/brand/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="${esc(origin)}/assets/brand/tweetpad-hash-180.png">
 <meta name="twitter:card" content="player">
-<meta name="twitter:site" content="@ordinalos">
+<meta name="twitter:site" content="@tweetpad_io">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:player" content="${esc(player)}">

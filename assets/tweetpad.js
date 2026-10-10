@@ -883,7 +883,17 @@ function txParts(tx) {
 /* Jito: a signed transaction that carries a tip goes to Jito's block engine as a bundle (private, lands as one, first in its
    block). Its endpoint is free and answers browsers, so nothing passes through us. If Jito refuses it, the public RPC sends it. */
 const JITO_URL = 'https://mainnet.block-engine.jito.wtf/api/v1/transactions?bundleOnly=true';
-const jitoOn = () => store.get('tweetpad:jito') !== '0';
+/* the bundle setting, per browser: off, or a tip speed (api/_jito.js TIPS); on at Fast until changed */
+const JITO_SPEEDS = { fast: { label: 'Fast', sol: 0.0001 }, turbo: { label: 'Turbo', sol: 0.0005 }, ultra: { label: 'Ultra', sol: 0.001 } };
+const jitoSpeed = () => { const v = store.get('tweetpad:jito'); return v === '0' ? null : JITO_SPEEDS[v] ? v : 'fast'; };
+const jitoOn = () => !!jitoSpeed();
+const jitoTip = () => (jitoOn() ? JITO_SPEEDS[jitoSpeed()].sol : 0);
+function setJito(v) { store.set('tweetpad:jito', v || '0'); renderTrade(); renderJitoRow(); }
+/* the speed picker beside a Jito checkbox (launch form and trade box) */
+const jitoSpeedPicker = (disabled) => h('span', { class: 'jito-speed', role: 'radiogroup', 'aria-label': 'Jito tip' },
+  ...Object.entries(JITO_SPEEDS).map(([k, v]) => h('button', { type: 'button', role: 'radio', 'aria-checked': String(jitoSpeed() === k), disabled: disabled || !jitoOn(),
+    title: '+' + v.sol + ' SOL tip', onclick: (ev) => { ev.preventDefault(); setJito(k); } }, v.label)));
+const jitoHint = () => '+' + jitoTip() + ' SOL tip';
 async function sendTx(tx, bundle) {
   const b64 = b64enc(tx);
   if (bundle && CLUSTER === 'mainnet') {
@@ -934,7 +944,7 @@ async function onLaunch(ev) {
     const mintKeys = await newKeypair();
     const mint = b58encode(mintKeys.publicKey);
     const built = await api('/api/create', { json: { publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image,
-      thumb: launch.thumb, devBuy: pair ? 0 : devBuy(), quote: pair ? pair.mint : 'sol', jito: jitoOn() } });
+      thumb: launch.thumb, devBuy: pair ? 0 : devBuy(), quote: pair ? pair.mint : 'sol', jito: jitoSpeed() || false } });
     check('ok', 'Transaction built · mint ' + shortAddr(mint) + (pair ? ' · paired with $' + pair.symbol : ''));
 
     /* 3. wallet signs first (it may add instructions), then the mint signs whatever the wallet returned */
@@ -1025,13 +1035,18 @@ function estimateBuy(sol) {
   return { tokens: Number(tokens) / 10 ** c.decimals, pct: Number(tokens * 1000000n / BigInt(c.supply)) / 1e4, feePct: c.feeBps / 100 };
 }
 const fmtAmount = (n) => (n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : Math.round(n).toString());
+function renderJitoRow() {
+  $('tk-jito').checked = jitoOn();
+  $('tk-jito').disabled = launch.busy;
+  $('jito-speed').replaceChildren(jitoSpeedPicker(launch.busy));
+  $('jito-hint').textContent = jitoOn() ? jitoHint() + ' · lands first in its block, out of the public mempool' : 'off: sent through the public RPC';
+}
 function renderDevBuy(pair) {
   const box = $('devbuy-box'), est = $('devbuy-est'), sol = devBuy();
   const rh = launch.chain !== 'solana', n = launchNet();
   $('devbuy-unit').textContent = rh ? n.symbol : 'SOL';
   $('jito-row').hidden = rh;
-  $('tk-jito').checked = jitoOn();
-  $('tk-jito').disabled = launch.busy;
+  renderJitoRow();
   /* presets follow the network: ETH and BNB amounts are far smaller than SOL ones */
   const presets = rh ? n.presets : ['0', '0.1', '0.5', '1'];
   box.querySelectorAll('[data-buy]').forEach((b, i) => { b.dataset.buy = presets[i]; b.textContent = i ? presets[i] : 'None'; });
@@ -1785,12 +1800,15 @@ const JUP = 'https://lite-api.jup.ag/swap/v1';
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const SLIPPAGES = [1, 3, 5, 10, 20];
 const BUY_PRESETS = ['0.05', '0.1', '0.5', '1'];   // SOL; each EVM chain has its own (EVM_NETS tradePresets)
-const trade = { mint: null, side: 'buy', amount: '', raw: null, slip: 5, quote: null, quoting: false, seq: 0, timer: null,
-  busy: false, status: null, holding: null, graduated: false, picking: false };
+const QUOTE_REFRESH = 10000;   // a quote on screen is refreshed this often while it's there
+const trade = { mint: null, side: 'buy', amount: '', raw: null, slip: Number(store.get('tweetpad:slip')) || 5, quote: null, quoting: false, seq: 0, timer: null,
+  refresh: null, busy: false, status: null, holding: null, native: null, graduated: false, picking: false };
 function resetTrade(mint) {
-  clearTimeout(trade.timer);
-  Object.assign(trade, { mint, amount: '', raw: null, quote: null, quoting: false, busy: false, status: null, holding: null, graduated: false, picking: false });
+  clearTimeout(trade.timer); clearTimeout(trade.refresh);
+  Object.assign(trade, { mint, amount: '', raw: null, quote: null, quoting: false, busy: false, status: null, holding: null, native: null, graduated: false, picking: false });
 }
+/* left in the wallet on Max: the network fee, the Jito tip and (Solana) rent for a new token account */
+const maxReserve = () => (isEvm(trade.mint) ? (coinChain(coin.launch) === 'bnb' ? 0.002 : 0.0003) : 0.01 + jitoTip());
 /* decimal string ⇄ base units, never through floating point */
 const toRaw = (s, d) => { const m = /^(\d+)(?:\.(\d*))?$/.exec(String(s).trim()); return m ? BigInt(m[1] + (m[2] || '').slice(0, d).padEnd(d, '0')) : null; };
 const fromRaw = (n, d) => { const s = BigInt(n).toString().padStart(d + 1, '0'); return (s.slice(0, -d) + '.' + s.slice(-d)).replace(/\.?0+$/, ''); };
@@ -1801,41 +1819,54 @@ const tradeQuote = () => isEvm(trade.mint) ? { symbol: netOf(coin.launch).symbol
   : coin.launch && coin.launch.quote ? { symbol: coin.launch.quote.symbol, decimals: 6, mint: coin.launch.quote.mint } : { symbol: 'SOL', decimals: 9 };
 const coinDecimals = () => (isEvm(trade.mint) ? 18 : 6);
 
-/* the connected wallet's balance of the open coin */
+/* the connected wallet's balances: the open coin, and what it pays with (SOL, ETH or BNB; a crafted pair's coin is not read) */
 async function loadHolding() {
   const mint = trade.mint, owner = tradeWallet();
   if (!mint || !owner) return;
   try {
-    let raw;
+    let raw, native = null;
     if (isEvm(mint)) {
-      const hex = await evmRead(netOf(coin.launch), 'eth_call', [{ to: mint, data: '0x70a08231' + owner.slice(2).toLowerCase().padStart(64, '0') }, 'latest']);
-      raw = BigInt(hex === '0x' ? 0 : hex);
+      const n = netOf(coin.launch);
+      const [hex, bal] = await Promise.all([evmRead(n, 'eth_call', [{ to: mint, data: '0x70a08231' + owner.slice(2).toLowerCase().padStart(64, '0') }, 'latest']),
+        evmRead(n, 'eth_getBalance', [owner, 'latest'])]);
+      raw = BigInt(hex === '0x' ? 0 : hex); native = BigInt(bal);
     } else {
-      const out = await rpcCall('getTokenAccountsByOwner', [owner, { mint }, { encoding: 'jsonParsed', commitment: 'confirmed' }]);
-      raw = out.value.reduce((t, a) => t + BigInt(a.account.data.parsed.info.tokenAmount.amount), 0n);
+      /* each read on its own: one failing (a busy public RPC) still leaves the other on screen */
+      const [out, bal] = await Promise.allSettled([rpcCall('getTokenAccountsByOwner', [owner, { mint }, { encoding: 'jsonParsed', commitment: 'confirmed' }]),
+        tradeQuote().mint ? null : rpcCall('getBalance', [owner, { commitment: 'confirmed' }])]);
+      if (out.status === 'rejected') log('warn', 'trade · coin balance: ' + errText(out.reason));
+      raw = out.status === 'fulfilled' ? out.value.value.reduce((t, a) => t + BigInt(a.account.data.parsed.info.tokenAmount.amount), 0n) : null;
+      native = bal.status === 'fulfilled' && bal.value ? BigInt(bal.value.value) : null;
     }
-    if (trade.mint === mint) { trade.holding = raw; renderTrade(); }
+    if (trade.mint === mint) { Object.assign(trade, { holding: raw, native }); renderTrade(); }
   } catch (err) { log('warn', 'trade · balance: ' + errText(err)); }
 }
 
 /* the live estimate as the amount changes (debounced; only the latest answer counts) */
-function requestQuote() {
-  clearTimeout(trade.timer);
-  trade.quote = null;
+function requestQuote(silent) {
+  clearTimeout(trade.timer); clearTimeout(trade.refresh);
+  if (!silent) trade.quote = null;
   const seq = ++trade.seq;
   if (!tradeAmountRaw()) { trade.quoting = false; return renderTrade(); }
-  trade.quoting = true;
+  trade.quoting = !silent;
   renderTrade();
   trade.timer = setTimeout(async () => {
     try {
       const q = await fetchQuote();
-      if (seq === trade.seq) trade.quote = q;
+      if (seq === trade.seq) trade.quote = { ...q, at: Date.now() };
     } catch (err) { if (seq === trade.seq) trade.quote = { error: errText(err).replace(/^Error /, '') }; }
-    if (seq === trade.seq) { trade.quoting = false; renderTrade(); }
-  }, 350);
+    if (seq !== trade.seq) return;
+    trade.quoting = false;
+    renderTrade();
+    /* keep it live: the price moves, so a quote left on screen is taken again (quietly) while the coin page is open */
+    const mint = trade.mint;
+    trade.refresh = setTimeout(() => { if (seq === trade.seq && trade.mint === mint && !trade.busy && !document.hidden && !$('tab-coin').hidden) requestQuote(true); }, QUOTE_REFRESH);
+  }, silent ? 0 : 350);
 }
-const tradeAmountRaw = () => trade.raw != null ? trade.raw : toRaw(trade.amount, trade.side === 'buy' ? tradeQuote().decimals : coinDecimals());
-const tradeAmountText = () => trade.raw != null ? fromRaw(trade.raw, coinDecimals()) : trade.amount.trim();
+/* an amount is typed (a decimal string) or set exactly in base units by a chip (% of the bag, Max) */
+const amountDecimals = () => (trade.side === 'buy' ? tradeQuote().decimals : coinDecimals());
+const tradeAmountRaw = () => trade.raw != null ? trade.raw : toRaw(trade.amount, amountDecimals());
+const tradeAmountText = () => trade.raw != null ? fromRaw(trade.raw, amountDecimals()) : trade.amount.trim();
 /* { out (base units of what you receive), jup (Jupiter's quote, for a graduated coin) } */
 async function fetchQuote() {
   const amount = tradeAmountText(), side = trade.side;
@@ -1887,7 +1918,7 @@ async function runTrade() {
       say('warn', 'Getting the best price…');
       let txB64, bundle = false, expected;
       if (!trade.graduated) {
-        const built = await api('/api/trade', { json: { wallet: wallet.account.address, mint, side, amount, slippage: trade.slip, jito: jitoOn() } });
+        const built = await api('/api/trade', { json: { wallet: wallet.account.address, mint, side, amount, slippage: trade.slip, jito: jitoSpeed() || false } });
         if (built.graduated) trade.graduated = true;
         else { txB64 = built.tx; bundle = jitoOn(); expected = BigInt(built.expected); }
       }
@@ -1902,13 +1933,14 @@ async function runTrade() {
       }
       say('warn', 'Approve in ' + wallet.name + '…');
       const [signed] = await feature.signTransaction({ account: wallet.account.raw, transaction: b64dec(txB64), chain: CHAIN });
-      say('warn', bundle ? 'Sending as a Jito bundle…' : 'Sending…');
+      say('warn', bundle ? 'Sending as a Jito bundle (' + JITO_SPEEDS[jitoSpeed()].label + ')…' : 'Sending…');
       sig = await sendTx(new Uint8Array(signed.signedTransaction), bundle);
       say('warn', 'Confirming…', 'https://solscan.io/tx/' + sig);
       await confirm(sig);
       say('ok', side === 'buy' ? 'Bought ≈ ' + fmtQty(Number(expected) / 1e6) + ' $' + l.symbol : 'Sold for ≈ ' + fmtQty(Number(expected) / 10 ** q.decimals) + ' ' + q.symbol, 'https://solscan.io/tx/' + sig);
     }
     setVerdict('ok', side === 'buy' ? 'Bought $' + l.symbol + '!' : 'Sold $' + l.symbol, trade.status.text);
+    clearTimeout(trade.refresh);
     Object.assign(trade, { amount: '', raw: null, quote: null });
     loadMarket([mint]);
     if (isEvm(mint)) loadChart();
@@ -1931,24 +1963,44 @@ function renderTrade() {
   const rh = isEvm(l.mint), q = tradeQuote(), buy = trade.side === 'buy', owner = tradeWallet();
   const unit = buy ? q.symbol : '$' + l.symbol;
   const holding = trade.holding != null ? Number(trade.holding) / 10 ** coinDecimals() : null;
+  const native = trade.native != null ? Number(trade.native) / 10 ** q.decimals : null;
+  /* dollar values and the market price, from the coin's market data (price in USD and in its pair) */
+  const m = tokens.market[l.mint] || {};
+  const pairUsd = m.price && m.priceNative ? m.price / m.priceNative : null;
+  const usd = (n, isCoin) => { const v = isCoin ? (m.price ? n * m.price : null) : (pairUsd ? n * pairUsd : null); return v == null ? '' : v >= 1 ? '$' + fmtQty(v) : '$' + v.toFixed(2); };
+  const amountIn = tradeAmountRaw() ? Number(tradeAmountRaw()) / 10 ** amountDecimals() : 0;
+  /* more than the wallet holds: say so on the button instead of letting the wallet fail */
+  const short = buy ? native != null && amountIn > native : holding != null && amountIn > holding;
   const setSide = (side) => { if (trade.side === side || trade.busy) return; Object.assign(trade, { side, amount: '', raw: null, status: null }); requestQuote(); };
   const setAmount = (amount, raw = null) => { Object.assign(trade, { amount, raw, status: null }); requestQuote(); };
-  const chips = buy ? (rh ? netOf(l).tradePresets : q.mint ? ['1000', '10000', '100000', '1000000'] : BUY_PRESETS).map(v => h('button', { type: 'button', disabled: trade.busy,
-      'aria-pressed': String(trade.amount === v), onclick: () => setAmount(v) }, fmtQty(Number(v))))
+  const maxRaw = native != null ? trade.native - toRaw(maxReserve().toFixed(q.decimals), q.decimals) : null;
+  const chips = buy ? [...(rh ? netOf(l).tradePresets : q.mint ? ['1000', '10000', '100000', '1000000'] : BUY_PRESETS).slice(0, 3).map(v => h('button', { type: 'button', disabled: trade.busy,
+      'aria-pressed': String(trade.raw == null && trade.amount === v), onclick: () => setAmount(v) }, fmtQty(Number(v)))),
+      h('button', { type: 'button', disabled: trade.busy || !(maxRaw > 0n), title: 'Everything but ' + maxReserve() + ' ' + q.symbol + ' for fees',
+        'aria-pressed': String(trade.raw != null && trade.raw === maxRaw), onclick: () => setAmount(fromRaw(maxRaw, q.decimals), maxRaw) }, 'Max')]
     : [25, 50, 100].map(p => h('button', { type: 'button', disabled: trade.busy || !trade.holding,
       'aria-pressed': String(trade.raw != null && trade.holding && trade.raw === trade.holding * BigInt(p) / 100n),
       onclick: () => { const raw = trade.holding * BigInt(p) / 100n; setAmount(fromRaw(raw, coinDecimals()), raw); } }, p + '%'));
-  const input = h('input', { type: 'text', inputmode: 'decimal', placeholder: '0', value: trade.raw != null ? fmtQty(holding * Number(trade.raw) / Number(trade.holding || 1n)) : trade.amount,
+  const input = h('input', { type: 'text', inputmode: 'decimal', placeholder: '0', value: trade.raw != null ? fmtQty(Number(trade.raw) / 10 ** amountDecimals()) : trade.amount,
     disabled: trade.busy, 'aria-label': (buy ? 'Amount of ' + q.symbol + ' to spend' : 'Amount of $' + l.symbol + ' to sell'),
-    oninput: (ev) => { const v = ev.target.value.replace(',', '.'); if (/^\d*\.?\d*$/.test(v)) setAmount(v); else ev.target.value = trade.amount; } });
+    oninput: (ev) => { const v = ev.target.value.replace(',', '.'); if (/^\d*\.?\d*$/.test(v)) setAmount(v); else ev.target.value = trade.amount; },
+    onkeydown: (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); const b = $('coin-trade').querySelector('.trade-btn'); if (b && !b.disabled) b.click(); } } });
   /* what it gets you, from the latest quote */
   const out = trade.quote && trade.quote.out != null ? Number(trade.quote.out) / 10 ** (buy ? coinDecimals() : q.decimals) : null;
+  /* how far the quote is from the market price (fees and the trade's own price impact together) */
+  const spot = m.priceNative && amountIn ? (buy ? amountIn / m.priceNative : amountIn * m.priceNative) : null;
+  const gap = out != null && spot ? Math.max(0, (1 - out / spot) * 100) : null;
   const est = trade.quoting ? h('span', { class: 'dim', text: 'Quoting…' })
     : trade.quote && trade.quote.error ? h('span', { class: 'bad', text: trade.quote.error })
     : out != null ? h('span', null, '≈ ', h('b', { text: fmtQty(out) + ' ' + (buy ? '$' + l.symbol : q.symbol) }),
-        h('span', { class: 'dim', text: ' · min ' + fmtQty(out * (1 - trade.slip / 100)) }))
-    : !buy && holding != null ? h('span', { class: 'dim' }, 'You hold ', h('b', { class: 'hold', text: fmtQty(holding) + ' $' + l.symbol }))
-    : h('span', { class: 'dim', text: rh ? '1% coin fee, to its creator and holders · tweetpad takes nothing' : 'pump.fun’s fees only · tweetpad takes nothing' });
+        h('span', { class: 'dim', text: (usd(out, buy) ? ' ' + usd(out, buy) : '') + ' · min ' + fmtQty(out * (1 - trade.slip / 100)) }),
+        gap != null && gap >= 0.5 ? h('span', { class: 'gap' + (gap >= 5 ? ' warn' : ''), title: 'How far this quote is from the market price: fees plus the price impact of the trade itself',
+          text: ' · −' + gap.toFixed(gap < 10 ? 1 : 0) + '% vs market' }) : null)
+    : null;
+  /* the line under the estimate: the balance this side spends */
+  const bal = !owner ? null : buy ? (native != null ? h('span', null, 'Balance ', h('b', { text: fmtQty(native) + ' ' + q.symbol }), usd(native) ? ' · ' + usd(native) : '') : null)
+    : holding != null ? h('span', null, 'You hold ', h('b', { text: fmtQty(holding) + ' $' + l.symbol }), usd(holding, true) ? ' · ' + usd(holding, true) : '') : null;
+  const feeLine = rh ? '1% coin fee, to its creator and holders · tweetpad takes nothing' : 'pump.fun’s fees only · tweetpad takes nothing';
   const jito = !rh && !trade.graduated;
   let action;
   if (!owner) {
@@ -1960,9 +2012,9 @@ function renderTrade() {
           list.length ? 'Connect EVM wallet to trade' : 'No EVM wallet here');
     } else action = h('button', { class: 'btn primary trade-btn', onclick: openMenu }, 'Connect wallet to trade');
   } else {
-    const ready = tradeAmountRaw() > 0n && !(trade.quote && trade.quote.error) && !trade.busy;
+    const ready = tradeAmountRaw() > 0n && !short && !(trade.quote && trade.quote.error) && !trade.busy;
     action = h('button', { class: 'btn primary trade-btn' + (buy ? '' : ' sell'), disabled: !ready, onclick: runTrade },
-      trade.busy ? 'Working…' : (buy ? 'Buy $' : 'Sell $') + l.symbol);
+      trade.busy ? 'Working…' : short ? (buy ? 'Not enough ' + q.symbol : 'You hold less than that') : (buy ? 'Buy $' : 'Sell $') + l.symbol);
   }
   box.replaceChildren(...[
     h('div', { class: 'trade-top' },
@@ -1970,12 +2022,13 @@ function renderTrade() {
         h('button', { type: 'button', role: 'tab', class: 'buy', 'aria-selected': String(buy), onclick: () => setSide('buy') }, 'Buy'),
         h('button', { type: 'button', role: 'tab', class: 'sell', 'aria-selected': String(!buy), onclick: () => setSide('sell') }, 'Sell')),
       h('button', { type: 'button', class: 'trade-slip', title: 'Slippage: the most the price may move against you before the trade cancels', disabled: trade.busy,
-        onclick: () => { trade.slip = SLIPPAGES[(SLIPPAGES.indexOf(trade.slip) + 1) % SLIPPAGES.length]; requestQuote(); } }, 'Slippage ' + trade.slip + '%')),
+        onclick: () => { trade.slip = SLIPPAGES[(SLIPPAGES.indexOf(trade.slip) + 1) % SLIPPAGES.length]; store.set('tweetpad:slip', String(trade.slip)); requestQuote(); } }, 'Slippage ' + trade.slip + '%')),
     h('div', { class: 'trade-row' }, h('label', { class: 'trade-amt' }, input, h('span', { class: 'trade-unit', text: unit })), h('div', { class: 'buy-chips' }, ...chips)),
-    h('div', { class: 'trade-est', 'aria-live': 'polite' }, est),
-    jito ? h('label', { class: 'jito-row compact' }, h('input', { type: 'checkbox', checked: jitoOn(), disabled: trade.busy,
-        onchange: (ev) => { store.set('tweetpad:jito', ev.target.checked ? '1' : '0'); renderTrade(); renderDevBuy(currentPair()); } }),
-      h('span', { class: 'jito-name', text: '⚡ Jito bundle' }), h('span', { class: 'jito-hint', text: '+0.0001 SOL tip · first in its block, private' })) : null,
+    h('div', { class: 'trade-est', 'aria-live': 'polite' }, est || h('span', { class: 'dim', text: feeLine })),
+    bal ? h('div', { class: 'trade-bal' }, bal) : null,
+    jito ? h('div', { class: 'jito-row compact' }, h('label', { class: 'jito-check' }, h('input', { type: 'checkbox', checked: jitoOn(), disabled: trade.busy,
+        onchange: (ev) => setJito(ev.target.checked ? 'fast' : null) }), h('span', { class: 'jito-name', text: '⚡ Jito bundle' })),
+      jitoSpeedPicker(trade.busy), h('span', { class: 'jito-hint', text: jitoOn() ? jitoHint() + ' · first in its block, private' : 'off' })) : null,
     action,
     trade.status ? h('div', { class: 'trade-status ' + trade.status.tone }, trade.status.text,
       trade.status.href ? h('a', { href: trade.status.href, target: '_blank', rel: 'noopener', text: ' Tx ↗' }) : null) : null,
@@ -2917,7 +2970,7 @@ const renderDescLeft = () => {
 };
 $('tk-desc').addEventListener('input', renderDescLeft);
 renderDescLeft();   // the prefilled description already uses some of the 140
-$('tk-jito').addEventListener('change', (ev) => { store.set('tweetpad:jito', ev.target.checked ? '1' : '0'); renderTrade(); });
+$('tk-jito').addEventListener('change', (ev) => setJito(ev.target.checked ? 'fast' : null));
 for (const b of document.querySelectorAll('[data-buy]')) b.addEventListener('click', () => {
   $('tk-buy').value = b.dataset.buy === '0' ? '' : b.dataset.buy;
   $('tk-buy').dispatchEvent(new Event('input'));

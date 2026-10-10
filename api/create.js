@@ -6,10 +6,10 @@
 // here with pump.fun's SDK (create_v2 with the quote coin's curve accounts).
 // With `jito: true` the launch carries a Jito tip (api/_jito.js) and the page sends it to Jito's block engine as a bundle:
 // create and dev buy land together, first in the block they make, never seen in the public mempool. The tip is the user's.
-// Body JSON: { publicKey, mint, name, symbol, uri, image, thumb, devBuy, quote, jito }
+// Body JSON: { publicKey, mint, name, symbol, uri, image, thumb, devBuy, quote, jito (false | true | 'fast' | 'turbo' | 'ultra') }
 const { PublicKey, TransactionMessage, VersionedTransaction, ComputeBudgetProgram } = require('@solana/web3.js');
 const { OnlinePumpSdk, PUMP_SDK } = require('@pump-fun/pump-sdk');
-const { withTip, tipInstruction } = require('./_jito');
+const { withTip, tipInstruction, tipOf } = require('./_jito');
 const { PUMP_PROGRAM, cors, readJson, isPubkey, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, cleanThumb, rateLimit, fail } = require('./_lib');
 
 /* Phantom flags dApps whose transactions fail on chain, so a build that would fail never reaches the wallet: simulate it
@@ -44,7 +44,7 @@ async function viaPumpPortal({ publicKey, mint, name, symbol, uri, devBuy }) {
   return tx;
 }
 
-async function viaSdkPaired({ publicKey, mint, name, symbol, uri, jito }, quoteMint, resolved) {
+async function viaSdkPaired({ publicKey, mint, name, symbol, uri, tip }, quoteMint, resolved) {
   const conn = connection();
   const quote = resolved || await new OnlinePumpSdk(conn).resolveQuoteMint(new PublicKey(quoteMint));
   const payer = new PublicKey(publicKey);
@@ -57,7 +57,7 @@ async function viaSdkPaired({ publicKey, mint, name, symbol, uri, jito }, quoteM
   const message = new TransactionMessage({
     payerKey: payer, recentBlockhash: blockhash,
     instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: CREATE_CU }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: CU_PRICE }), ix,
-      ...(jito ? [tipInstruction(publicKey)] : [])],
+      ...(tip ? [tipInstruction(publicKey, tip)] : [])],
   }).compileToV0Message();
   return Buffer.from(new VersionedTransaction(message).serialize());
 }
@@ -93,10 +93,10 @@ module.exports = async (req, res) => {
 
   let tx;
   try {
-    const jito = b.jito === true;
-    tx = quote.mint ? await viaSdkPaired({ publicKey, mint, name, symbol, uri, jito }, quote.mint, resolved)
+    const tip = tipOf(b.jito);
+    tx = quote.mint ? await viaSdkPaired({ publicKey, mint, name, symbol, uri, tip }, quote.mint, resolved)
                     : await viaPumpPortal({ publicKey, mint, name, symbol, uri, devBuy });
-    if (jito && !quote.mint) tx = await withTip(tx, publicKey, connection());
+    if (tip && !quote.mint) tx = await withTip(tx, publicKey, connection(), tip);
   } catch (err) {
     return fail(res, 502, 'could not build the transaction: ' + err.message);
   }

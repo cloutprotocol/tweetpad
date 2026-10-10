@@ -11,8 +11,12 @@ const TIP_ACCOUNTS = [
   'ADaUMid9yfUytqMBgopwjb2DTLSokTSzL1zt6iGPaS49', 'DfXygSm4jCyNCybVYYK6DwvWqjKee8pbDmJGcLWNDXjh', 'ADuUkR4vqLUMWXxW9gh6D6L8pMSawimctcNZ5pGwDcEt',
   'DttWaMuVvTiduZRnguLF7jNxTgiMBZ1hyAumKUiL2KRL', '3AVi9Tg9Uo68tJfuvoKvqKNWKkC5wPdSSdeBnizKZ6jT',
 ];
-/* 0.0001 SOL: above ~90% of landed tips (bundles.jito.wtf tip_floor, 2026-10-09), about a cent */
-const TIP_LAMPORTS = 100000;
+/* the tip, by speed: Fast 0.0001 SOL is above ~90% of landed tips (bundles.jito.wtf tip_floor, 2026-10-09), about a cent;
+   Turbo and Ultra outbid busier blocks. The user picks; only these amounts are accepted. */
+const TIPS = { fast: 100000, turbo: 500000, ultra: 1000000 };
+const TIP_LAMPORTS = TIPS.fast;
+/* the request's `jito`: false/absent (no bundle), true (Fast) or a speed name → lamports, or 0 */
+const tipOf = (jito) => (jito === true ? TIPS.fast : TIPS[jito] || 0);
 
 const tipAccount = () => new PublicKey(TIP_ACCOUNTS[Math.floor(Math.random() * TIP_ACCOUNTS.length)]);
 const tipInstruction = (payer, lamports = TIP_LAMPORTS) =>
@@ -45,4 +49,4 @@ async function sendViaJito(signedB64) {
   return out.result;   // the transaction signature
 }
 
-module.exports = { TIP_LAMPORTS, tipInstruction, withTip, sendViaJito };
+module.exports = { TIPS, TIP_LAMPORTS, tipOf, tipInstruction, withTip, sendViaJito };
