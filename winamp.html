@@ -17,11 +17,11 @@
 <meta name="twitter:player" content="https://www.tweetpad.io/winamp?embed&amp;skin=5e4f10275dcb1fb211d4a8b4f1bda236">
 <meta name="twitter:player:width" content="480">
 <meta name="twitter:player:height" content="480">
-<meta name="twitter:image" content="https://www.tweetpad.io/assets/winamp-card.png">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/winamp-card.png?v=2">
 <meta name="twitter:image:alt" content="Winamp in its classic skin, with tweetpad's # lit up as a spectrum analyser">
 <meta property="og:title" content="Winamp on tweetpad">
 <meta property="og:description" content="Winamp inside a tweet: tracker classics, 90,000 skins, your own music.">
-<meta property="og:image" content="https://www.tweetpad.io/assets/winamp-card.png">
+<meta property="og:image" content="https://www.tweetpad.io/assets/winamp-card.png?v=2">
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&display=swap">
 <style>
@@ -38,11 +38,11 @@
   .status { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); font-size: 12px; }
   .status:empty { display: none; }
   #wa-stage { position: relative; width: 275px; height: 348px; flex: none; zoom: var(--pz, 1); }   /* --pz: the player's scale, set by winamp.js */
-  .tools { justify-content: center; padding: 5px 4px; }
+  .tools { justify-content: center; gap: 10px; padding: 5px 4px; }
 
   /* the frame: the player and its controls, at tweetpad's size (480 square, like the card on X) on the full page and in
      the X card, and just the player in the pop-out */
-  .frame { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  .frame { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
     width: 480px; height: 480px; max-width: 100%; overflow: hidden; background: rgba(4, 10, 16, .45); }
   .frame > * { position: relative; }
   #webamp * { image-rendering: pixelated; }   /* skins are pixel art: scaled up, they stay sharp */
@@ -73,7 +73,7 @@
   html[data-mode="embed"] .frame { width: 100vw; height: 100vh; background: rgba(4, 10, 16, .3); }
   html[data-mode="embed"] body { background: #050b10; }
   html[data-mode="popup"] .frame { width: 275px; height: 100vh; justify-content: flex-start; gap: 0; background: #000; }
-  html[data-mode="popup"] .tools { width: 275px; justify-content: flex-start; }
+  html[data-mode="popup"] .tools { width: 275px; justify-content: flex-start; gap: 6px; }
   body > div { position: absolute; }   /* Webamp's own layer at the end of body, kept out of the flow */
 </style>
 </head>
