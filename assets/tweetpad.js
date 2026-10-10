@@ -2733,8 +2733,8 @@ async function sendChat() {
 /* ---------- wiring ---------- */
 /* main views: 'wallets' (the launch form), 'tokens' (+ 'coin', 'user'), 'feed' (+ 'thread'), 'more' (profile, games, about, debug)
    and 'settings'; sign / env / report / fallbacks live inside the debug panel */
-const MAIN_VIEWS = ['wallets', 'tokens', 'feed', 'thread', 'coin', 'user', 'more', 'profile', 'games', 'about', 'settings'];
-const UNDER_MORE = ['more', 'profile', 'games', 'about', 'settings'];   // the More button stays lit on these and on debug
+const MAIN_VIEWS = ['wallets', 'tokens', 'feed', 'thread', 'coin', 'user', 'more', 'profile', 'agents', 'games', 'about', 'settings'];
+const UNDER_MORE = ['more', 'profile', 'agents', 'games', 'about', 'settings'];   // the More button stays lit on these and on debug
 let debugTab = 'sign';
 let mainView = 'wallets';
 let settingsFrom = 'wallets';   // where Esc or × returns to from settings
@@ -2745,10 +2745,12 @@ function selectTab(name) {
   for (const t of document.querySelectorAll('.views [role="tab"]')) t.setAttribute('aria-selected', String(!debug && t.dataset.view === (name === 'coin' || name === 'user' ? 'tokens' : name === 'thread' ? 'feed' : name)));
   if (!debug) mainView = name;
   if (name !== 'coin') closeLive();
+  if (name !== 'games' && !$('game-view').hidden) closeGame();   // a game left running would keep playing sound
   if (name === 'tokens' && !tokens.loaded) loadTokens();
   if (name === 'coin') requestAnimationFrame(drawChart);
   if (name === 'profile') { loadMe(); loadEvmMe(); }
   if (name === 'about') renderAbout();
+  agentPreview(name === 'agents');
   if (name === 'user') renderUser();
   if (name === 'feed') loadFeed();
   if (MAIN_VIEWS.includes(name)) loadChat();
@@ -2773,8 +2775,74 @@ const toggleFeed = () => { $('feed-lines').hidden = !$('feed-lines').hidden; };
 /* More opens the list; from the list itself it closes back to launch, from profile / games / debug it steps back to the list */
 const toggleMore = () => selectTab(mainView === 'more' && $('debug').hidden ? 'wallets' : 'more');
 $('btn-more').addEventListener('click', toggleMore);
-for (const b of document.querySelectorAll('.more-row-btn')) b.addEventListener('click', () => (b.dataset.goto === 'debug' ? selectTab(debugTab) : selectTab(b.dataset.goto)));
-$('games-close').addEventListener('click', () => selectTab('more'));
+for (const b of document.querySelectorAll('.more-row-btn[data-goto]')) b.addEventListener('click', () => (b.dataset.goto === 'debug' ? selectTab(debugTab) : selectTab(b.dataset.goto)));
+$('games-close').addEventListener('click', () => { closeGame(); selectTab('more'); });
+/* ---------- games: browser games from other sites. One that allows framing plays here (the frame is made on Play and removed
+   on close, which stops it); one that doesn't opens in its own tab. Five needs shared memory, which only works when vel.gg is
+   the top page (it sends COOP/COEP and CORP same-origin), so it always gets its own tab, from the card on X too.
+   Pointer lock (mouse look in shooters) needs the frame's sandbox to allow it; X's player card doesn't, so inside X a
+   framed game offers a full-screen tab instead. ---------- */
+const GAMES = {
+  five: { title: 'Five · BO1 Zombies', url: 'https://vel.gg/bo1z/five', ownTab: true },
+};
+/* a cross-origin parent is X (our landing page embeds us same-origin) */
+const IN_X_FRAME = window.self !== window.top && (() => { try { return !window.top.location.href; } catch { return true; } })();
+function openGame(id) {
+  const g = GAMES[id];
+  if (!g) return;
+  if (g.ownTab) return window.open(g.url, '_blank', 'noopener');
+  $('games-list').hidden = true;
+  $('game-view').hidden = false;
+  $('game-title').textContent = g.title;
+  $('game-full').href = g.url;
+  $('game-note').hidden = !(g.mouse && IN_X_FRAME);
+  $('game-credit').textContent = g.credit;
+  $('game-frame').replaceChildren(h('iframe', { src: g.url, title: g.title, allow: 'fullscreen; autoplay; gamepad; pointer-lock; keyboard-map',
+    allowfullscreen: '', referrerpolicy: 'no-referrer-when-downgrade' }));
+  document.querySelector('#tab-games .pane').classList.add('playing');
+}
+function closeGame() {
+  $('game-frame').replaceChildren();
+  $('game-view').hidden = true;
+  $('games-list').hidden = false;
+  document.querySelector('#tab-games .pane').classList.remove('playing');
+}
+for (const b of document.querySelectorAll('[data-game]')) b.addEventListener('click', () => openGame(b.dataset.game));
+$('game-back').addEventListener('click', closeGame);
+$('agents-close').addEventListener('click', () => selectTab('more'));
+/* ---------- Winamp: its own small window on /winamp (Webamp, tracker classics, skins), so the music plays on wherever you go
+   here, and on X too. Sized to Winamp's three windows plus a line of controls; blocked pop-ups get a tab instead ---------- */
+function popWinamp() {
+  const w = window.open('/winamp?popup', 'tweetpad-winamp', 'popup,width=275,height=382');
+  if (!w) window.open('/winamp', '_blank', 'noopener');
+  else w.focus();
+}
+$('winamp-pop').addEventListener('click', popWinamp);
+/* ---------- Agents (coming soon): the preview card plays a demo loop of what an agent does, while the page is open ---------- */
+const AGENT_DEMO = [
+  ['think', 'Reading the timeline for $AI…'],
+  ['tool', 'x_search("$AI OR \"agent inu\"") → 14 new posts'],
+  ['tool', 'chart($AI, 1h) → +12.4% · buys 38 / sells 11'],
+  ['think', 'Momentum and mentions are up. Stay on voice: dog, calm, no price promises.'],
+  ['post', 'such volume. very community. wow. 🐕'],
+  ['tool', 'reply(@tweetpad_io) → thanked a new holder'],
+  ['think', 'Idle until the next block of posts…'],
+];
+let agentTimer = null;
+function agentPreview(on) {
+  clearInterval(agentTimer);
+  const log = $('agent-log');
+  if (!on) return;
+  let i = 0;
+  const step = () => {
+    const [kind, text] = AGENT_DEMO[i++ % AGENT_DEMO.length];
+    log.append(h('li', { class: 'agent-' + kind }, h('span', { class: 'agent-k', text: kind === 'think' ? 'thinking' : kind === 'tool' ? 'tool' : 'posted' }), h('span', { text })));
+    while (log.children.length > 5) log.firstChild.remove();
+  };
+  log.replaceChildren();
+  step(); step();
+  agentTimer = setInterval(step, 1800);
+}
 $('about-close').addEventListener('click', () => selectTab('more'));
 /* mailto may be blocked inside X's card sandbox, so the address is one click to copy as well */
 $('about-copy-email').addEventListener('click', () => copyText('tweetpad@proton.me', 'email'));
@@ -2809,7 +2877,7 @@ $('btn-debug-close').addEventListener('click', () => selectTab(mainView));
 $('wc-btn').addEventListener('click', toggleMenu);
 document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.wc')) closeMenu(); });
 $('verdict').addEventListener('click', () => { clearTimeout(setVerdict.hide); $('verdict').classList.add('gone'); });
-/* game-style hotkeys: Enter chat, C wallet menu, L launch, T tokens, F feed, P profile, M more, G games, A about, comma settings, D debug, S/E/R/B debug tabs, 1-9 inventory, H feed, Esc goes back */
+/* game-style hotkeys: Enter chat, C wallet menu, L launch, T tokens, F feed, P profile, M more, G games, J Winamp, A about, comma settings, D debug, S/E/R/B debug tabs, 1-9 inventory, H feed, Esc goes back */
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
     if (closePairs() || closeImage() || closeVerify() || closeChat()) return;
@@ -2833,14 +2901,17 @@ document.addEventListener('keydown', (ev) => {
   else if (k === 'p') selectTab('profile');
   else if (k === 'm') toggleMore();
   else if (k === 'g') selectTab('games');
+  else if (k === 'i') selectTab('agents');
+  else if (k === 'j') popWinamp();
   else if (k === 'a') selectTab('about');
   else if (k === ',') toggleSettings();
   else if (tab) selectTab(tab.dataset.tab);
   else if (k >= '1' && k <= '9') selectSlot(Number(k));
   else if (k === 'h') toggleFeed();
 });
-/* ---------- skins: '2012' (the default) dresses the app as the old bird app; 'tweetcraft' is the pixel HUD ---------- */
-const SKINS = ['2012', 'tweetcraft'];
+/* ---------- skins: '2012' (the default) dresses the app as the old bird app; 'tweetcraft' is the pixel HUD; 'lights' is
+   Lights out, dark like today's X (assets/skin-lights.css, built on the 2012 skin's selectors) ---------- */
+const SKINS = ['2012', 'tweetcraft', 'lights'];
 const SKIN_KEY = 'tweetpad:skin';
 function setSkin(name) {
   if (!SKINS.includes(name)) name = SKINS[0];

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tweetpad Winamp</title>
+<link rel="icon" href="assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/tweetpad-hash-32.png">
+<link rel="apple-touch-icon" href="assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#1da1f2">
+
+<!-- posted on X, /winamp plays in the post: the player card loads ?embed. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Winamp on tweetpad">
+<meta name="twitter:description" content="Winamp inside a tweet: tracker classics, 90,000 skins, your own music.">
+<meta name="twitter:player" content="https://www.tweetpad.io/winamp?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/winamp-card.png">
+<meta name="twitter:image:alt" content="Winamp with the Sony 2000 SE skin">
+<meta property="og:title" content="Winamp on tweetpad">
+<meta property="og:description" content="Winamp inside a tweet: tracker classics, 90,000 skins, your own music.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/winamp-card.png">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&display=swap">
+<style>
+  :root { --blue: #1da1f2; --ink: #e7e9ea; --dim: #8b98a5; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { color: var(--ink); font: 13px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; background: #000; }
+  a { color: #8ecdf8; }
+  button { flex: none; cursor: pointer; padding: 5px 10px; color: var(--ink); font: 700 12px/1 "Helvetica Neue", Helvetica, Arial, sans-serif; white-space: nowrap; background: #16181c; border: 1px solid #333639; border-radius: 9999px; }
+  button:hover { border-color: var(--blue); }
+  button:disabled { opacity: .5; cursor: progress; }
+  [hidden] { display: none !important; }
+  .bar { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .skin-name, .status { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); font-size: 12px; }
+  .status:empty { display: none; }
+  #wa-stage { position: relative; }
+
+  /* full page: a desktop in tweetpad blue with the # mark printed over it; Webamp's windows float on it and drag anywhere */
+  html[data-mode="page"] body { display: flex; flex-direction: column; min-height: 100vh;
+    background: url("assets/brand/hash-white.png") 0 0 / 48px 48px repeat, linear-gradient(160deg, #1da1f2, #0b5f99); }
+  html[data-mode="page"] body::before { content: ""; position: fixed; inset: 0; background: rgba(13, 120, 190, .82); pointer-events: none; }
+  html[data-mode="page"] header, html[data-mode="page"] footer { position: relative; z-index: 1; padding: 10px 16px; background: rgba(0, 0, 0, .55); }
+  html[data-mode="page"] header .bar { justify-content: space-between; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 8px; color: #fff; text-decoration: none; font: 600 22px/1 "Fredoka", "Arial Rounded MT Bold", sans-serif; }
+  .brand img { width: 28px; height: 28px; }
+  .brand span { color: #fff; opacity: .7; font-size: 18px; }
+  html[data-mode="page"] #wa-stage { flex: 1; min-height: 420px; }
+  html[data-mode="page"] footer { color: #c9d6df; font-size: 12px; }
+  html[data-mode="page"] footer p { margin: 0 0 4px; }
+
+  /* popup and the X card: the three windows (275 by 348) and one line of controls under them */
+  html:not([data-mode="page"]) header { order: 2; }
+  html:not([data-mode="page"]) header .brand { display: none; }
+  html:not([data-mode="page"]) footer { display: none; }
+  html:not([data-mode="page"]) body > div:not(#wa-stage) { position: absolute; }   /* Webamp's own layer at the end of body, kept out of the flow */
+  html:not([data-mode="page"]) body { display: flex; flex-direction: column; overflow: hidden; }
+  html:not([data-mode="page"]) #wa-stage { width: 275px; height: 348px; flex: none; }
+  html:not([data-mode="page"]) .tools { width: 275px; padding: 5px 4px; }
+  html[data-mode="embed"] body { align-items: center; justify-content: center; gap: 4px;
+    background: url("assets/brand/hash-white.png") 0 0 / 36px 36px repeat, #0b1a26; }
+  html[data-mode="embed"] body::before { content: ""; position: fixed; inset: 0; background: rgba(8, 20, 30, .9); pointer-events: none; }
+  html[data-mode="embed"] #wa-stage, html[data-mode="embed"] header { z-index: 1; }
+  html[data-mode="embed"] .tools a.full { margin-left: auto; font-size: 12px; white-space: nowrap; }
+  html:not([data-mode="embed"]) .tools a.full { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="brand" href="/"><img src="assets/brand/tweetpad-hash-180.png" alt="">tweetpad <span>· Winamp</span></a>
+    <div class="bar tools">
+      <button id="wa-add" type="button" title="Tracker modules (.mod .xm .s3m .it…), music, or a .wsz skin">+ Add</button>
+      <button id="wa-random" type="button">🎲 Skin</button>
+      <button id="wa-reopen" type="button" hidden>Reopen</button>
+      <a class="skin-name" id="wa-skin" target="_blank" rel="noopener"></a>
+      <span class="status" id="wa-status"></span>
+      <a class="full" href="/winamp" target="_blank" rel="noopener">Full page ↗</a>
+    </div>
+  </div>
+</header>
+<div id="wa-stage"></div>
+<footer>
+  <p>Drop tracker modules (.mod .xm .s3m .it), MP3s or a .wsz skin anywhere on the player, or right-click it for skins and
+    options. Your files stay in your browser.</p>
+  <p>Music: <a href="https://modarchive.org/module.php?57925" target="_blank" rel="noopener">Space Debris</a> by Captain,
+    <a href="https://modarchive.org/module.php?212083" target="_blank" rel="noopener">Unreal ][</a> by Purple Motion,
+    <a href="https://modarchive.org/module.php?191789" target="_blank" rel="noopener">Aryx</a> by Karsten Koch,
+    <a href="https://modarchive.org/module.php?40475" target="_blank" rel="noopener">Elysium</a> by Jester and
+    <a href="https://modarchive.org/module.php?42560" target="_blank" rel="noopener">Guitar Slinger</a> by Jogeir Liljedahl, played from
+    <a href="https://modarchive.org" target="_blank" rel="noopener">The Mod Archive</a>.
+    <a href="https://webamp.org" target="_blank" rel="noopener">Webamp</a> by Jordan Eldredge, skins from the
+    <a href="https://skins.webamp.org" target="_blank" rel="noopener">Winamp Skin Museum</a>, modules played with libopenmpt.
+    Not affiliated with Winamp.</p>
+</footer>
+<input type="file" id="wa-file" multiple hidden accept="audio/*,.mp3,.ogg,.wav,.flac,.m4a,.mod,.xm,.s3m,.it,.mptm,.669,.mtm,.med,.okt,.stm,.ult,.umx,.mo3,.wsz,.zip">
+<script src="https://cdn.jsdelivr.net/npm/webamp@2.3.1/built/webamp.bundle.min.js"></script>
+<script src="assets/winamp.js"></script>
+</body>
+</html>

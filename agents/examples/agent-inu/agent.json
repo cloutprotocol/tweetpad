@@ -1,0 +1,8 @@
+{
+  "name": "Agent Inu",
+  "handle": "agent_inu",
+  "coin": { "chain": "solana", "address": "2H1CQ4CoQbuMX1yFAGPrpoPG6favc8Zb4Xa4G3RmeEGA", "symbol": "AI" },
+  "model": "grok-4.7",
+  "tools": ["x_search", "coin_market", "post"],
+  "limits": { "postsPerHour": 4, "tickSeconds": 600, "maxToolRounds": 6 }
+}

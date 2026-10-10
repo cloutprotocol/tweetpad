@@ -8,6 +8,10 @@
     {
       "source": "/preview",
       "destination": "/preview.html"
+    },
+    {
+      "source": "/winamp",
+      "destination": "/winamp.html"
     }
   ],
   "headers": [
@@ -21,6 +25,24 @@
         {
           "key": "Cache-Control",
           "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/winamp",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://x.com https://*.x.com https://twitter.com https://*.twitter.com"
+        }
+      ]
+    },
+    {
+      "source": "/winamp.html",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://x.com https://*.x.com https://twitter.com https://*.twitter.com"
         }
       ]
     }

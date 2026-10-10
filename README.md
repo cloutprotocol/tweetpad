@@ -32,13 +32,15 @@ shareable card that plays inside X again. No app to install and no tab to open.
 | **Trade** | Buy and sell on the coin screen: presets, % of your bag, slippage, a live quote. Solana coins trade on their pump.fun curve through pump.fun's own SDK (`api/trade.js`, Jito optional), graduated ones through Jupiter's free API; Robinhood, BNB and Base coins in their Uniswap v4 pool through Uniswap's Universal Router on that chain (`api/evm-trade.js`). The wallet signs and pays; tweetpad takes no fee. |
 | **Coin screen** | Candle chart, compact recent trades, live trades over a websocket, the creator (2012-style author card), copyable contract address, share card, and **posts**: tweet-sized comments (140 characters) signed in with the wallet. |
 | **Inventory** | The hotbar holds your coins, then the newest. `1`–`9` opens them. |
-| **More** | Profile, Games, Debug, About (version, network, $TP contract, contact) and Settings (skins) in one list. |
+| **More** | Profile, Games, Winamp, Debug, About (version, network, $TP contract, contact) and Settings (skins) in one list. |
 | **Profile** | Link your wallet to your X account with one tweet, see the coins you launched, claim creator rewards. |
-| **Settings** | Skins: **2012** (default: blue bar, white cards, dark tab bar) or **Tweetcraft** (the pixel HUD). Saved per browser. |
+| **Settings** | Skins: **2012** (default: blue bar, white cards, dark tab bar), **Tweetcraft** (the pixel HUD) or **Lights out** (pure black, hairlines, flat pills, like today's X, under tweetpad's own marks). Saved per browser. |
+| **Agents** | Coming soon: a Grok-powered agent tied to a coin, watchable live in its card inside a post. The page shows a preview; the dev kit in `agents/` is real (spec, skill file template, manifest schema, an example, and a local runner on xAI's Responses API with your own key). |
 | **Games** | Coming soon: a placeholder grid for now. |
+| **Winamp** | `/winamp`: [Webamp](https://github.com/captbaritone/webamp) (MIT) with the Sony 2000 SE skin, a playlist of tracker classics fetched from [The Mod Archive](https://modarchive.org) and rendered in the browser with libopenmpt, random skins from the [Winamp Skin Museum](https://skins.webamp.org), and your own modules, MP3s and `.wsz` skins. Full page, X player card (`?embed`), and the pop-out window More → Winamp opens (`?popup`). |
 | **Debug** | The original wallet-in-an-iframe probe: sign tests, environment, report, popup bridge. |
 
-Keys: `C` wallet · `L` launch · `T` tokens · `F` feed · `M` more · `P` profile · `G` games · `A` about · `,` settings · `D` debug · `1`–`9` inventory · `H` chat · `Esc` back.
+Keys: `C` wallet · `L` launch · `T` tokens · `F` feed · `M` more · `P` profile · `I` agents · `G` games · `J` Winamp · `A` about · `,` settings · `D` debug · `1`–`9` inventory · `H` chat · `Esc` back.
 
 ## How it works
 
@@ -92,6 +94,8 @@ site.webmanifest       app name and icons (wallet connect prompts, home screens)
 assets/tweetpad.js     the card app (plain JS, no build step)
 assets/tweetpad.css    layout and the Tweetcraft skin (pixel HUD)
 assets/skin-2012.css   the default 2012 skin, layered over tweetpad.css
+assets/skin-lights.css Lights out, the dark skin (built from the 2012 skin's selectors)
+agents/                the agents dev kit: README (spec), SKILL.template.md, agent.schema.json, examples/, run.mjs
 assets/brand/          app icon kit: favicons, # icon sizes, # glyphs
 api/                   Vercel functions, one per route; _lib.js (shared) and _evm.js (Robinhood Chain) are not routes
   ipfs · create · evm-create · launches · market · chart · image · upload     launching (Solana and Robinhood), the token list, prices and charts
