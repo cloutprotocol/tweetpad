@@ -9,6 +9,8 @@
   const SKIN_MUSEUM = 'https://api.webamp.org/graphql';
   const skinUrl = (md5) => 'https://r2.webampskins.org/skins/' + md5 + '.wsz';
   const DEFAULT_SKIN = 'd585200e36246e65959d93a71cc4579b';   // Sony_2000_SE.wsz
+  const askedSkin = (new URLSearchParams(location.search).get('skin') || '').toLowerCase();   // ?skin=<museum md5>, to share a look
+  const firstSkin = /^[0-9a-f]{32}$/.test(askedSkin) ? askedSkin : DEFAULT_SKIN;
   const SKINS = [   // the right-click menu's Skins list
     ['Sony 2000 SE', DEFAULT_SKIN],
     ['Winamp3 Classified', 'cd251187a5e6ff54ce938d26f1f2de02'],
@@ -17,7 +19,7 @@
     ['Microchip 2', '03a967351bc69b83a3c063782997d434'],
     ['PlasTech', 'eaa2bdf27a82632543cd5fe319a71d45'],
   ];
-  /* the preloaded playlist: well-loved modules on The Mod Archive, played from their copy, credited in the page footer */
+  /* the preloaded playlist: well-loved modules on The Mod Archive, played from their copy, credited under ⓘ */
   const MODS = [
     { id: 57925, artist: 'Captain', title: 'Space Debris' },
     { id: 212083, artist: 'Purple Motion', title: 'Unreal ][ (Second Reality)' },
@@ -62,7 +64,7 @@
   const status = (s) => { $('wa-status').textContent = s || ''; };
   if (!window.Webamp || !Webamp.browserIsSupported()) { status('This browser can\'t run Winamp.'); return; }
   const app = new Webamp({
-    initialSkin: { url: skinUrl(DEFAULT_SKIN) },
+    initialSkin: { url: skinUrl(firstSkin) },
     availableSkins: SKINS.map(([name, md5]) => ({ name, url: skinUrl(md5) })),
     enableHotkeys: false,   // the page is small, and on X the keys belong to the post
     /* a drop with tracker modules or a skin in it is ours; anything else, Webamp handles (null) */
@@ -101,6 +103,11 @@
     const w = window.open('/winamp?popup', 'tweetpad-winamp', 'popup,width=275,height=382');
     if (w) { app.pause(); w.focus(); }
   });
+  /* ⓘ opens the panel; it covers the controls, so a click on it (not on a link), a click elsewhere or Esc closes it */
+  const showInfo = (open) => { $('wa-info').hidden = !open; $('wa-info-btn').setAttribute('aria-expanded', String(open)); };
+  $('wa-info-btn').addEventListener('click', (e) => { e.stopPropagation(); showInfo($('wa-info').hidden); });
+  document.addEventListener('click', (e) => { if (!$('wa-info').hidden && !e.target.closest('#wa-info a')) showInfo(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') showInfo(false); });
   $('wa-add').addEventListener('click', () => {
     pick.onchange = async () => { app.appendTracks(await tracksFromFiles([...pick.files])); pick.value = ''; };
     pick.click();
@@ -121,4 +128,84 @@
       }
     } catch { /* the museum is down: keep the current skin */ } finally { btn.disabled = false; }
   });
+
+  /* ---------- the player scales to fill its frame (480 square on the full page and on X: 1.25x), in eighths so the pixel art
+     stays even; the pop-out is the player's own size ---------- */
+  function fit() {
+    if (mode === 'popup') return;
+    const f = stage.parentElement.getBoundingClientRect();
+    const z = Math.floor(Math.min((f.width - 16) / 275, (f.height - 50) / 348) * 8) / 8;
+    document.documentElement.style.setProperty('--pz', String(Math.max(0.75, Math.min(1.5, z))));
+  }
+  fit();
+  new ResizeObserver(fit).observe(stage.parentElement);
+
+  /* ---------- the backdrop: tweetpad's # in a grid, lit from the bottom as Winamp's spectrum analyser in the skin's own
+     colours (VISCOLOR: 2 to 17 are the bars top to bottom, 23 the peak dots). Still and dim when nothing plays ---------- */
+  const vis = $('wa-vis');
+  if (mode === 'popup' || !vis) return;
+  const ctx = vis.getContext('2d');
+  const CELL = 22;
+  const glyphs = new Map();   // one pre-drawn # per colour
+  const glyph = (color) => {
+    if (glyphs.has(color)) return glyphs.get(color);
+    const g = document.createElement('canvas');
+    g.width = g.height = CELL * devicePixelRatio;
+    const c = g.getContext('2d');
+    c.scale(devicePixelRatio, devicePixelRatio);
+    c.fillStyle = color;
+    c.font = '700 19px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('#', CELL / 2, CELL / 2 + 1);
+    glyphs.set(color, g);
+    return g;
+  };
+  const DIM = 'rgba(120, 160, 190, .09)';
+  let freq = null, levels = [], peaks = [], last = '';
+  function frame() {
+    requestAnimationFrame(frame);
+    if (document.hidden) return;
+    const w = innerWidth, h = innerHeight;
+    if (vis.width !== Math.round(w * devicePixelRatio) || vis.height !== Math.round(h * devicePixelRatio)) {
+      vis.width = Math.round(w * devicePixelRatio); vis.height = Math.round(h * devicePixelRatio);
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      last = '';
+    }
+    const cols = Math.ceil(w / CELL), rows = Math.ceil(h / CELL);
+    const colors = (app.store.getState().display || {}).skinColors || [];
+    const playing = app.getMediaStatus && app.getMediaStatus() === 'PLAYING';
+    const analyser = app.media && app.media.getAnalyser && app.media.getAnalyser();
+    let moving = false;
+    if (playing && analyser) {
+      if (!freq || freq.length !== analyser.frequencyBinCount) freq = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(freq);
+    }
+    for (let c = 0; c < cols; c++) {
+      /* columns are log-spaced over the useful part of the spectrum, like Winamp's 19 bars, mirrored from the centre out */
+      const k = Math.abs(c - (cols - 1) / 2) / (cols / 2);
+      let v = 0;
+      if (playing && freq) {
+        const lo = Math.floor(2 * Math.pow(freq.length * 0.6 / 2, k)), hi = Math.max(lo + 1, Math.floor(2 * Math.pow(freq.length * 0.6 / 2, k + 1 / cols * 2)));
+        for (let i = lo; i < hi; i++) v = Math.max(v, freq[i]);
+        v = Math.pow(v / 255, 1.6);
+      }
+      levels[c] = Math.max(v, (levels[c] || 0) - 0.025);
+      peaks[c] = Math.max(levels[c], (peaks[c] || 0) - 0.006);
+      if (levels[c] > 0 || peaks[c] > 0) moving = true;
+    }
+    if (!moving && last === 'still') return;   // nothing playing and already drawn still
+    last = moving ? 'moving' : 'still';
+    ctx.clearRect(0, 0, w, h);
+    for (let c = 0; c < cols; c++) {
+      const lit = Math.round(levels[c] * rows), peak = rows - 1 - Math.min(rows - 1, Math.round(peaks[c] * rows));
+      for (let r = 0; r < rows; r++) {
+        const fromBottom = rows - 1 - r;
+        let color = DIM;
+        if (fromBottom < lit) color = colors[17 - Math.min(15, Math.floor(fromBottom / rows * 16))] || '#3c3';
+        else if (r === peak && peaks[c] > 0.02) color = colors[23] || '#ccc';
+        ctx.drawImage(glyph(color), c * CELL, r * CELL, CELL, CELL);
+      }
+    }
+  }
+  requestAnimationFrame(frame);
 })();
