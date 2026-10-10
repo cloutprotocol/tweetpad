@@ -49,8 +49,7 @@
   /* the backdrop: a grid of tweetpad's # lit as Winamp's spectrum analyser (assets/winamp.js draws it) */
   #wa-vis { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; }
   html[data-mode="popup"] #wa-vis { display: none; }
-  .frame .full { margin-left: auto; font-size: 12px; white-space: nowrap; }
-  html:not([data-mode="embed"]) .frame .full, html[data-mode="popup"] #wa-pop { display: none; }
+  html[data-mode="popup"] #wa-pop { display: none; }
 
   /* full page: the visualizer behind, and the frame in the middle at the landing page's size for tweetpad (480 square) */
   html[data-mode="page"] body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
@@ -89,7 +88,6 @@
     <button id="wa-pop" type="button" title="Winamp in its own small window">⧉ Pop out</button>
     <button id="wa-info-btn" type="button" aria-expanded="false" aria-controls="wa-info" title="How to use it, and credits">ⓘ</button>
     <span class="status" id="wa-status"></span>
-    <a class="full" href="/winamp" target="_blank" rel="noopener">Full ↗</a>
   </div>
   <div class="info" id="wa-info" hidden>
     <p>Drop tracker modules (.mod .xm .s3m .it), MP3s or a .wsz skin anywhere on the player, or right-click it for skins and
