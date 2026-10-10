@@ -64,7 +64,7 @@
   const app = new Webamp({
     initialSkin: { url: skinUrl(DEFAULT_SKIN) },
     availableSkins: SKINS.map(([name, md5]) => ({ name, url: skinUrl(md5) })),
-    enableHotkeys: mode === 'page',
+    enableHotkeys: false,   // the page is small, and on X the keys belong to the post
     /* a drop with tracker modules or a skin in it is ours; anything else, Webamp handles (null) */
     handleTrackDropEvent: (e) => {
       const files = [...e.dataTransfer.files];
@@ -93,9 +93,14 @@
   }
 
   const stage = $('wa-stage');
-  (mode === 'page' ? app.renderWhenReady(stage) : app.renderInto(stage)).then(preload);
+  app.renderInto(stage).then(preload);
   app.onClose(() => { if (mode === 'popup') window.close(); else $('wa-reopen').hidden = false; });
   $('wa-reopen').addEventListener('click', () => { app.reopen(); $('wa-reopen').hidden = true; });
+  /* the same pop-out tweetpad's More → Winamp opens; this player pauses so the two don't play over each other */
+  $('wa-pop').addEventListener('click', () => {
+    const w = window.open('/winamp?popup', 'tweetpad-winamp', 'popup,width=275,height=382');
+    if (w) { app.pause(); w.focus(); }
+  });
   $('wa-add').addEventListener('click', () => {
     pick.onchange = async () => { app.appendTracks(await tracksFromFiles([...pick.files])); pick.value = ''; };
     pick.click();
@@ -112,9 +117,6 @@
         const skin = ((((await r.json()) || {}).data || {}).skins || {}).nodes?.[0];
         if (!skin || skin.nsfw) continue;
         app.setSkinFromUrl(skinUrl(skin.md5));
-        const a = $('wa-skin');
-        a.href = 'https://skins.webamp.org/skin/' + skin.md5;
-        a.textContent = skin.filename.replace(SKIN_FILE, '');
         return;
       }
     } catch { /* the museum is down: keep the current skin */ } finally { btn.disabled = false; }
