@@ -2,7 +2,7 @@
    The same steps as the launch form's Ethereum option: the image and metadata go to IPFS, Launch Party's review is asked from
    this browser, /api/evm-create checks its answer and rebuilds the transaction, the wallet sends it, /api/launches lists the coin.
    Here a creator may also choose an upgradeable hook (they become the proxy's admin) and a team share that vests to them, and can
-   freeze an upgradeable hook later. ?embed is the X card (it pops the deployer out), ?popup the pop-out, ?card the card image. */
+   freeze an upgradeable hook later. ?embed is the X card (it opens the deployer in place), ?popup the pop-out, ?card the card image. */
 const $ = (id) => document.getElementById(id);
 const MODE = document.documentElement.dataset.mode;
 const ETH = { id: 1, hex: '0x1', explorer: 'https://etherscan.io' };
@@ -241,13 +241,15 @@ $('cl-copy').addEventListener('click', async () => {
 });
 
 /* ---------- wiring ---------- */
-const pop = (hashPart) => {
-  const url = '/custom?popup' + (hashPart || '');
-  const w = window.open(url, 'tweetpad-custom', 'popup,width=480,height=480');
-  if (w) w.focus(); else window.open(url, '_blank', 'noopener');
+/* the X card opens the deployer in place, inside the frame (at the agent's brief for "Use your agent") */
+const openDeployer = (id) => {
+  document.documentElement.dataset.open = '';
+  const scroll = document.querySelector('.scroll');
+  scroll.scrollTop = id ? $(id).offsetTop - scroll.offsetTop - 10 : 0;
+  render();
 };
-$('cl-pop').addEventListener('click', () => pop());
-$('cl-agent-pop').addEventListener('click', () => pop('#cl-agent'));
+$('cl-pop').addEventListener('click', () => openDeployer());
+$('cl-agent-pop').addEventListener('click', () => openDeployer('cl-agent'));
 for (const el of document.querySelectorAll('[data-hook]')) el.addEventListener('click', () => { opts.hook = el.dataset.hook; render(); });
 for (const el of document.querySelectorAll('[data-fee]')) el.addEventListener('click', () => { opts.feePct = Number(el.dataset.fee); render(); });
 for (const el of document.querySelectorAll('[data-start]')) el.addEventListener('click', () => { opts.start = el.dataset.start; render(); });

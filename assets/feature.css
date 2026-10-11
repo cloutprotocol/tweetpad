@@ -159,5 +159,8 @@ html[data-mode="card"] .live { display: none; }   /* the still shows what it doe
 html:not([data-mode="card"]) .still { display: none; }
 html:is([data-mode="embed"], [data-mode="card"]) .deployer { display: none; }
 html:is([data-mode="page"], [data-mode="popup"]) .intro { display: none; }
-html[data-mode="embed"] #cl-agent { display: none; }   /* the card's "Use your agent" pops the deployer out at the brief */
+html[data-mode="embed"] #cl-agent { display: none; }   /* the card's "Use your agent" opens the deployer at the brief */
+/* the X card with the deployer opened in place (custom.js openDeployer): as the pop-out shows it */
+html[data-mode="embed"][data-open] .intro { display: none; }
+html[data-mode="embed"][data-open] .deployer, html[data-mode="embed"][data-open] #cl-agent { display: flex; }
 html[data-mode="card"] .custom-steps { display: none; }   /* the card image: the post, what it is and the small print, all in view */
