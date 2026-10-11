@@ -508,7 +508,7 @@ function renderEthBox() {
   $('eth-note').replaceChildren('Each trade: ', h('b', { text: ethOpts.feePct + '% to you' }), ', in ETH and in the coin, claimed on your profile.',
     h('small', { text: ' Fixed at launch: the fee hook can never be changed.' }),
     h('span', { class: 'fee-sub' }, 'Reviewed and launched by ', h('a', { href: 'https://party.studio', target: '_blank', rel: 'noopener' }, 'Launch Party'), ' · 0.001 ETH launch fee · ',
-      h('button', { class: 'linkish', onclick: popCustom }, 'Upgradeable hook or team share ↗')));
+      h('button', { class: 'linkish', onclick: openCustom }, 'Upgradeable hook or team share')));
 }
 function renderFeeBox() {
   const box = $('fee-box');
@@ -1050,7 +1050,7 @@ async function onDryRun() {
 }
 
 /* ---------- tokens launched through the pad ---------- */
-const tokens = { list: [], next: null, total: 0, loaded: false, loading: false, error: null, market: {}, sort: 'new', chain: 'all' };
+const tokens = { list: [], next: null, total: 0, loaded: false, loading: false, error: null, market: {}, sort: 'new', chain: 'all', pin: null };
 const pad = { quote: null };   // the server's default pair (QUOTE_MINT), from /api/launches
 
 /* ---------- dev buy: presets, and a live estimate from a fresh curve's reserves and fee (api/launches?curve=new) ---------- */
@@ -1240,7 +1240,7 @@ async function loadMarket(mints = tokens.list.map(l => l.mint)) {
 /* refresh numbers every 10s while the page is in view: the list when it's open, the hotbar's coins always */
 setInterval(() => {
   if (document.hidden) return;
-  const mints = [...(!$('tab-tokens').hidden ? tokens.list.map(l => l.mint) : []), ...inventory().map(l => l.mint)];
+  const mints = [...(!$('tab-tokens').hidden ? [...tokens.list, ...(tokens.pin ? [tokens.pin] : [])].map(l => l.mint) : []), ...inventory().map(l => l.mint)];
   if (mints.length) loadMarket(mints);
 }, 10000);
 /* IPFS links go through our cached gateway proxy; anything else is shown as is */
@@ -1271,6 +1271,7 @@ async function loadTokens(more) {
     Object.assign(tokens, { list, next: out.next, total: out.total, loaded: true, error: null });
     pad.quote = out.quote;
     renderLaunch();
+    if (!more) loadPin(out.launches);
     loadProfiles(out.launches.map(l => l.creator)).then(renderTokens);
     loadMarket(more ? out.launches.map(l => l.mint) : undefined);
   } catch (err) {
@@ -1280,6 +1281,16 @@ async function loadTokens(more) {
     renderTokens();
   }
 }
+/* $TP, launched on tweetpad, sits on top of the list under every sort; fetched on its own once it is past the first page */
+async function loadPin(first) {
+  if (!TOKEN_CA || tokens.pin || first.some(l => l.mint === TOKEN_CA)) return;
+  try {
+    const res = await fetch('/api/launches?mint=' + TOKEN_CA);
+    if (!res.ok) return;
+    tokens.pin = (await res.json()).launch;
+    loadMarket([TOKEN_CA]);
+  } catch { /* the list works without it */ }
+}
 function renderTokens() {
   $('token-count').textContent = tokens.loaded ? tokens.total : '';
   renderHud();
@@ -1288,10 +1299,12 @@ function renderTokens() {
   const by = { mcap: (l) => mk(l).mcap || 0, hot: (l) => mk(l).volume1h || 0 }[tokens.sort];
   /* one list for every chain; the filter only narrows it (counts are of the coins loaded so far) */
   const onChain = (l, c) => c === 'all' || coinChain(l) === c;
-  for (const c of ['all', ...CHAINS]) $('cf-' + c).textContent = tokens.list.filter(l => onChain(l, c)).length || '';
+  const pin = tokens.list.find(l => l.mint === TOKEN_CA) || tokens.pin;
+  const all = pin ? [pin, ...tokens.list.filter(l => l !== pin)] : tokens.list;
+  for (const c of ['all', ...CHAINS]) $('cf-' + c).textContent = all.filter(l => onChain(l, c)).length || '';
   for (const b of document.querySelectorAll('.chain-filter [data-chain]')) b.setAttribute('aria-checked', String(b.dataset.chain === tokens.chain));
-  const shown = tokens.list.filter(l => onChain(l, tokens.chain));
-  const sorted = by ? [...shown].sort((a, b) => by(b) - by(a)) : shown;
+  const shown = all.filter(l => l !== pin && onChain(l, tokens.chain));
+  const sorted = [...(pin && onChain(pin, tokens.chain) ? [pin] : []), ...(by ? [...shown].sort((a, b) => by(b) - by(a)) : shown)];
   for (const b of document.querySelectorAll('.sort [data-sort]')) b.setAttribute('aria-pressed', String(b.dataset.sort === tokens.sort));
   for (const l of sorted) if (mk(l).pair) queueSpark(l.mint, mk(l).pair, coinChain(l));
   const rows = sorted.map(l => h('li', {},
@@ -1301,6 +1314,7 @@ function renderTokens() {
       h('span', { class: 'tok-main' }, h('b', { text: l.name }),
         h('span', { class: 'tok-sub' }, '$' + l.symbol + ' · ' + ago(l.time),
           profiles[l.creator] ? h('span', { class: 'tok-by', text: ' · @' + profiles[l.creator].handle + ' ✓' }) : null)),
+      l === pin ? h('span', { class: 'tag', title: '$TP, tweetpad\'s own coin, launched on tweetpad', text: 'PINNED' }) : null,
       l.creator === me ? h('span', { class: 'tag gold', text: 'YOURS' }) : null,
       h('span', { class: 'tok-mkt' }, h('b', { text: fmtUsd(mk(l).mcap) }),
         mk(l).change1h != null ? h('span', { class: mk(l).change1h >= 0 ? 'up' : 'down', text: fmtPct(mk(l).change1h) }) : null))));
@@ -2900,13 +2914,10 @@ function popWinamp() {
   else w.focus();
 }
 $('winamp-pop').addEventListener('click', popWinamp);
-/* ---------- Custom launch: /custom in its own window (Ethereum, the fee hook fixed or upgradeable, a team share, your agent) ---------- */
-function popCustom() {
-  const w = window.open('/custom?popup', 'tweetpad-custom', 'popup,width=480,height=480');
-  if (!w) window.open('/custom', '_blank', 'noopener');
-  else w.focus();
-}
-$('custom-pop').addEventListener('click', popCustom);
+/* ---------- Custom launch: /custom's deployer in this same frame (Ethereum, the fee hook fixed or upgradeable, a team share, your
+   agent); its ‹ comes back here ---------- */
+function openCustom() { location.href = '/custom?popup'; }
+$('custom-pop').addEventListener('click', openCustom);
 /* ---------- Agents (coming soon): the preview card plays a demo loop of what an agent does, while the page is open ---------- */
 const AGENT_DEMO = [
   ['think', 'Reading the timeline for $AI…'],
