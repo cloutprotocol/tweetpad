@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tweetpad Custom launch</title>
+<link rel="icon" href="assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/tweetpad-hash-32.png">
+<link rel="apple-touch-icon" href="assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#1da1f2">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : /[?&]popup\b/.test(location.search) ? 'popup' : 'page';</script>
+
+<!-- posted on X, /custom plays in the post: the player card loads ?embed. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Custom launch on tweetpad">
+<meta name="twitter:description" content="Your coin with its own Uniswap v4 fee hook on Ethereum, through Launch Party. Fixed forever, or upgradeable by you in public. Or hand it to your agent.">
+<meta name="twitter:player" content="https://www.tweetpad.io/custom?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/custom-card.png?v=5">
+<meta name="twitter:image:alt" content="tweetpad Custom launch: a coin with its own fee hook on Ethereum, fixed or upgradeable">
+<meta property="og:title" content="Custom launch on tweetpad">
+<meta property="og:description" content="Your coin with its own Uniswap v4 fee hook on Ethereum, through Launch Party. Fixed forever, or upgradeable by you in public.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/custom-card.png?v=5">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
+<link rel="stylesheet" href="assets/feature.css">
+</head>
+<body>
+<a class="brand" href="/"><img src="assets/brand/tweetpad-hash-180.png" alt="">tweetpad <span>· Custom launch</span></a>
+<main class="frame tall">
+  <!-- the bar: back home to tweetpad on the left, this page (its chain's mark) on the right -->
+  <div class="head">
+    <a class="home" href="/" title="Back to tweetpad"><span class="back" aria-hidden="true">‹</span><img class="gem" src="assets/brand/tweetpad-hash-180.png" alt=""><span class="word">tweetpad</span></a>
+    <h1 class="title"><span class="mark eth" aria-label="Ethereum"></span>Custom launch</h1>
+  </div>
+  <div class="scroll">
+  <!-- the welcome post, as on the launch form: a meme, from an obvious parody account ("parody" in its name, its own handle, the
+       Ethereum diamond for a face). It is not Vitalik Buterin and never uses his name as a handle or his picture. The chip under it is tweetpad's own account. -->
+  <article class="tweet" aria-label="Post from a parody account">
+    <img class="tweet-ava" src="assets/vitalik.jpeg" alt="" width="48" height="48">
+    <div class="tweet-body">
+      <div class="tweet-head"><b>vitalik.eth</b><span class="parody">parody</span><span class="tweet-handle">@VitalikButerin</span><span class="tweet-time">now</span></div>
+      <p class="tweet-copy">Launch a coin with its own fee hook on Ethereum, fixed or upgradeable, straight from a tweet. <a href="https://x.com/launchpartyv4" target="_blank" rel="noopener">@launchpartyv4</a> cooked. <span class="hashtag">#tweetpad</span> <a class="mention" href="https://x.com/tweetpad_io" target="_blank" rel="noopener"><span class="mention-pic"><img src="assets/brand/tweetpad-hash-180.png" alt=""><span class="mark eth" aria-hidden="true"></span></span>@tweetpad_io</a></p>
+    </div>
+  </article>
+
+  <!-- the X card, and the card image: what it is, and the way to the deployer -->
+  <div class="hero intro">
+    <span class="pill">your token</span><span class="arrow">+</span><span class="pill gold">your fee hook</span>
+    <b>fixed or upgradeable</b>
+  </div>
+  <ol class="steps intro custom-steps">
+    <li><b>Pick the hook</b> <span>fixed forever, or upgradeable by you (repoint it or freeze it, in public).</span></li>
+    <li><b>Launch Party reviews it</b> <span>a test buy and sell through the pool; tweetpad checks every byte.</span></li>
+    <li><b>One transaction</b> <span>the pool opens with its liquidity locked; your fee pays you on every trade.</span></li>
+  </ol>
+  <div class="actions intro live">
+    <button class="btn primary" id="cl-pop" type="button">Open the deployer ↗</button>
+    <button class="btn" id="cl-agent-pop" type="button">Use your agent</button>
+  </div>
+
+  <!-- the deployer (full page and pop-out) -->
+  <section class="deployer">
+    <div class="box">
+      <div class="row"><span class="field-label grow">Wallet</span><span id="cl-wallet" class="note"></span></div>
+      <div class="row" id="cl-wallets"></div>
+    </div>
+
+    <div class="box">
+      <div class="row" style="align-items:flex-start">
+        <label class="drop" id="cl-drop" title="Click, drop or paste an image"><input type="file" id="cl-img" accept="image/png,image/jpeg,image/gif,image/webp" hidden><span>+ image</span></label>
+        <div class="grow" style="display:grid;gap:6px">
+          <input class="text" id="cl-name" maxlength="32" placeholder="Name" autocomplete="off" spellcheck="false" aria-label="Name">
+          <input class="text" id="cl-ticker" maxlength="10" placeholder="TICKER" autocomplete="off" spellcheck="false" aria-label="Ticker">
+        </div>
+      </div>
+      <textarea class="text" id="cl-desc" rows="2" maxlength="140" placeholder="Description (optional)" aria-label="Description">launched on tweetpad.io</textarea>
+      <div class="row"><input class="text grow" id="cl-x" maxlength="200" placeholder="X: @handle or link (optional)" aria-label="X link">
+        <input class="text grow" id="cl-web" maxlength="200" placeholder="Website (optional)" aria-label="Website"></div>
+    </div>
+
+    <div class="box">
+      <span class="field-label">Fee hook</span>
+      <div class="choice" role="group" aria-label="Fee hook">
+        <button type="button" data-hook="fixed"><b>Fixed</b><span>The hook can never change. What buyers see is what it stays.</span></button>
+        <button type="button" data-hook="upgradeable"><b>Upgradeable</b><span>You can point it at new logic, in public, or freeze it for good.</span></button>
+      </div>
+      <span class="field-label">Creator fee</span>
+      <div class="chips" role="group" aria-label="Creator fee"><button type="button" data-fee="0">0%</button><button type="button" data-fee="1">1%</button><button type="button" data-fee="2">2%</button><button type="button" data-fee="3">3%</button><button type="button" data-fee="5">5%</button></div>
+      <span class="field-label">Starting value</span>
+      <div class="chips" role="group" aria-label="Starting value"><button type="button" data-start="2">2 ETH</button><button type="button" data-start="5">5 ETH</button><button type="button" data-start="10">10 ETH</button><button type="button" data-start="25">25 ETH</button></div>
+      <span class="field-label">Team share</span>
+      <div class="chips" role="group" aria-label="Team share"><button type="button" data-team="0">None</button><button type="button" data-team="5">5%</button><button type="button" data-team="10">10%</button><button type="button" data-team="20">20%</button></div>
+      <div class="chips" id="cl-vest-row" role="group" aria-label="Team share vesting"><button type="button" data-vest="30">30 days</button><button type="button" data-vest="60">60 days</button><button type="button" data-vest="90">90 days</button><button type="button" data-vest="120">120 days</button></div>
+      <p class="note" id="cl-summary"></p>
+    </div>
+
+    <button class="btn primary wide" id="cl-launch" type="button">Connect a wallet</button>
+    <ul class="checks" id="cl-checks"></ul>
+
+    <div class="box" id="cl-mine" hidden>
+      <span class="field-label">Your upgradeable hooks</span>
+      <ul class="coins" id="cl-coins"></ul>
+    </div>
+  </section>
+
+  <!-- hand it to your agent: tweetpad's skill file and a brief to paste -->
+  <section class="box live" id="cl-agent">
+    <div class="row"><span class="field-label grow">Or hand it to your agent</span><a href="/skills/tweetpad-custom-launch/SKILL.md" target="_blank" rel="noopener">Skill file ↗</a></div>
+    <p class="note">Your agent reads one file, prepares the launch through tweetpad and brings you the transaction to sign. It is listed here like any other.</p>
+    <pre class="brief" id="cl-brief"></pre>
+    <div class="row"><button class="btn" id="cl-copy" type="button">Copy brief</button><span class="note" id="cl-copied"></span></div>
+  </section>
+
+  <p class="fine">Launched through <a href="https://party.studio" target="_blank" rel="noopener">Launch Party</a>'s CustomLaunch on Ethereum · 0.001 ETH launch fee + gas ·
+    the hook's fee is yours · tweetpad takes nothing. A check is not an audit: trade carefully. The post is a parody, not from Vitalik Buterin, and implies no endorsement by him.</p>
+  </div>
+</main>
+<script src="assets/custom.js"></script>
+</body>
+</html>

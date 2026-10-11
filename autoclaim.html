@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tweetpad Auto-claim</title>
+<link rel="icon" href="assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/tweetpad-hash-32.png">
+<link rel="apple-touch-icon" href="assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#1da1f2">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : 'page';</script>
+
+<!-- posted on X, /autoclaim plays in the post: the player card loads ?embed. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Auto-claim on tweetpad">
+<meta name="twitter:description" content="Your pump.fun creator fees, claimed to your wallet every 5 minutes. tweetpad pays the network fee.">
+<meta name="twitter:player" content="https://www.tweetpad.io/autoclaim?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/autoclaim-card.png?v=3">
+<meta name="twitter:image:alt" content="tweetpad Auto-claim: creator fees claimed to your wallet every 5 minutes">
+<meta property="og:title" content="Auto-claim on tweetpad">
+<meta property="og:description" content="Your pump.fun creator fees, claimed to your wallet every 5 minutes. tweetpad pays the network fee.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/autoclaim-card.png?v=3">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
+<link rel="stylesheet" href="assets/feature.css">
+</head>
+<body>
+<a class="brand" href="/"><img src="assets/brand/tweetpad-hash-180.png" alt="">tweetpad <span>· Auto-claim</span></a>
+<main class="frame">
+  <!-- the bar: back home to tweetpad on the left, this page (its chain's mark) on the right -->
+  <div class="head">
+    <a class="home" href="/" title="Back to tweetpad"><span class="back" aria-hidden="true">‹</span><img class="gem" src="assets/brand/tweetpad-hash-180.png" alt=""><span class="word">tweetpad</span></a>
+    <h1 class="title"><span class="mark sol" aria-label="Solana"></span>Auto-claim</h1>
+  </div>
+  <div class="scroll">
+  <p class="lede">Your pump.fun <b>creator fees</b>, claimed <b>to your wallet</b> every 5 minutes. tweetpad pays the network fee.
+    No keys, no deposits, no cut.</p>
+  <div class="hero still">
+    <span class="pill">pump.fun creator fees</span><span class="arrow">→</span><span class="pill gold">your wallet</span>
+    <b>every 5 minutes</b>
+  </div>
+  <div class="stats live">
+    <div class="stat"><b id="ac-sol">…</b><span>SOL claimed</span></div>
+    <div class="stat"><b id="ac-claims">…</b><span>Claims</span></div>
+    <div class="stat"><b id="ac-wallets">…</b><span>Creators on</span></div>
+  </div>
+  <ol class="steps">
+    <li><b>Turn it on</b> <span>in your tweetpad profile: one free signature, no transaction.</span></li>
+    <li><b>We claim</b> <span>once <span id="ac-min">0.005</span> SOL is waiting, sweeping pump.fun's curve and pool fees too.</span></li>
+    <li><b>It lands in your wallet</b> <span>as SOL. Turn it off any time.</span></li>
+  </ol>
+  <ul class="feed live" id="ac-feed"><li class="empty">Loading recent claims…</li></ul>
+  <p class="fine still">Only pump.fun's own permissionless claim instructions: the fees can only go to the creator.</p>
+  <div class="actions live">
+    <button class="btn primary" id="ac-open" type="button">Turn on in tweetpad ↗</button>
+  </div>
+  </div>
+</main>
+<script src="assets/autoclaim.js"></script>
+</body>
+</html>

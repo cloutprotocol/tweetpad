@@ -63,6 +63,7 @@
             <button type="button" role="radio" data-net="robinhood" aria-checked="false" aria-label="Robinhood Chain" title="Launch on Robinhood Chain"><span class="net-logo rh" aria-hidden="true"></span></button>
             <button type="button" role="radio" data-net="bnb" aria-checked="false" aria-label="BNB Chain" title="Launch on BNB Chain"><span class="net-logo bnb" aria-hidden="true"></span></button>
             <button type="button" role="radio" data-net="base" aria-checked="false" aria-label="Base" title="Launch on Base"><span class="net-logo base" aria-hidden="true"></span></button>
+            <button type="button" role="radio" data-net="ethereum" aria-checked="false" aria-label="Ethereum" title="Launch on Ethereum (Launch Party custom launch)"><span class="net-logo eth" aria-hidden="true"></span></button>
           </span>
           <button class="pair-pick" id="pair-pick" type="button" aria-haspopup="dialog" aria-controls="pairs"></button></div>
         <div class="evm-wallet" id="evm-wallet" hidden></div>
@@ -101,6 +102,18 @@
           </div>
           <div class="devbuy-est" id="fee-note"></div>
         </div>
+        <!-- Ethereum only: Launch Party's custom launch, with its own fee hook paying the creator on every trade -->
+        <div class="fee-box" id="eth-box" hidden>
+          <div class="devbuy-head"><span class="field-label">Creator fee</span><span class="devbuy-hint">of every trade, to your wallet, for the coin's life</span></div>
+          <div class="buy-chips" role="group" aria-label="Creator fee">
+            <button type="button" data-ethfee="0">0%</button><button type="button" data-ethfee="1">1%</button><button type="button" data-ethfee="2">2%</button><button type="button" data-ethfee="3">3%</button><button type="button" data-ethfee="5">5%</button>
+          </div>
+          <div class="devbuy-head"><span class="field-label">Starting value</span><span class="devbuy-hint">the coin's market cap when it opens</span></div>
+          <div class="buy-chips" role="group" aria-label="Starting value">
+            <button type="button" data-ethstart="2">2 ETH</button><button type="button" data-ethstart="5">5 ETH</button><button type="button" data-ethstart="10">10 ETH</button><button type="button" data-ethstart="25">25 ETH</button>
+          </div>
+          <div class="devbuy-est" id="eth-note"></div>
+        </div>
         <!-- dev buy: right above the button, with a live estimate of what it gets -->
         <div class="devbuy-box" id="devbuy-box">
           <div class="devbuy-head"><span class="field-label">Dev buy</span><span class="devbuy-hint">optional · bought in the launch transaction</span></div>
@@ -132,6 +145,7 @@
           <button type="button" role="radio" data-chain="robinhood" aria-checked="false" title="Robinhood Chain"><span class="net-logo rh" aria-hidden="true"></span> <span class="n" id="cf-robinhood"></span></button>
           <button type="button" role="radio" data-chain="bnb" aria-checked="false" title="BNB Chain"><span class="net-logo bnb" aria-hidden="true"></span> <span class="n" id="cf-bnb"></span></button>
           <button type="button" role="radio" data-chain="base" aria-checked="false" title="Base"><span class="net-logo base" aria-hidden="true"></span> <span class="n" id="cf-base"></span></button>
+          <button type="button" role="radio" data-chain="ethereum" aria-checked="false" title="Ethereum"><span class="net-logo eth" aria-hidden="true"></span> <span class="n" id="cf-ethereum"></span></button>
         </div>
         <ul class="token-list" id="token-list"></ul>
       </div>
@@ -204,6 +218,9 @@
           <li><button class="more-row-btn" data-goto="games"><span class="more-ico" aria-hidden="true">
             <svg viewBox="0 0 8 8"><path d="M1 2h6v1h1v4H6V6H2v1H0V3h1zm1 1v1H1v1h1v1h1V5h1V4H3V3zm3 1v1h1V4zm1-1v1h1V3z" fill="currentColor" fill-rule="evenodd"/></svg></span>
             <span class="more-main"><b>Games</b><small>Play with your coins</small></span><span class="tag dim">Soon</span><kbd>G</kbd><span class="chev" aria-hidden="true">›</span></button></li>
+          <li><button class="more-row-btn" id="custom-pop"><span class="more-ico" aria-hidden="true">
+            <svg viewBox="0 0 16 16"><path d="M8 1.5 3.5 8.6 8 11.2l4.5-2.6zM8 12.3 3.5 9.7 8 14.5l4.5-4.8z" fill="currentColor"/></svg></span>
+            <span class="more-main"><b>Custom launch</b><small>Pops out: Ethereum, your own fee hook, fixed or upgradeable, or your agent</small></span><span class="chev" aria-hidden="true">↗</span></button></li>
           <li><button class="more-row-btn" id="winamp-pop"><span class="more-ico" aria-hidden="true">
             <svg viewBox="0 0 8 8"><path d="M3 0h5v5H7V2H4v4H3V5H1V4h2V1zM0 5h1v2h2v1H1V7H0zm5 0h2v1h1v1H7v1H5V7h1V6H5z" fill="currentColor" fill-rule="evenodd"/></svg></span>
             <span class="more-main"><b>Winamp</b><small>Pops out: tracker classics, 90,000 skins, your music</small></span><kbd>J</kbd><span class="chev" aria-hidden="true">↗</span></button></li>
@@ -391,12 +408,13 @@
     <button class="slot chat-slot" id="btn-chat" title="Chat (Enter)" aria-label="Open chat">
       <svg viewBox="0 0 8 8" aria-hidden="true"><path d="M1 1h6v4H4L2 7V5H1z" fill="currentColor"/></svg></button>
     <div id="hotbar" role="toolbar" aria-label="Your coins (keys 1–9)"></div>
-    <!-- the chain switch, opposite chat: Solana (pump.fun), or Robinhood Chain, BNB Chain or Base (Launch Party's solo launcher), logos only -->
+    <!-- the chain switch, opposite chat: Solana (pump.fun), Robinhood Chain, BNB Chain or Base (Launch Party's solo launcher), or Ethereum (its custom launch), logos only -->
     <span class="net-switch" role="radiogroup" aria-label="Network">
       <button type="button" role="radio" data-net="solana" aria-checked="true" aria-label="Solana" title="Launch on Solana (pump.fun)"><span class="net-logo sol" aria-hidden="true"></span></button>
       <button type="button" role="radio" data-net="robinhood" aria-checked="false" aria-label="Robinhood Chain" title="Launch on Robinhood Chain"><span class="net-logo rh" aria-hidden="true"></span></button>
       <button type="button" role="radio" data-net="bnb" aria-checked="false" aria-label="BNB Chain" title="Launch on BNB Chain"><span class="net-logo bnb" aria-hidden="true"></span></button>
       <button type="button" role="radio" data-net="base" aria-checked="false" aria-label="Base" title="Launch on Base"><span class="net-logo base" aria-hidden="true"></span></button>
+      <button type="button" role="radio" data-net="ethereum" aria-checked="false" aria-label="Ethereum" title="Launch on Ethereum (Launch Party custom launch)"><span class="net-logo eth" aria-hidden="true"></span></button>
     </span>
 
   </div>

@@ -3,3 +3,6 @@
 .env*
 node_modules
 agents/**/feed.jsonl
+
+# rendered films and stills (remotion/project renders them)
+remotion/out

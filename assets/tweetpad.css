@@ -320,6 +320,8 @@ button.chiplink { appearance: none; cursor: pointer; text-shadow: var(--shadow);
 .rewards-label { font: 14px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--gold); }
 .rewards b { flex: 1; min-width: 0; font: 600 12px/1.2 var(--px); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rewards.compact { margin-top: 8px; padding: 5px 6px; }
+.rewards.auto { margin-top: 6px; }   /* auto-claim, right under the creator rewards it claims */
+.rewards.auto .chiplink { padding: 2px 6px; }
 .acct-box .actions { align-items: center; }
 .acct-box .via { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font: 14px/1 var(--mono); color: var(--dim); }
 .acct-box .via img, .acct-box .via .ph { width: 14px; height: 14px; border: 1px solid #000; }
@@ -545,6 +547,8 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 
 /* ---------- dev buy: its own block above the launch button ---------- */
 .devbuy-box { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: rgba(5, 12, 14, .45); border: 1px dashed var(--line); }
+.devbuy-box[hidden] { display: none; }   /* Ethereum's custom launch has no dev buy */
+#eth-box .buy-chips button { padding-block: 5px; }
 .devbuy-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .devbuy-hint { font: 13px/1 var(--mono); color: var(--dim); }
 .devbuy-row { display: flex; gap: 6px; }
@@ -727,6 +731,7 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .net-logo.rh { -webkit-mask-image: url(robinhood.png); mask-image: url(robinhood.png); }
 .net-logo.bnb { -webkit-mask-image: url(bnb.svg); mask-image: url(bnb.svg); }
 .net-logo.base { -webkit-mask-image: url(base.svg); mask-image: url(base.svg); }
+.net-logo.eth { -webkit-mask-image: url(ethereum.svg); mask-image: url(ethereum.svg); }
 .evm-wallet { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 14px/1.2 var(--mono); color: var(--dim); }
 .evm-wallet[hidden] { display: none; }
 .evm-wallet b { color: var(--text); font: 600 12px/1 var(--px); }
@@ -744,6 +749,7 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .coin-fees { display: flex; flex-direction: column; gap: 6px; }
 .coin-fees-line { font: 14px/1.2 var(--mono); color: var(--dim); }
 .coin-fees-line b { color: var(--text); font-weight: normal; }
+.coin-fees-line.warn b { color: var(--warn); }   /* an upgradeable Ethereum hook */
 .net-sec { display: flex; align-items: center; gap: 6px; }
 .net-sec .net-logo { width: 13px; height: 13px; color: var(--text); }
 .fee-sub { display: block; margin-top: 3px; font: 13px/1.2 var(--mono); color: var(--dim); }
@@ -769,6 +775,7 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .chain-badge.rh { background: #ccff00; color: #000; }
 .chain-badge.bnb { background: #f0b90b; color: #fff; }   /* BNB yellow, white mark: the coin icon wallets show */
 .chain-badge.base { background: #0000ff; color: #fff; }
+.chain-badge.eth { background: #627eea; color: #fff; }
 .chain-badge.base .net-logo { width: 46%; height: 46%; }
 .chain-badge .net-logo { width: 62%; height: 62%; }
 .coin-img-btn .chain-badge { right: auto; left: -4px; }   /* the zoom + sits bottom-right on the coin page */

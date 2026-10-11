@@ -4,6 +4,10 @@
 // Body JSON: { chain (robinhood | bnb | base), wallet, name, symbol, uri, image, thumb, devBuy (native coin, decimal string), holdersBps (0–10000), twitter?, telegram?, website? }
 // Every launch has a flat 1% trading fee; holdersBps is how much of the creator side (after Launch Party's 10%) goes to holders.
 // Returns: { tx: { to, data, value, gas, chainId }, fee, expected, minimum }   (wei and token amounts as decimal strings)
+// Ethereum (api/_eth-launch.js) is a two-step: { chain: 'ethereum', step: 'request', wallet, name, symbol, uri, feePct, openingValue, twitter?, website?,
+// hook? (fixed | upgradeable), teamPct?, teamVestDays? }
+// → { url, body } for the browser to POST to Launch Party's review, then the same fields plus { prepared: <its answer>, image, thumb }
+// → { tx, fee, token, expiresAt }.
 const { createHash } = require('node:crypto');
 const { cors, readJson, isEvmAddress, EVM_CHAINS, cleanThumb, redis, rateLimit, fail } = require('./_lib');
 
@@ -42,6 +46,7 @@ module.exports = async (req, res) => {
   const socials = {};
   for (const k of ['twitter', 'telegram', 'website']) if (typeof b[k] === 'string' && /^https:\/\/\S{3,200}$/.test(b[k])) socials[k] = b[k];
 
+  if (chain === 'ethereum') return ethereum(b, res);
   const evm = require('./_evm');   // viem is only loaded for EVM launches
   const wallet = evm.getAddress(b.wallet);
   let built;
@@ -61,5 +66,33 @@ module.exports = async (req, res) => {
     fee: built.fee.toString(), expected: built.expected.toString(), minimum: built.minimum.toString(),
   });
 };
+
+/* Ethereum: Launch Party's review is asked from the browser; its answer is checked and rebuilt here (api/_eth-launch.js) */
+async function ethereum(b, res) {
+  const eth = require('./_eth-launch');
+  let s;
+  try { s = eth.settings(b); }
+  catch (err) { return fail(res, err.status || 400, err.message); }
+  if (b.step === 'request' && !b.prepared) return res.status(200).json({ url: eth.API + '/prepare', body: eth.prepareRequest(s) });   // with prepared, it's the build
+  let built;
+  try { built = await eth.buildEthLaunch(s, b.prepared); }
+  catch (err) { return fail(res, err.status || 502, err.message); }
+  const image = typeof b.image === 'string' && /^https:\/\/[A-Za-z0-9.-]{1,64}\/ipfs\/[A-Za-z0-9]{46,100}$/.test(b.image) ? b.image : '';
+  /* each review predicts a new coin address (a new nonce), so a creator who reviews again keeps the earlier ones too: whichever
+     of their approved launches they send is the one listed, if its terms on chain are the ones approved here */
+  const pending = { chain: 'ethereum', creator: s.account, name: s.name, symbol: s.symbol, uri: s.uri, image, thumb: cleanThumb(b.thumb), devBuy: 0, holdersBps: 0,
+    builds: [{ token: built.token, termsHash: built.termsHash, upgradeable: built.upgradeable }], at: Date.now() };
+  const [set] = await redis(['SET', pendingKey(s.uri), JSON.stringify(pending), 'NX', 'EX', PENDING_TTL]);
+  if (set !== 'OK') {
+    const [held] = await redis(['GET', pendingKey(s.uri)]);
+    const prev = held && JSON.parse(held);
+    if (!prev || prev.creator !== s.account) return fail(res, 409, 'this metadata is already being launched; upload again to start over');
+    pending.builds = [...(prev.builds || []), ...pending.builds].slice(-5);
+    await redis(['SET', pendingKey(s.uri), JSON.stringify(pending), 'EX', PENDING_TTL]);
+  }
+  const hex = (n) => '0x' + n.toString(16);
+  return res.status(200).json({ tx: { to: built.to, data: built.data, value: hex(built.value), gas: hex(built.gas), chainId: '0x1' },
+    fee: built.fee.toString(), token: built.token, expiresAt: built.expiresAt, findings: built.findings });
+}
 
 module.exports.pendingKey = pendingKey;

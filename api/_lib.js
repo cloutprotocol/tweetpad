@@ -71,8 +71,8 @@ const isPubkey = (s) => typeof s === 'string' && s.length >= 32 && s.length <= 4
    doesn't say which chain it is on, so that comes from the coin's launch record (launchidx); older records are Robinhood's. */
 const isEvmAddress = (s) => typeof s === 'string' && /^0x[0-9a-fA-F]{40}$/.test(s);
 const isCoinId = (s) => isPubkey(s) || isEvmAddress(s);
-const EVM_CHAINS = ['robinhood', 'bnb', 'base'];
-const DEX_SLUG = { solana: 'solana', robinhood: 'robinhood', bnb: 'bsc', base: 'base' };   // DexScreener and GeckoTerminal network ids
+const EVM_CHAINS = ['robinhood', 'bnb', 'base', 'ethereum'];   // ethereum: Launch Party's CustomLaunch (api/_eth-launch.js), not its solo launcher
+const DEX_SLUG = { solana: 'solana', robinhood: 'robinhood', bnb: 'bsc', base: 'base', ethereum: 'ethereum' };   // DexScreener and GeckoTerminal network ids (GeckoTerminal says eth)
 async function chainsOf(coins) {
   const out = {}, evm = coins.filter(isEvmAddress);
   for (const c of coins) out[c] = isEvmAddress(c) ? 'robinhood' : 'solana';

@@ -132,6 +132,7 @@ async function recordEvm(b, res) {
   if (typeof b.hash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(b.hash)) return fail(res, 400, 'invalid transaction hash');
   const evm = require('./_evm');
   const chain = b.chain;
+  if (chain === 'ethereum') return recordEth(b, res);
   let v;
   try { v = await evm.verifyLaunch(chain, b.hash); }
   catch (err) { return fail(res, err.status || 502, err.message); }
@@ -145,6 +146,33 @@ async function recordEvm(b, res) {
     creator: v.creator, devBuy: v.devBuy, quote: null, signature: b.hash, time: v.time, poolId: v.poolId, feeBps: v.feeBps, holdersBps: v.holdersBps };
   await redis(['SET', 'launch:' + v.coin, JSON.stringify(launch)], ['ZADD', 'launches', v.time, v.coin], ['ZADD', 'creator:' + v.creator, v.time, v.coin],
     ['HSET', 'launchidx', v.coin, JSON.stringify(slim(launch))], ['DEL', require('./evm-create').pendingKey(v.uri)]);
+  return res.status(200).json({ ok: true, launch });
+}
+
+/* an Ethereum launch: a successful launchSolo through Launch Party's CustomLaunch (api/_eth-coins.js checks it against
+   CustomLaunch's own record), of the very coin built here for this creator (pending, by its metadata link) */
+async function recordEth(b, res) {
+  let v;
+  try { v = await require('./_eth-coins').verifyEthLaunch(b.hash); }
+  catch (err) { return fail(res, err.status || 502, err.message); }
+  const key = require('./evm-create').pendingKey(v.uri);
+  const [existing, pendingRaw] = await redis(['GET', 'launch:' + v.mint], ['GET', key]);
+  if (existing) return res.status(200).json({ ok: true, launch: JSON.parse(existing) });
+  if (!pendingRaw) return fail(res, 404, 'this coin was not built through tweetpad (or it expired)');
+  const pending = JSON.parse(pendingRaw);
+  /* the coin, and its terms on chain (pool, opening value, fee, no team share), must be one built and approved here */
+  const build = pending.chain === 'ethereum' && pending.creator === v.creator && (pending.builds || []).find(x => x.token === v.mint);
+  if (!build || build.termsHash !== v.termsHash) return fail(res, 400, 'this launch is not the one built here for this wallet');
+  /* the terms hash covers the pool, the opening value and the team share; the hook is read from the chain (through the proxy
+     when upgradeable, whose logic must still be the template paying the creator) */
+  if (!v.templateToken || v.hookTemplate !== 'FeeHookV1' || v.upgradeable !== !!build.upgradeable || v.feeRecipient !== v.creator || v.lpFee !== 0
+    || v.pair !== '0x0000000000000000000000000000000000000000') return fail(res, 400, 'this launch\'s token or fee hook is not the one built here');
+  const launch = { chain: 'ethereum', mint: v.mint, name: v.name, symbol: v.symbol, image: pending.image, thumb: pending.thumb || '', uri: v.uri,
+    creator: v.creator, devBuy: 0, quote: null, signature: b.hash, time: v.time, poolId: v.poolId, feeBps: v.feeBps, holdersBps: 0,
+    hook: v.hook, pair: v.pair, lpFee: v.lpFee, feeRecipient: v.feeRecipient,
+    ...(v.upgradeable ? { upgradeable: true } : {}), ...(v.teamBps ? { teamBps: v.teamBps, teamVest: v.teamVest, teamTo: v.teamTo, teamEscrow: v.teamEscrow } : {}) };
+  await redis(['SET', 'launch:' + v.mint, JSON.stringify(launch)], ['ZADD', 'launches', v.time, v.mint], ['ZADD', 'creator:' + v.creator, v.time, v.mint],
+    ['HSET', 'launchidx', v.mint, JSON.stringify(slim(launch))], ['DEL', key]);
   return res.status(200).json({ ok: true, launch });
 }
 

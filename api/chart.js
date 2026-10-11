@@ -1,13 +1,14 @@
 // Coin screen data in one cached call: candles + recent trades from GeckoTerminal (free; open CORS, but
 // rate-limited per IP, so going through here with a short CDN cache keeps every viewer under the limit).
-// GET /api/chart?pool=<pair address>&tf=1m|5m|15m|1h[&net=robinhood|bnb|base]   (net: the chain of a v4 pool id)
+// GET /api/chart?pool=<pair address>&tf=1m|5m|15m|1h[&net=robinhood|bnb|base|ethereum]   (net: the chain of a v4 pool id)
 // GET /api/chart?pool=<pair address>&spark=1   → { points }: the last day's 15-minute closes, for the token list's row charts
 const { cors, isPubkey, redis, DEX_SLUG, fail } = require('./_lib');
 const SPARK_TTL = 300;   // seconds a row chart is reused, from Redis, across every region and viewer
 
 /* Solana pools are base58 accounts; EVM pools are Uniswap v4 pool ids (0x + 64 hex), on the chain named by ?net= (Robinhood if absent) */
 const isV4Pool = (s) => /^0x[0-9a-fA-F]{64}$/.test(s);
-const baseFor = (pool, net) => 'https://api.geckoterminal.com/api/v2/networks/' + (isV4Pool(pool) ? DEX_SLUG[net] || 'robinhood' : 'solana') + '/pools/';
+const GECKO = { ...DEX_SLUG, ethereum: 'eth' };   // GeckoTerminal's ids are DexScreener's, but for Ethereum
+const baseFor = (pool, net) => 'https://api.geckoterminal.com/api/v2/networks/' + (isV4Pool(pool) ? GECKO[net] || 'robinhood' : 'solana') + '/pools/';
 const TIMEFRAMES = { '1m': ['minute', 1], '5m': ['minute', 5], '15m': ['minute', 15], '1h': ['hour', 1] };
 
 async function gecko(path, net) {

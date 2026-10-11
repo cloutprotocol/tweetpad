@@ -420,10 +420,15 @@ const EVM_NETS = {
   base: { key: 'base', id: 8453, hex: '0x2105', name: 'Base', short: 'Base', symbol: 'ETH', currency: 'Ether', logo: 'base',
     rpc: 'https://mainnet.base.org', explorer: 'https://basescan.org', dex: 'base', openingFdv: 1.3, maxDevBuy: 1,
     presets: ['0', '0.001', '0.005', '0.01'], tradePresets: ['0.001', '0.005', '0.01', '0.05'] },
+  /* Ethereum: Launch Party's custom launch (api/_eth-launch.js), not its solo launcher. Its own fee hook pays the creator on
+     every trade; the launch carries no dev buy (the 0.001 ETH it sends for the sell check comes back in it). */
+  ethereum: { key: 'ethereum', id: 1, hex: '0x1', name: 'Ethereum', short: 'Ethereum', symbol: 'ETH', currency: 'Ether', logo: 'eth', custom: true,
+    rpc: 'https://ethereum-rpc.publicnode.com', explorer: 'https://etherscan.io', dex: 'ethereum', openingFdv: 10, maxDevBuy: 0,
+    presets: ['0', '0', '0', '0'], tradePresets: ['0.005', '0.01', '0.05', '0.1'] },
 };
-const CHAINS = ['solana', 'robinhood', 'bnb', 'base'];
-const CHAIN_NAME = { solana: 'Solana', robinhood: 'Robinhood Chain', bnb: 'BNB Chain', base: 'Base' };
-const CHAIN_LOGO = { solana: 'sol', robinhood: 'rh', bnb: 'bnb', base: 'base' };
+const CHAINS = ['solana', 'robinhood', 'bnb', 'base', 'ethereum'];
+const CHAIN_NAME = { solana: 'Solana', robinhood: 'Robinhood Chain', bnb: 'BNB Chain', base: 'Base', ethereum: 'Ethereum' };
+const CHAIN_LOGO = { solana: 'sol', robinhood: 'rh', bnb: 'bnb', base: 'base', ethereum: 'eth' };
 /* the chain a coin (its launch record) is on: older EVM records are Robinhood's */
 const coinChain = (l) => (l && CHAINS.includes(l.chain) ? l.chain : l && isEvm(l.mint) ? 'robinhood' : 'solana');
 const netOf = (l) => EVM_NETS[coinChain(l)] || EVM_NETS.robinhood;
@@ -492,9 +497,23 @@ function renderEvmWallet() {
 }
 /* the creator / holders split of the 1% fee. Launch Party's hook takes 10% of each fee first; the rest splits as chosen. */
 const holdersPct = () => Math.max(0, Math.min(100, Number($('fee-holders').value) || 0));
+/* Ethereum's custom launch: the creator's fee on every trade, and the market cap the pool opens at */
+const ethOpts = { feePct: 2, start: '10' };
+function renderEthBox() {
+  const box = $('eth-box');
+  box.hidden = !launchNet().custom || launch.chain === 'solana';
+  if (box.hidden) return;
+  for (const b of box.querySelectorAll('[data-ethfee]')) { b.disabled = launch.busy; b.setAttribute('aria-pressed', String(Number(b.dataset.ethfee) === ethOpts.feePct)); }
+  for (const b of box.querySelectorAll('[data-ethstart]')) { b.disabled = launch.busy; b.setAttribute('aria-pressed', String(b.dataset.ethstart === ethOpts.start)); }
+  $('eth-note').replaceChildren('Each trade: ', h('b', { text: ethOpts.feePct + '% to you' }), ', in ETH and in the coin, claimed on your profile.',
+    h('small', { text: ' Fixed at launch: the fee hook can never be changed.' }),
+    h('span', { class: 'fee-sub' }, 'Reviewed and launched by ', h('a', { href: 'https://party.studio', target: '_blank', rel: 'noopener' }, 'Launch Party'), ' · 0.001 ETH launch fee · ',
+      h('button', { class: 'linkish', onclick: popCustom }, 'Upgradeable hook or team share ↗')));
+}
 function renderFeeBox() {
   const box = $('fee-box');
-  box.hidden = launch.chain === 'solana';
+  box.hidden = launch.chain === 'solana' || !!launchNet().custom;
+  renderEthBox();
   if (box.hidden) return;
   const hp = holdersPct(), cp = 100 - hp;
   $('fee-holders').disabled = launch.busy;
@@ -507,6 +526,19 @@ function renderFeeBox() {
     /* the launcher's cut, set apart and credited */
     h('span', { class: 'fee-sub' }, '0.1% to ', h('a', { href: 'https://party.studio', target: '_blank', rel: 'noopener' }, 'Launch Party SDK')));
 }
+/* Ethereum: Launch Party reviews the launch and signs its approval (asked from this browser, so its per-IP limit is the
+   creator's own); /api/evm-create checks the answer is exactly what was asked and rebuilds the transaction from it */
+async function buildEthLaunch(meta, ipfs, links) {
+  const fields = { chain: 'ethereum', wallet: evm.address, name: meta.name, symbol: meta.symbol, uri: ipfs.uri, feePct: ethOpts.feePct, openingValue: ethOpts.start,
+    twitter: links.twitter || '', website: links.website || '' };
+  const req = await api('/api/evm-create', { json: { ...fields, step: 'request' } });
+  check('warn', 'Launch Party is reviewing the launch…');
+  const r = await fetch(req.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(req.body) });
+  const prepared = await r.json().catch(() => null);
+  if (r.status === 429) throw new Error('Launch Party\'s review is busy for this connection; try again in a few minutes');
+  if (!prepared) throw new Error('Launch Party\'s review did not answer (' + r.status + ')');
+  return api('/api/evm-create', { json: { ...fields, image: ipfs.image, thumb: launch.thumb, prepared } });
+}
 async function onLaunchEvm() {
   if (!evm.address) {
     const list = evmProviders();
@@ -518,6 +550,7 @@ async function onLaunchEvm() {
   Object.assign(launch, { busy: true, done: false, result: null, checks: [] });
   const links = socialLinks();
   const meta = { name: $('tk-name').value.trim(), symbol: $('tk-ticker').value.trim(), description: $('tk-desc').value.trim(), ...links };
+  let hash = null, n = launchNet();   // once sent, a failure still links the transaction
   try {
     check('warn', 'Uploading image and metadata to IPFS…');
     const ipfs = await api('/api/ipfs', { body: launch.bytes, headers: {
@@ -525,23 +558,25 @@ async function onLaunchEvm() {
     if (ipfs.sha256 !== launch.sha) throw new Error('IPFS step hashed a different image');
     check('ok', 'Image and metadata on IPFS', ipfs.uri, 'JSON ↗');
 
-    const n = launchNet();
+    n = launchNet();
     check('warn', 'Building the ' + n.name + ' launch…');
-    const built = await api('/api/evm-create', { json: { chain: n.key, wallet: evm.address, name: meta.name, symbol: meta.symbol, uri: ipfs.uri, image: ipfs.image,
+    const built = n.custom ? await buildEthLaunch(meta, ipfs, links) : await api('/api/evm-create', { json: { chain: n.key, wallet: evm.address, name: meta.name, symbol: meta.symbol, uri: ipfs.uri, image: ipfs.image,
       thumb: launch.thumb, devBuy: $('tk-buy').value.trim() || '0', holdersBps: holdersPct() * 100, twitter: links.twitter || '', telegram: links.telegram || '', website: links.website || '' } });
-    check('ok', 'Transaction built and checked against the live launcher');
+    check('ok', n.custom ? 'Reviewed by Launch Party and checked here: approved for 30 minutes' : 'Transaction built and checked against the live launcher');
 
     const p = evm.active.provider;
     await ensureChain(p, n);
     check('warn', 'Approve in ' + evm.active.info.name + '…');
-    const hash = await p.request({ method: 'eth_sendTransaction', params: [{ from: evm.address, ...built.tx }] });
+    hash = await p.request({ method: 'eth_sendTransaction', params: [{ from: evm.address, ...built.tx }] });
     check('warn', 'Confirming on ' + n.name + '…', n.explorer + '/tx/' + hash, 'Tx ↗');
 
-    /* the server waits for the receipt, then checks it's a real launch built here before listing it */
+    /* the server waits for the receipt, then checks it's a real launch built here before listing it. Ethereum blocks are
+       slower and busier, so it is given longer (each try waits up to 30 s on the server) */
     let rec = null;
-    for (let i = 0; i < 6 && !rec; i++) {
+    const tries = n.id === 1 ? 16 : 6;
+    for (let i = 0; i < tries && !rec; i++) {
       try { rec = await api('/api/launches', { json: { chain: n.key, hash } }); }
-      catch (err) { if (!/not found yet/.test(errText(err)) || i === 5) throw err; await new Promise(r => setTimeout(r, 2500)); }
+      catch (err) { if (!/not found yet/.test(errText(err)) || i === tries - 1) throw err; await new Promise(r => setTimeout(r, 2500)); }
     }
     check('ok', '$' + meta.symbol + ' is live on ' + n.name, n.explorer + '/token/' + rec.launch.mint, 'Explorer ↗');
     Object.assign(launch, { done: true, result: rec.launch });
@@ -551,7 +586,9 @@ async function onLaunchEvm() {
     openCoin(rec.launch.mint);
   } catch (err) {
     const msg = errText(err).replace(/^Error:? /, '');
-    check('bad', /reject|denied|cancel/i.test(msg) ? 'Cancelled in the wallet' : msg);
+    /* sent but not confirmed in time: say so and keep the link, rather than invite a second launch */
+    if (hash && /not found yet/.test(msg)) { check('bad', 'Sent, not confirmed yet: check the transaction before launching again', n.explorer + '/tx/' + hash, 'Tx ↗'); launch.done = true; }   // the button then reads Launch another
+    else check('bad', /reject|denied|cancel/i.test(msg) ? 'Cancelled in the wallet' : msg, hash ? n.explorer + '/tx/' + hash : undefined, hash ? 'Tx ↗' : undefined);
   } finally {
     launch.busy = false;
     renderLaunch();
@@ -772,7 +809,7 @@ function launchProblem() {
     if (!launch.file) return 'Add an image';
     if (!$('tk-name').value.trim()) return 'Add a name';
     if (!/^[A-Z0-9]{2,10}$/.test($('tk-ticker').value.trim())) return 'Ticker: 2–10 letters or numbers';
-    if (!/^\d{0,4}(\.\d{0,18})?$/.test($('tk-buy').value.trim()) || !(devBuy() >= 0 && devBuy() <= launchNet().maxDevBuy)) return 'Dev buy: 0–' + launchNet().maxDevBuy + ' ' + launchNet().symbol;
+    if (!launchNet().custom && (!/^\d{0,4}(\.\d{0,18})?$/.test($('tk-buy').value.trim()) || !(devBuy() >= 0 && devBuy() <= launchNet().maxDevBuy))) return 'Dev buy: 0–' + launchNet().maxDevBuy + ' ' + launchNet().symbol;
     const l = socialLinks();
     if (l.twitter === null) return 'X link: @handle or an x.com link';
     if (l.telegram === null) return 'Telegram: @group or a t.me link';
@@ -802,13 +839,14 @@ function renderLaunch() {
   const rh = launch.chain !== 'solana', n = launchNet();
   for (const b of document.querySelectorAll('.net-switch [data-net]')) { b.setAttribute('aria-checked', String(b.dataset.net === launch.chain)); b.disabled = launch.busy; }
   $('pair-pick').hidden = rh;
-  $('launch-note').textContent = rh ? 'Launches on ' + n.name + ' · 1% trading fee · 0.0005 ' + n.symbol + ' launch fee + gas' : 'Launches on pump.fun · 0 pad fee · network fees apply';
+  $('launch-note').textContent = rh && n.custom ? 'Launches on Ethereum through Launch Party · ' + ethOpts.feePct + '% fee to you · 0.001 ETH launch fee + gas'
+    : rh ? 'Launches on ' + n.name + ' · 1% trading fee · 0.0005 ' + n.symbol + ' launch fee + gas' : 'Launches on pump.fun · 0 pad fee · network fees apply';
   renderEvmWallet();
   renderFeeBox();
   if (rh) {
     btn.textContent = launch.busy ? 'Launching…' : launch.done ? 'Launch another'
       : !evm.address ? (evmProviders().length ? (evm.picking ? 'Choose a wallet above' : 'Connect EVM wallet') : 'Get an EVM wallet')
-      : problem || 'Launch $' + $('tk-ticker').value.trim() + ' on ' + n.short + (devBuy() > 0 ? ' · buy ' + devBuy() + ' ' + n.symbol : '');
+      : problem || 'Launch $' + $('tk-ticker').value.trim() + ' on ' + n.short + (!n.custom && devBuy() > 0 ? ' · buy ' + devBuy() + ' ' + n.symbol : '');
     btn.classList.toggle('primary', !evm.address || !problem || launch.done);
   } else btn.textContent = launch.busy ? 'Launching…'
     : launch.done ? 'Launch another'
@@ -1050,6 +1088,8 @@ function renderDevBuy(pair) {
   /* presets follow the network: ETH and BNB amounts are far smaller than SOL ones */
   const presets = rh ? n.presets : ['0', '0.1', '0.5', '1'];
   box.querySelectorAll('[data-buy]').forEach((b, i) => { b.dataset.buy = presets[i]; b.textContent = i ? presets[i] : 'None'; });
+  box.hidden = rh && !!n.custom;   // Ethereum's custom launch carries no dev buy: buy on the coin page once it is live
+  if (box.hidden) return;
   if (rh) {
     for (const b of box.querySelectorAll('[data-buy]')) { b.disabled = launch.busy; b.setAttribute('aria-pressed', String(Number(b.dataset.buy) === sol && ($('tk-buy').value !== '' || sol === 0))); }
     box.classList.remove('off'); $('tk-buy').disabled = launch.busy;
@@ -1253,7 +1293,7 @@ function renderTokens() {
   const shown = tokens.list.filter(l => onChain(l, tokens.chain));
   const sorted = by ? [...shown].sort((a, b) => by(b) - by(a)) : shown;
   for (const b of document.querySelectorAll('.sort [data-sort]')) b.setAttribute('aria-pressed', String(b.dataset.sort === tokens.sort));
-  for (const l of sorted) if (mk(l).pair) queueSpark(l.mint, mk(l).pair);
+  for (const l of sorted) if (mk(l).pair) queueSpark(l.mint, mk(l).pair, coinChain(l));
   const rows = sorted.map(l => h('li', {},
     h('button', { class: 'tok', title: 'Open $' + l.symbol, onclick: () => openCoin(l.mint) },
       sparkline(sparks.data[l.mint]),
@@ -1273,18 +1313,19 @@ function renderTokens() {
 /* ---------- row charts: the last day's prices drawn faintly behind each token row ---------- */
 const sparks = { data: {}, queued: new Set(), running: 0 };
 const SPARK_PARALLEL = 3;   // GeckoTerminal rate-limits per IP; the server caches each coin for 5 minutes
-function queueSpark(mint, pool) {
+function queueSpark(mint, pool, chain) {
   if (mint in sparks.data || sparks.queued.has(mint)) return;
   sparks.queued.add(mint);
-  pumpSparks(pool && [mint, pool]);
+  pumpSparks(pool && [mint, pool, chain]);
 }
 const sparkQueue = [];
 async function pumpSparks(job) {
   if (job) sparkQueue.push(job);
   while (sparks.running < SPARK_PARALLEL && sparkQueue.length) {
-    const [mint, pool] = sparkQueue.shift();
+    const [mint, pool, chain] = sparkQueue.shift();
     sparks.running++;
-    fetch('/api/chart?spark=1&pool=' + pool).then(r => (r.ok ? r.json() : null)).catch(() => null).then(out => {
+    /* a v4 pool id doesn't say its chain: the row's coin does */
+    fetch('/api/chart?spark=1&pool=' + pool + (chain && chain !== 'solana' ? '&net=' + chain : '')).then(r => (r.ok ? r.json() : null)).catch(() => null).then(out => {
       if (out) sparks.data[mint] = out.points && out.points.length > 1 ? out.points : null;
       /* upstream busy (rate limit): forget the attempt so the next render a minute on tries again */
       else setTimeout(() => sparks.queued.delete(mint), 60000);
@@ -1781,6 +1822,11 @@ function renderCoinFees() {
   const box = $('coin-fees'), l = coin.launch;
   box.hidden = !l || !isEvm(l.mint) || !l.feeBps;
   if (box.hidden) return;
+  /* Ethereum: the hook's fee, and what a buyer should know: whether its creator can still change the hook, and any team share */
+  if (l.chain === 'ethereum') return box.replaceChildren(...[h('div', { class: 'coin-fees-line' }, h('b', { text: (l.feeBps / 100) + '% trading fee' }), ' · to its creator, in ETH and $' + l.symbol),
+    l.upgradeable ? h('div', { class: 'coin-fees-line warn' }, h('b', { text: 'Upgradeable hook' }), ': its creator can change it or freeze it, in public') : null,
+    l.teamBps ? h('div', { class: 'coin-fees-line' }, (l.teamBps / 100) + '% of supply vests to the team over ' + Math.round(l.teamVest / 86400) + ' days') : null,
+    h('span', { class: 'fee-sub' }, (l.upgradeable ? 'Fee hook' : 'Fixed fee hook') + ', launched through ', h('a', { href: 'https://party.studio', target: '_blank', rel: 'noopener' }, 'Launch Party'))].filter(Boolean));
   const hp = (l.holdersBps || 0) / 100;
   box.replaceChildren(...[
     h('div', { class: 'coin-fees-line' }, h('b', { text: (l.feeBps / 100) + '% trading fee' }),
@@ -1808,7 +1854,7 @@ function resetTrade(mint) {
   Object.assign(trade, { mint, amount: '', raw: null, quote: null, quoting: false, busy: false, status: null, holding: null, native: null, graduated: false, picking: false });
 }
 /* left in the wallet on Max: the network fee, the Jito tip and (Solana) rent for a new token account */
-const maxReserve = () => (isEvm(trade.mint) ? (coinChain(coin.launch) === 'bnb' ? 0.002 : 0.0003) : 0.01 + jitoTip());
+const maxReserve = () => (isEvm(trade.mint) ? ({ bnb: 0.002, ethereum: 0.003 }[coinChain(coin.launch)] || 0.0003) : 0.01 + jitoTip());   // gas kept back: L1 swaps cost more
 /* decimal string ⇄ base units, never through floating point */
 const toRaw = (s, d) => { const m = /^(\d+)(?:\.(\d*))?$/.exec(String(s).trim()); return m ? BigInt(m[1] + (m[2] || '').slice(0, d).padEnd(d, '0')) : null; };
 const fromRaw = (n, d) => { const s = BigInt(n).toString().padStart(d + 1, '0'); return (s.slice(0, -d) + '.' + s.slice(-d)).replace(/\.?0+$/, ''); };
@@ -2000,7 +2046,8 @@ function renderTrade() {
   /* the line under the estimate: the balance this side spends */
   const bal = !owner ? null : buy ? (native != null ? h('span', null, 'Balance ', h('b', { text: fmtQty(native) + ' ' + q.symbol }), usd(native) ? ' · ' + usd(native) : '') : null)
     : holding != null ? h('span', null, 'You hold ', h('b', { text: fmtQty(holding) + ' $' + l.symbol }), usd(holding, true) ? ' · ' + usd(holding, true) : '') : null;
-  const feeLine = rh ? '1% coin fee, to its creator and holders · tweetpad takes nothing' : 'pump.fun’s fees only · tweetpad takes nothing';
+  const feeLine = coin.launch && coin.launch.chain === 'ethereum' ? (coin.launch.feeBps / 100) + '% coin fee, to its creator · tweetpad takes nothing'
+    : rh ? '1% coin fee, to its creator and holders · tweetpad takes nothing' : 'pump.fun’s fees only · tweetpad takes nothing';
   const jito = !rh && !trade.graduated;
   let action;
   if (!owner) {
@@ -2305,7 +2352,7 @@ function selectSlot(n) {
   if (l) openCoin(l.mint);
 }
 /* ---------- profiles: wallet ↔ X account, launched coins, creator rewards ---------- */
-const me = { wallet: null, profile: null, rewards: null, coins: [], loading: false, claiming: false, status: null };
+const me = { wallet: null, profile: null, rewards: null, auto: null, coins: [], loading: false, claiming: false, toggling: false, status: null };
 const profiles = {};   // wallet → profile (or null), for creators shown on coin screens
 const avatarOf = (p, wallet, cls) => p && p.avatar
   ? h('img', { class: 'avatar ' + (cls || ''), src: p.avatar, alt: '', referrerpolicy: 'no-referrer', onerror: (ev) => ev.target.replaceWith(avatarOf(null, wallet, cls)) })
@@ -2330,19 +2377,21 @@ async function loadProfiles(wallets) {
 /* everything the profile screen and wallet menu show for the connected wallet */
 async function loadMe() {
   const wallet = state.active && state.active.account && state.active.account.address;
-  if (!wallet) { Object.assign(me, { wallet: null, profile: null, rewards: null, coins: [] }); return renderProfile(); }
-  if (me.wallet !== wallet) Object.assign(me, { wallet, profile: null, rewards: null, coins: [], status: null });
+  if (!wallet) { Object.assign(me, { wallet: null, profile: null, rewards: null, auto: null, coins: [] }); return renderProfile(); }
+  if (me.wallet !== wallet) Object.assign(me, { wallet, profile: null, rewards: null, auto: null, coins: [], status: null });
   me.loading = true;
   renderProfile();
-  const [p, r, c] = await Promise.all([
+  const [p, r, c, a] = await Promise.all([
     fetch('/api/profile?wallet=' + wallet + '&fresh=1').then(x => x.json()).catch(() => null),
     fetch('/api/rewards?wallet=' + wallet).then(x => x.json()).catch(() => null),
     fetch('/api/launches?creator=' + wallet).then(x => x.json()).catch(() => null),
+    fetch('/api/autoclaim?wallet=' + wallet).then(x => x.json()).catch(() => null),
   ]);
   if (me.wallet !== wallet) return;
   me.profile = p && p.profiles ? p.profiles[wallet] : null;
   profiles[wallet] = me.profile;
   me.rewards = r && !r.error ? r : null;
+  me.auto = a && !a.error ? a : null;
   me.coins = c && c.launches ? c.launches : [];
   me.loading = false;
   if (me.coins.length) loadMarket(me.coins.map(l => l.mint));
@@ -2385,6 +2434,36 @@ async function claimRewards() {
     me.claiming = false;
     loadMe();
   }
+}
+/* auto-claim (api/autoclaim.js): one free signed message turns it on or off; tweetpad's keeper then claims to this wallet */
+async function toggleAutoClaim() {
+  const wallet = state.active;
+  if (!wallet || me.toggling || !me.auto) return;
+  const on = !me.auto.on;
+  me.toggling = true;
+  setStatus('warn', 'Sign in ' + wallet.name + ' to turn auto-claim ' + (on ? 'on' : 'off') + ' (free, no transaction)…');
+  try {
+    const address = wallet.account.address;
+    const prep = await api('/api/autoclaim', { json: { action: 'prepare', wallet: address, on } });
+    const sig = await signRaw(wallet, new TextEncoder().encode(prep.message));
+    me.auto = await api('/api/autoclaim', { json: { wallet: address, on, issued: prep.issued, signature: b58encode(sig) } });
+    setStatus('ok', on ? 'Auto-claim is on: fees of ' + me.auto.minSol + ' SOL or more are claimed to this wallet' : 'Auto-claim is off');
+  } catch (err) {
+    const text = errText(err).replace(/^Error /, '');
+    setStatus('bad', /rejected|declined|denied|cancel/i.test(text) ? 'Cancelled in wallet' : 'Auto-claim: ' + text);
+  } finally {
+    me.toggling = false;
+    renderProfile();
+  }
+}
+function autoClaimBox() {
+  const a = me.auto;
+  return h('div', { class: 'rewards auto' },
+    h('span', { class: 'rewards-label', text: 'Auto-claim' }),
+    h('b', { text: !a ? (me.loading ? '…' : '—') : a.on ? (a.claims ? a.sol.toFixed(4) + ' SOL in ' + a.claims + (a.claims === 1 ? ' claim' : ' claims') : 'On · from ' + a.minSol + ' SOL') : 'Off' }),
+    h('a', { class: 'chiplink', href: '/autoclaim', target: '_blank', rel: 'noopener', title: 'How auto-claim works' }, 'ⓘ'),
+    h('button', { class: 'btn sm' + (a && a.on ? '' : ' primary'), disabled: !a || me.toggling, onclick: toggleAutoClaim, 'aria-pressed': String(!!(a && a.on)) },
+      me.toggling ? '…' : a && a.on ? 'Turn off' : 'Turn on'));
 }
 /* ---------- EVM profile: the connected EVM wallet's coins and creator fees on each chain ---------- */
 const evmMe = { wallet: null, rewards: null, coins: [], loading: false, claiming: false, status: null };
@@ -2446,10 +2525,12 @@ function evmRewardsBoxes() {
   const chains = evmMe.rewards ? evmMe.rewards.chains : [];
   if (!chains.length) return [h('div', { class: 'rewards' }, h('span', { class: 'rewards-label', text: 'Creator rewards' }), h('b', { text: evmMe.loading ? '…' : '—' }))];
   return chains.map(c => {
-    const has = c.amount > 0;
+    /* Ethereum hooks also pay in the coin itself (coinAmount): those count as something to claim too */
+    const coinFees = (c.perCoin || []).filter(p => p.coinAmount > 0);
+    const has = c.amount > 0 || coinFees.length > 0;
     return h('div', { class: 'rewards' },
       h('span', { class: 'rewards-label' }, h('span', { class: 'net-logo ' + CHAIN_LOGO[c.chain], 'aria-hidden': 'true' }), ' Creator rewards'),
-      h('b', { text: c.amount == null ? 'unavailable' : c.amount.toFixed(5) + ' ' + c.symbol }),
+      h('b', { text: c.amount == null ? 'unavailable' : [c.amount.toFixed(5) + ' ' + c.symbol, ...coinFees.map(p => fmtAmount(p.coinAmount) + ' $' + p.symbol)].join(' + ') }),
       h('button', { class: 'btn sm' + (has ? ' primary' : ''), disabled: !has || !!evmMe.claiming, onclick: () => claimEvmRewards(c.chain) }, evmMe.claiming === c.chain ? 'Claiming…' : 'Claim'));
   });
 }
@@ -2457,7 +2538,7 @@ function evmRewardsBoxes() {
 function evmProfileSection() {
   if (!evm.address) return [];
   const mk = (l) => tokens.market[l.mint] || {};
-  return [h('div', { class: 'menu-sec net-sec' }, ...['rh', 'bnb', 'base'].map(c => h('span', { class: 'net-logo ' + c, 'aria-hidden': 'true' })), 'Robinhood · BNB · Base'),
+  return [h('div', { class: 'menu-sec net-sec' }, ...['rh', 'bnb', 'base', 'eth'].map(c => h('span', { class: 'net-logo ' + c, 'aria-hidden': 'true' })), 'Robinhood · BNB · Base · Ethereum'),
     h('div', { class: 'who-addr' }, shortAddr(evm.address), copyBtn(evm.address, 'EVM address')),
     ...evmRewardsBoxes(),
     evmMe.status ? h('div', { class: 'status ' + evmMe.status.tone }, evmMe.status.text,
@@ -2465,9 +2546,9 @@ function evmProfileSection() {
     h('div', { class: 'menu-sec', text: 'Your EVM coins · ' + evmMe.coins.length }),
     h('ul', { class: 'token-list' }, ...(evmMe.coins.length ? evmMe.coins.map(l => shareRow(
       h('button', { class: 'tok', onclick: () => openCoin(l.mint) }, coinImg(l),
-        h('span', { class: 'tok-main' }, h('b', { text: l.name }), h('span', { class: 'tok-sub', text: '$' + l.symbol + ' · ' + ago(l.time) + ' · ' + (100 - (l.holdersBps || 0) / 100) + '% yours' })),
+        h('span', { class: 'tok-main' }, h('b', { text: l.name }), h('span', { class: 'tok-sub', text: '$' + l.symbol + ' · ' + ago(l.time) + ' · ' + (l.chain === 'ethereum' ? (l.feeBps / 100) + '% fee to you' : (100 - (l.holdersBps || 0) / 100) + '% yours') })),
         h('span', { class: 'tok-mkt' }, h('b', { text: fmtUsd(mk(l).mcap) }))), l))
-      : [h('li', { class: 'note', style: 'padding:10px 2px' }, evmMe.loading ? 'Loading…' : 'No coins on Robinhood, BNB or Base yet.')]))];
+      : [h('li', { class: 'note', style: 'padding:10px 2px' }, evmMe.loading ? 'Loading…' : 'No coins on Robinhood, BNB, Base or Ethereum yet.')]))];
 }
 function setStatus(tone, text, href) {
   me.status = { tone, text, href };
@@ -2510,6 +2591,7 @@ function renderProfile() {
     h('div', { class: 'launch-head' }, h('span', { text: 'Profile' }), me.profile ? h('span', { class: 'tag', text: 'VERIFIED' }) : h('span', { class: 'tag dim', text: 'UNVERIFIED' })),
     profileCard(),
     rewardsBox(),
+    autoClaimBox(),
     me.status ? h('div', { class: 'status ' + me.status.tone }, me.status.text,
       me.status.href ? h('a', { class: 'chiplink', style: 'margin-left:6px', href: me.status.href, target: '_blank', rel: 'noopener' }, 'Tx ↗') : null) : null,
     h('div', { class: 'menu-sec', text: 'Your coins · ' + me.coins.length }),
@@ -2818,6 +2900,13 @@ function popWinamp() {
   else w.focus();
 }
 $('winamp-pop').addEventListener('click', popWinamp);
+/* ---------- Custom launch: /custom in its own window (Ethereum, the fee hook fixed or upgradeable, a team share, your agent) ---------- */
+function popCustom() {
+  const w = window.open('/custom?popup', 'tweetpad-custom', 'popup,width=480,height=480');
+  if (!w) window.open('/custom', '_blank', 'noopener');
+  else w.focus();
+}
+$('custom-pop').addEventListener('click', popCustom);
 /* ---------- Agents (coming soon): the preview card plays a demo loop of what an agent does, while the page is open ---------- */
 const AGENT_DEMO = [
   ['think', 'Reading the timeline for $AI…'],
@@ -3012,6 +3101,8 @@ $('link-newtab').href = STANDALONE;
 $('launch-btn').addEventListener('click', onLaunch);
 $('pair-pick').addEventListener('click', () => openPairs('pair'));
 $('fee-holders').addEventListener('input', renderLaunch);
+for (const b of document.querySelectorAll('[data-ethfee]')) b.addEventListener('click', () => { ethOpts.feePct = Number(b.dataset.ethfee); renderLaunch(); });
+for (const b of document.querySelectorAll('[data-ethstart]')) b.addEventListener('click', () => { ethOpts.start = b.dataset.ethstart; renderLaunch(); });
 for (const b of document.querySelectorAll('.net-switch [data-net]')) b.addEventListener('click', () => {
   if (launch.busy || launch.chain === b.dataset.net) return;
   launch.chain = b.dataset.net;
@@ -3080,6 +3171,7 @@ for (const id of ['tk-name', 'tk-ticker', 'tk-desc', 'tk-buy', ...LINK_IDS]) $(i
   loadCurve();
   loadChat();
   if (isPubkeyLike(qs.get('coin')) || isEvm(qs.get('coin'))) openCoin(qs.get('coin'));   // Solana or Robinhood share links
+  else if (MAIN_VIEWS.includes(qs.get('tab')) && !['coin', 'user', 'thread'].includes(qs.get('tab'))) selectTab(qs.get('tab'));   // ?tab=profile: links from the feature pages
   renderWallets();
   for (const delay of [300, 1000, 2500]) setTimeout(discoverLegacy, delay);
   setTimeout(() => {

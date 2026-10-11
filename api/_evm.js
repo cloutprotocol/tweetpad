@@ -21,6 +21,12 @@ const NETS = {
   base: { id: 8453, name: 'Base', symbol: 'ETH', rpc: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
     factory: '0xE7d290A376784e458413fD8D7453DE4Ea31D6Afc', hook: '0xd37AEdbBF32d203c72309a6c96A265fc04FA68CC', explorer: 'https://basescan.org',
     router: '0x6fF5693b99212Da76ad316178A184AB56D299b43', quoter: '0x0d5e0F971ED27FBfF6c2837bf31316121532048D' },
+  /* coins launched through Launch Party's CustomLaunch (api/_eth-launch.js), each with its own hook and LP fee (read from launchOf).
+     No factory or chain-wide hook: launches, their checks and creator fees go through _eth-launch.js, trades through here.
+     Its router decodes ExactInputSingleParams WITHOUT sqrtPriceLimitX96 (checked live 2026-10-11): noPriceLimit. */
+  ethereum: { id: 1, name: 'Ethereum', symbol: 'ETH', rpc: process.env.ETHEREUM_RPC_URL || 'https://ethereum-rpc.publicnode.com', explorer: 'https://etherscan.io',
+    customLaunch: '0x3481909A7067F8DdDd4DD9b3e544256F58Ee7e76', noPriceLimit: true,
+    router: '0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af', quoter: '0x52F0E24D1c21C8A0cB1e5a5dD6198556BD9E1203' },
 };
 const PERMIT2 = '0x000000000022D473030F116dDEE9F6B43aC78BA3';   // the same address on every chain
 const isNet = (chain) => Object.prototype.hasOwnProperty.call(NETS, chain);
@@ -197,29 +203,64 @@ const PERMIT2_ABI = parseAbi([
   'function allowance(address user, address token, address spender) view returns (uint160 amount, uint48 expiration, uint48 nonce)',
   'function approve(address token, address spender, uint160 amount, uint48 expiration)',
 ]);
-const poolKeyOf = (chain, coin) => ({ currency0: NATIVE, currency1: getAddress(coin), fee: 0, tickSpacing: 60, hooks: net(chain).hook });
+/* CustomLaunch's record of a coin (packages/core/src/trade.ts in Launch Party): its hook, and the pair and LP fee in its terms */
+const CUSTOM_LAUNCH_ABI = [{ type: 'function', name: 'launchOf', stateMutability: 'view', inputs: [{ name: 'token', type: 'address' }], outputs: [{ name: '', type: 'tuple', components: [
+  { name: 'team', type: 'address' }, { name: 'hook', type: 'address' }, { name: 'hookCodehash', type: 'bytes32' }, { name: 'hookImpl', type: 'address' },
+  { name: 'poolId', type: 'bytes32' }, { name: 'room', type: 'address' }, { name: 'escrow', type: 'address' }, { name: 'teamEscrow', type: 'address' },
+  { name: 'launched', type: 'bool' }, { name: 'openedAt', type: 'uint64' }, { name: 'terms', type: 'tuple', components: [
+    { name: 'pair', type: 'address' }, { name: 'lpFee', type: 'uint24' }, { name: 'openingFdv', type: 'uint256' }, { name: 'crewBps', type: 'uint16' },
+    { name: 'vestDuration', type: 'uint64' }, { name: 'probeIn', type: 'uint256' }, { name: 'hookImpl', type: 'address' }, { name: 'fee', type: 'uint256' },
+    { name: 'manifestHash', type: 'bytes32' }, { name: 'teamBps', type: 'uint16' }, { name: 'teamVest', type: 'uint64' }, { name: 'teamTo', type: 'address' },
+  ] },
+] }] }];
+/* a coin's pool: { key, pair }. A tweetpad coin's is (ETH, coin, fee 0, spacing 60, the chain's hook); a CustomLaunch coin's comes
+   from launchOf (or a stored { hook, lpFee, pair }): currencies sorted, its own hook, fee 0 or the dynamic flag 0x800000, spacing 60.
+   A launched pool never changes, so it is read once per instance. */
+const pools = {};
+async function poolOf(chain, coin, rec) {
+  const n = net(chain);
+  coin = getAddress(coin);
+  if (!n.customLaunch) return { key: { currency0: NATIVE, currency1: coin, fee: 0, tickSpacing: 60, hooks: n.hook }, pair: NATIVE };
+  const id = chain + ':' + coin;
+  if (pools[id]) return pools[id];
+  if (!rec) {
+    const L = await rpc(chain).readContract({ address: n.customLaunch, abi: CUSTOM_LAUNCH_ABI, functionName: 'launchOf', args: [coin] });
+    if (!L.launched) throw Object.assign(new Error('this coin has no pool to trade in yet'), { status: 400 });
+    rec = { hook: L.hook, lpFee: L.terms.lpFee, pair: L.terms.pair };
+  }
+  const pair = getAddress(rec.pair);
+  /* a USDC pair would need its 6 decimals and a Permit2 approval for buys too; every live coin is ETH-paired */
+  if (pair !== NATIVE) throw Object.assign(new Error('only ' + n.symbol + '-paired coins trade here for now'), { status: 400 });
+  const [currency0, currency1] = BigInt(coin) < BigInt(pair) ? [coin, pair] : [pair, coin];
+  return (pools[id] = { key: { currency0, currency1, fee: Number(rec.lpFee), tickSpacing: 60, hooks: getAddress(rec.hook) }, pair });
+}
+/* a buy pays the pair: zeroForOne when the pair is currency0 (always, for native ETH) */
+const zeroForOneOf = (p, side) => (p.key.currency0 === p.pair) === (side === 'buy');
 
 /* what amountIn (wei of the native coin to buy, or of the coin to sell) gets right now, the hook's fee included */
 async function quoteTrade(chain, coin, side, amountIn) {
+  const p = await poolOf(chain, coin);
   const { result } = await rpc(chain).simulateContract({ address: net(chain).quoter, abi: QUOTER_ABI, functionName: 'quoteExactInputSingle',
-    args: [{ poolKey: poolKeyOf(chain, coin), zeroForOne: side === 'buy', exactAmount: amountIn, hookData: '0x' }] });
+    args: [{ poolKey: p.key, zeroForOne: zeroForOneOf(p, side), exactAmount: amountIn, hookData: '0x' }] });
   return result[0];
 }
 
-/* Universal Router: one V4_SWAP command (0x10) with SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL. The deployed router predates
-   the removal of sqrtPriceLimitX96 from ExactInputSingleParams, so it stays in (0 = no limit; minOut is the bound). */
-function swapCall(chain, coin, side, amountIn, minOut, deadline) {
-  const key = poolKeyOf(chain, coin), zeroForOne = side === 'buy';
+/* Universal Router: one V4_SWAP command (0x10) with SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL. Robinhood's and BNB's routers
+   predate the removal of sqrtPriceLimitX96 from ExactInputSingleParams, so it stays in there (0 = no limit; minOut is the bound).
+   Ethereum's (and Base's) decode the newer struct without it: there the field would be read as hookData's offset, harmless
+   only while currency0 is the zero address, so it is left out (noPriceLimit). */
+function swapCall(chain, p, side, amountIn, minOut, deadline) {
+  const key = p.key, zeroForOne = zeroForOneOf(p, side), limit = !net(chain).noPriceLimit;
   const [tokIn, tokOut] = zeroForOne ? [key.currency0, key.currency1] : [key.currency1, key.currency0];
   const swap = encodeAbiParameters([{ type: 'tuple', components: [
     { name: 'poolKey', ...POOL_KEY }, { name: 'zeroForOne', type: 'bool' }, { name: 'amountIn', type: 'uint128' }, { name: 'amountOutMinimum', type: 'uint128' },
-    { name: 'sqrtPriceLimitX96', type: 'uint160' }, { name: 'hookData', type: 'bytes' },
-  ] }], [{ poolKey: key, zeroForOne, amountIn, amountOutMinimum: minOut, sqrtPriceLimitX96: 0n, hookData: '0x' }]);
+    ...(limit ? [{ name: 'sqrtPriceLimitX96', type: 'uint160' }] : []), { name: 'hookData', type: 'bytes' },
+  ] }], [{ poolKey: key, zeroForOne, amountIn, amountOutMinimum: minOut, ...(limit ? { sqrtPriceLimitX96: 0n } : {}), hookData: '0x' }]);
   const pair = [{ type: 'address' }, { type: 'uint256' }];
   const input = encodeAbiParameters([{ type: 'bytes' }, { type: 'bytes[]' }],
     ['0x060c0f', [swap, encodeAbiParameters(pair, [tokIn, amountIn]), encodeAbiParameters(pair, [tokOut, minOut])]]);
   return { to: net(chain).router, data: encodeFunctionData({ abi: TRADE_ABI, functionName: 'execute', args: ['0x10', [input], deadline] }),
-    value: zeroForOne ? amountIn : 0n };
+    value: tokIn === NATIVE ? amountIn : 0n };
 }
 
 /* the calls for one trade, in order, after checking the wallet has what it spends; slippageBps bounds the minimum received */
@@ -245,7 +286,7 @@ async function buildTrade({ chain, wallet, coin, side, amountIn, slippageBps }) 
       calls.push({ label: 'allow the router', to: PERMIT2, data: encodeFunctionData({ abi: PERMIT2_ABI, functionName: 'approve', args: [coin, router, amountIn, Number(now + 3600n)] }), value: 0n });
     }
   }
-  const swap = swapCall(chain, coin, side, amountIn, minimum, now + DEADLINE_SECONDS);
+  const swap = swapCall(chain, await poolOf(chain, coin), side, amountIn, minimum, now + DEADLINE_SECONDS);   // cached by the quote
   /* a buy (or a sell with nothing left to approve) is dry-run first, so a swap that would revert never reaches the wallet */
   if (!calls.length) {
     try { await c.call({ account: wallet, to: swap.to, data: swap.data, value: swap.value }); }

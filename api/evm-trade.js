@@ -3,7 +3,7 @@
 // POST { chain, wallet, coin, side, amount, slippageBps }  → { calls: [{ label, to, data, value }], expected, minimum }
 // chain defaults to robinhood. Amounts are decimal strings (native coins and tweetpad coins all have 18 decimals); returned
 // amounts are base units as decimal strings.
-const { cors, readJson, isEvmAddress, EVM_CHAINS, rateLimit, fail } = require('./_lib');
+const { cors, readJson, isEvmAddress, EVM_CHAINS, redis, rateLimit, fail } = require('./_lib');
 
 /* "0.25" → 0.25e18, without going through floating point */
 function toUnits(s) {
@@ -26,6 +26,11 @@ module.exports = async (req, res) => {
   if (b.side === 'buy' && amountIn > 10n * 10n ** 18n) return fail(res, 400, 'buy at most 10 ' + (chain === 'bnb' ? 'BNB' : 'ETH') + ' at a time');
 
   const evm = require('./_evm');   // viem is only loaded for EVM chains
+  /* Ethereum: CustomLaunch coins carry any team's own hook, so only coins launched and checked here are traded here */
+  if (chain === 'ethereum') {
+    const [listed] = await redis(['GET', 'launch:' + evm.getAddress(b.coin)]).catch(() => [null]);
+    if (!listed) return fail(res, 400, 'only Ethereum coins launched on tweetpad trade here');
+  }
   try {
     if (req.method !== 'POST') {
       const expected = await evm.quoteTrade(chain, b.coin, b.side, amountIn).catch(() => { throw Object.assign(new Error('this coin has no pool to trade in yet'), { status: 400 }); });
