@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- film 10's demo coin image ($ECAT, "Ether Cat"): drawn for the film, not a real coin -->
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9b8f6"/><stop offset="1" stop-color="#627eea"/></linearGradient></defs>
+  <rect width="256" height="256" fill="url(#bg)"/>
+  <path d="M70 172 L28 162 M70 184 L30 192 M186 172 L228 162 M186 184 L226 192" stroke="#2a2f4a" stroke-width="5" stroke-linecap="round"/>
+  <path d="M58 96 L68 30 L112 70 Q128 66 144 70 L188 30 L198 96 Q214 124 208 156 Q198 218 128 226 Q58 218 48 156 Q42 124 58 96Z" fill="#f6f2ea" stroke="#2a2f4a" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M74 50 L80 88 L102 72Z" fill="#f4aabb"/>
+  <path d="M182 50 L176 88 L154 72Z" fill="#f4aabb"/>
+  <path d="M128 82 L113 108 L128 117 L143 108Z" fill="#627eea"/>
+  <path d="M128 121 L113 112 L128 133 L143 112Z" fill="#8299ee"/>
+  <ellipse cx="96" cy="150" rx="12" ry="16" fill="#2a2f4a"/>
+  <ellipse cx="160" cy="150" rx="12" ry="16" fill="#2a2f4a"/>
+  <circle cx="100" cy="144" r="4.5" fill="#fff"/><circle cx="164" cy="144" r="4.5" fill="#fff"/>
+  <path d="M119 174 L137 174 L128 184Z" fill="#f08aa0"/>
+  <path d="M128 184 Q128 196 115 198 M128 184 Q128 196 141 198" fill="none" stroke="#2a2f4a" stroke-width="4.5" stroke-linecap="round"/>
+</svg>

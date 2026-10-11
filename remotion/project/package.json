@@ -1,0 +1,49 @@
+{
+  "name": "tweetpad-remotion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "tweetpad square promo (1080x1080, 30fps). Rebuilds the tweetpad X-card UI in React/CSS.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "render": "remotion render src/index.ts TweetpadSquare ../out/tweetpad-square.mp4",
+    "render:craft": "remotion render src/index.ts TweetpadSquareCraft ../out/tweetpad-square-tweetcraft.mp4",
+    "render:robinhood": "remotion render src/index.ts TweetpadRobinhoodUpdate ../out/tweetpad-robinhood-update.mp4",
+    "stills": "node scripts/stills.mjs",
+    "stills:robinhood": "node scripts/stills.mjs ../out/stills 0:rh-title 238:rh-switch 377:rh-network 570:rh-estimate 680:rh-fees 833:rh-approve 900:rh-live 1025:rh-coin 1210:rh-claimed 1300:rh-end --comp=TweetpadRobinhoodUpdate",
+    "render:trade": "remotion render src/index.ts TweetpadTradeUpdate ../out/tweetpad-trade-update.mp4",
+    "stills:trade": "node scripts/stills.mjs ../out/stills 60:trade-hook 150:trade-tokens 244:trade-quote 290:trade-approve 308:trade-bundle 350:trade-bought 386:trade-sell-hold 414:trade-sell-quote 438:trade-sell-approve 462:trade-sell-bundle 512:trade-sold 550:trade-rh 592:trade-jito 666:trade-confirmed 750:trade-end --comp=TweetpadTradeUpdate",
+    "render:multichain": "remotion render src/index.ts TweetpadMultichainUpdate ../out/tweetpad-multichain-update.mp4",
+    "stills:multichain": "node scripts/stills.mjs ../out/stills 60:multi-hook 128:multi-rh 150:multi-bnb 172:multi-base 205:multi-settle 260:multi-name 310:multi-estimate 375:multi-approve 430:multi-live 485:multi-filter 545:multi-badge 595:multi-trade 640:multi-base-coin 730:multi-end --comp=TweetpadMultichainUpdate",
+    "render:welcome": "remotion render src/index.ts TweetpadWelcomeBnbBase ../out/tweetpad-welcome-bnb-base.mp4",
+    "stills:welcome": "node scripts/stills.mjs ../out/stills 0:welcome-start 70:welcome-live 150:welcome-cz 250:welcome-both 288:welcome-chain 330:welcome-launch 370:welcome-jito 410:welcome-trade 455:welcome-fees 560:welcome-end --comp=TweetpadWelcomeBnbBase",
+    "render:panel": "remotion render src/index.ts TweetpadTradePanel ../out/tweetpad-trade-panel.mp4",
+    "stills:panel": "node scripts/stills.mjs ../out/stills 0:panel-start 40:panel-intro 90:panel-flyin 120:panel-explode 170:panel-quote 226:panel-turbo 272:panel-enter 300:panel-bundle 328:panel-confirming 350:panel-bought 385:panel-sell-hold 418:panel-sell-quote 426:panel-sell-press 460:panel-snap 490:panel-out 560:panel-end --comp=TweetpadTradePanel",
+    "render:agents": "remotion render src/index.ts TweetpadAgentsTeaser ../out/tweetpad-agents-teaser.mp4",
+    "stills:agents": "node scripts/stills.mjs ../out/stills 0:agents-start 50:agents-hook 110:agents-build 172:agents-tool 230:agents-log 280:agents-skill-json 380:agents-skill-md 420:agents-coin 500:agents-post 530:agents-post-full 600:agents-end --comp=TweetpadAgentsTeaser",
+    "render:winamp": "remotion render src/index.ts TweetpadWinamp ../out/tweetpad-winamp.mp4",
+    "stills:winamp": "node scripts/stills.mjs ../out/stills 0:winamp-hook 120:winamp-skin 300:winamp-skins 500:winamp-tracker 620:winamp-popout 720:winamp-end --comp=TweetpadWinamp",
+    "render:ethereum": "remotion render src/index.ts TweetpadEthereum ../out/tweetpad-ethereum.mp4",
+    "stills:ethereum": "node scripts/stills.mjs ../out/stills 60:hook 100:open-base 136:hover 142:tap 200:eth-box 220:drop 288:fee 306:start 338:launch 372:reviewing 436:approve 470:live 495:coin 560:fees 618:autoclaim-tap 650:autoclaim-on 755:end --comp=TweetpadEthereum",
+    "render:three": "remotion render src/index.ts TweetpadThreeNew ../out/tweetpad-three-new.mp4",
+    "stills:three": "node scripts/stills.mjs ../out/stills 0:three-thumb 40:three-gm 80:three-eth 120:three-custom 170:three-autoclaim 192:three-peek 250:three-fee 290:three-reviewing 330:three-approve 380:three-live 420:three-post 450:three-hook 515:three-vest 600:three-agent 690:three-autoclaim-on 760:three-page 880:three-end --comp=TweetpadThreeNew",
+    "render:howto": "remotion render src/index.ts TweetpadHowToLaunch ../out/tweetpad-how-to-launch.mp4",
+    "stills:howto": "node scripts/stills.mjs ../out/stills 190:tour 430:connect 1270:approve 1415:launched 1480:share --comp=TweetpadHowToLaunch"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.534",
+    "@remotion/cli": "4.0.534",
+    "@remotion/fonts": "4.0.534",
+    "@remotion/media": "4.0.534",
+    "@remotion/media-utils": "4.0.534",
+    "@remotion/renderer": "4.0.534",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.534"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3"
+  }
+}
