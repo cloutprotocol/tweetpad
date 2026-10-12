@@ -54,7 +54,7 @@ html[data-skin="lights"] .ghost[aria-selected="true"] .tab-ico { fill: #9fdcff; 
 html[data-skin="lights"] .views .count { font: bold 11px/1 var(--px); color: #000; background: rgba(0, 0, 0, .2); padding: 2px 5px; border-radius: 8px; }
 
 /* ---------- stage ---------- */
-html[data-skin="lights"] main { padding: 10px 10px 40px; scrollbar-color: #3e4144 transparent; }
+html[data-skin="lights"] main { padding: 10px 8px 40px; scrollbar-color: #3e4144 transparent; }
 /* "Sending Tweet": the toast is the old in-app status bar note, a dark strip that rises from behind the tab bar and ducks back under it */
 html[data-skin="lights"] .toast { top: auto; bottom: 0; left: 0; right: 0; max-width: none; justify-content: center; gap: 6px; padding: 5px 10px; border: 0;
   border-radius: 0; background: rgba(20, 20, 20, .92); box-shadow: 0 -1px 3px rgba(0, 0, 0, .3); transition: transform .3s ease, opacity .3s ease; }

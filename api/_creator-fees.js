@@ -18,7 +18,7 @@ async function accounts(conn, keys) {
   return out;
 }
 
-/* the wallet's coins here (Solana ones), newest 200; the search index has each coin's pair, full records fill its gaps */
+/* the wallet's pump.fun coins here, newest 200; the search index has each coin's pair, full records fill its gaps */
 async function launched(wallet) {
   const [mints] = await redis(['ZREVRANGE', 'creator:' + wallet, 0, 199]);
   const sol = mints.filter(isPubkey);
@@ -26,7 +26,8 @@ async function launched(wallet) {
   const slim = (await redis(['HMGET', 'launchidx', ...sol]))[0];
   const gaps = sol.filter((m, i) => !slim[i]);
   const full = gaps.length ? (await redis(['MGET', ...gaps.map(m => 'launch:' + m)]))[0] : [];
-  return [...slim, ...full].filter(Boolean).map(r => JSON.parse(r)).filter(l => !l.chain || l.chain === 'solana');
+  /* pump.fun coins only: a Stonkfun coin's creator share is forwarded by Stonkfun, there is nothing here to claim */
+  return [...slim, ...full].filter(Boolean).map(r => JSON.parse(r)).filter(l => (!l.chain || l.chain === 'solana') && l.venue !== 'stonk');
 }
 
 /* every quote this creator could hold fees in: the current pairing token and each of their coins' pairs (SOL is separate) */

@@ -66,6 +66,11 @@
             <button type="button" role="radio" data-net="ethereum" aria-checked="false" aria-label="Ethereum" title="Launch on Ethereum (Launch Party custom launch)"><span class="net-logo eth" aria-hidden="true"></span></button>
           </span>
           <button class="pair-pick" id="pair-pick" type="button" aria-haspopup="dialog" aria-controls="pairs"></button></div>
+        <!-- Solana: the launchpad, also picked by the pair in "Pair with" -->
+        <div class="venue-row" id="venue-row">
+          <span class="field-label">Launchpad</span>
+          <span class="buy-chips" role="group" aria-label="Launchpad"><button type="button" data-venue="pump" aria-pressed="true">pump.fun</button><button type="button" data-venue="stonk" aria-pressed="false">Stonkfun</button></span>
+        </div>
         <div class="evm-wallet" id="evm-wallet" hidden></div>
         <div id="launch-banner" hidden></div>
         <div class="launch-grid">
@@ -113,6 +118,16 @@
             <button type="button" data-ethstart="2">2 ETH</button><button type="button" data-ethstart="5">5 ETH</button><button type="button" data-ethstart="10">10 ETH</button><button type="button" data-ethstart="25">25 ETH</button>
           </div>
           <div class="devbuy-est" id="eth-note"></div>
+        </div>
+        <!-- Stonkfun only (a Stonkfun pair picked in "Pair with"): the fee setup, fixed at launch -->
+        <div class="fee-box" id="stonk-box" hidden>
+          <div class="devbuy-head"><span class="field-label">Fees</span><span class="devbuy-hint">fixed at launch, for the coin's life</span></div>
+          <div class="buy-chips" role="group" aria-label="Fee setup">
+            <button type="button" data-smode="standard">Creator fees</button><button type="button" data-smode="reward">Holder rewards</button><button type="button" data-smode="community">Community</button>
+          </div>
+          <div class="devbuy-head" id="stonk-tax-head"><span class="field-label">Holder tax</span><span class="devbuy-hint">on every transfer, paid to holders</span></div>
+          <div class="buy-chips" id="stonk-tax" role="group" aria-label="Holder tax"></div>
+          <div class="devbuy-est" id="stonk-note"></div>
         </div>
         <!-- dev buy: right above the button, with a live estimate of what it gets -->
         <div class="devbuy-box" id="devbuy-box">
@@ -384,9 +399,11 @@
   <div class="lightbox-card panel pairs-card">
     <div class="lightbox-head"><b id="pairs-title">Pair with</b><button class="menu-x" id="pairs-close" aria-label="Close" title="Close (Esc)">×</button></div>
     <input id="pairs-search" class="pairs-search" placeholder="Search name, $ticker or contract" autocomplete="off" spellcheck="false" aria-label="Search coins to pair with">
+    <!-- the launchpad: every pair at once, or one launchpad's (the pair picked decides where the coin launches) -->
+    <div class="buy-chips pairs-venue" id="pairs-venue" role="group" aria-label="Launchpad"><button type="button" data-pvenue="all">All</button><button type="button" data-pvenue="pump">pump.fun</button><button type="button" data-pvenue="stonk">Stonkfun</button></div>
     <ul class="pairs-grid" id="pairs-grid" role="listbox" aria-label="Pairs"></ul>
     <div class="status" id="pairs-status"></div>
-    <p class="note fine" id="pairs-note">SOL or any tweetpad coin.</p>
+    <p class="note fine" id="pairs-note"></p>
   </div>
 </div>
 <div class="lightbox" id="verify" role="dialog" aria-modal="true" aria-labelledby="verify-title" hidden>

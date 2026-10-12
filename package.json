@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@pump-fun/pump-sdk": "4.0.0",
+    "@raydium-io/raydium-sdk-v2": "0.2.74-alpha",
     "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.2",
     "@vercel/og": "0.8.6",

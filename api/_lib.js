@@ -142,6 +142,7 @@ async function pairQuote(mint) {
   const [row] = await redis(['GET', 'launch:' + mint]);
   if (!row) throw Object.assign(new Error('only coins launched on tweetpad can be paired with'), { status: 400 });
   const launch = JSON.parse(row);
+  if (launch.venue === 'stonk') throw Object.assign(new Error('$' + launch.symbol + ' is a Stonkfun coin; pump.fun pairs only with pump.fun coins'), { status: 400 });
   const { PublicKey } = require('@solana/web3.js');
   const { OnlinePumpSdk } = require('@pump-fun/pump-sdk');
   try {
@@ -188,6 +189,9 @@ async function marketData(mints) {
       dex: p.dexId, pair: p.pairAddress,
     };
   }
+  /* DexScreener doesn't list LaunchLab curves: Stonkfun coins it misses come from GeckoTerminal (kept 30s, its limit is per IP) */
+  try { Object.assign(market, await stonkMarket(mints.filter(m => !market[m] && chains[m] === 'solana'))); }
+  catch { /* the rest still stands */ }
   /* only coins launched here are kept, so the hash can't be grown with arbitrary mints */
   try {
     const known = Object.keys(market).filter(k => market[k].mcap);
@@ -195,6 +199,37 @@ async function marketData(mints) {
     const caps = known.filter((k, i) => listed[i]).flatMap(k => [k, String(market[k].mcap)]);
     if (caps.length) await redis(['HSET', 'mcaps', ...caps]);
   } catch { /* a bonus: never fail market data over it */ }
+  return market;
+}
+
+async function stonkMarket(mints) {
+  if (!mints.length) return {};
+  const [rows] = await redis(['HMGET', 'launchidx', ...mints]);
+  const stonk = mints.filter((m, i) => rows[i] && JSON.parse(rows[i]).venue === 'stonk');
+  if (!stonk.length) return {};
+  const [hits] = await redis(['MGET', ...stonk.map(m => 'gmkt:' + m)]);
+  const market = {}, ask = stonk.filter((m, i) => { if (hits[i]) market[m] = JSON.parse(hits[i]); return !hits[i]; });
+  if (!ask.length) return market;
+  const r = await fetch('https://api.geckoterminal.com/api/v2/networks/solana/tokens/multi/' + ask.join(',') + '?include=top_pools',
+    { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+  if (!r.ok) return market;
+  const out = await r.json();
+  const pools = new Map((out.included || []).map(p => [p.id, p.attributes]));
+  const n = (v) => (v == null || v === '' ? null : Number(v));
+  const fresh = [];
+  for (const t of out.data || []) {
+    const a = t.attributes, top = (((t.relationships || {}).top_pools || {}).data || [])[0], p = top && pools.get(top.id);
+    if (!a || !p) continue;
+    market[a.address] = {
+      mcap: n(a.market_cap_usd) || n(a.fdv_usd), price: n(a.price_usd), priceNative: n(p.base_token_price_native_currency),
+      change1h: n((p.price_change_percentage || {}).h1), change24h: n((p.price_change_percentage || {}).h24),
+      buys1h: ((p.transactions || {}).h1 || {}).buys || 0, sells1h: ((p.transactions || {}).h1 || {}).sells || 0,
+      volume1h: n((p.volume_usd || {}).h1) || 0, volume24h: n((p.volume_usd || {}).h24) || 0,
+      liquidity: n(p.reserve_in_usd) || 0, dex: 'launchlab', pair: top.id.replace(/^solana_/, ''),
+    };
+    fresh.push(['SET', 'gmkt:' + a.address, JSON.stringify(market[a.address]), 'EX', 30]);
+  }
+  if (fresh.length) redis(...fresh).catch(() => {});
   return market;
 }
 

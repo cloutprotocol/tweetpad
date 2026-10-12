@@ -427,6 +427,15 @@ const EVM_NETS = {
     presets: ['0', '0', '0', '0'], tradePresets: ['0.005', '0.01', '0.05', '0.1'] },
 };
 const CHAINS = ['solana', 'robinhood', 'bnb', 'base', 'ethereum'];
+/* Stonkfun (api/stonk.js): a coin paired with a tokenized stock or USDC on Raydium's LaunchLab, adopted by Stonkfun; its
+   creator's share of the curve fee is forwarded by Stonkfun. Bought and sold with SOL through Jupiter. */
+const isStonk = (l) => !!(l && (l.venue === 'stonk' || l.stonk));
+const STONK = 'https://www.stonkfun.xyz';
+/* Stonkfun's fee setup: standard (creator fees), reward (a transfer tax paid to holders) or community (a third of the
+   payouts to holders of the pair token); the tax tiers and the community share come from /api/stonk */
+const stonkOpts = { mode: 'standard', taxBps: 100 };
+const stonkInfo = { tiers: [100, 300], shareBps: 3300 };
+const STONK_MODES = { standard: 'Creator fees', reward: 'Holder rewards', community: 'Community' };
 const CHAIN_NAME = { solana: 'Solana', robinhood: 'Robinhood Chain', bnb: 'BNB Chain', base: 'Base', ethereum: 'Ethereum' };
 const CHAIN_LOGO = { solana: 'sol', robinhood: 'rh', bnb: 'bnb', base: 'base', ethereum: 'eth' };
 /* the chain a coin (its launch record) is on: older EVM records are Robinhood's */
@@ -510,10 +519,40 @@ function renderEthBox() {
     h('span', { class: 'fee-sub' }, 'Reviewed and launched by ', h('a', { href: 'https://party.studio', target: '_blank', rel: 'noopener' }, 'Launch Party'), ' · 0.001 ETH launch fee · ',
       h('button', { class: 'linkish', onclick: openCustom }, 'Upgradeable hook or team share')));
 }
+/* Solana's launchpad switch (the pair in "Pair with" sets it too), and Stonkfun's fee setup when it is Stonkfun */
+function renderStonkBox() {
+  const stonk = launch.chain === 'solana' && launch.venue === 'stonk', pair = currentPair();
+  $('venue-row').hidden = launch.chain !== 'solana';
+  for (const b of document.querySelectorAll('[data-venue]')) { b.disabled = launch.busy; b.setAttribute('aria-pressed', String(b.dataset.venue === launch.venue)); }
+  const box = $('stonk-box');
+  box.hidden = !stonk;
+  if (!stonk) return;
+  const community = !!(pair && pair.community), tax = stonkOpts.taxBps / 100, ticker = $('tk-ticker').value.trim();
+  const coinName = ticker ? '$' + ticker : 'your coin';
+  const paid = pair ? (pair.symbol === 'SOL' ? 'SOL' : '$' + pair.symbol) : 'the pair';
+  for (const b of box.querySelectorAll('[data-smode]')) {
+    b.disabled = launch.busy || (b.dataset.smode === 'community' && !community);
+    b.title = b.dataset.smode === 'community' && !community ? 'Community Mode is offered on the tokenized stocks' : '';
+    b.setAttribute('aria-pressed', String(b.dataset.smode === stonkOpts.mode));
+  }
+  const taxed = stonkOpts.mode !== 'standard';
+  $('stonk-tax-head').hidden = $('stonk-tax').hidden = !taxed;
+  $('stonk-tax').replaceChildren(...stonkInfo.tiers.map(bps => h('button', { type: 'button', disabled: launch.busy, 'aria-pressed': String(bps === stonkOpts.taxBps),
+    onclick: () => { stonkOpts.taxBps = bps; renderLaunch(); } }, bps / 100 + '%')));
+  const share = Math.round(stonkInfo.shareBps / 100);
+  $('stonk-note').replaceChildren(...[
+    stonkOpts.mode === 'standard' ? h('span', null, 'Each trade: a 1% curve fee, ', h('b', { text: 'your share forwarded to your wallet' }), ' by Stonkfun. No transfer tax.')
+      : h('span', null, 'Every transfer of ' + coinName + ' is taxed ', h('b', { text: tax + '%' }), '; Stonkfun pays it out in ' + paid + ': ',
+        stonkOpts.mode === 'community' ? h('b', { text: (100 - share) + '% to ' + coinName + ' holders, ' + share + '% to ' + paid + ' holders' }) : h('b', { text: 'all to ' + coinName + ' holders' }),
+        '. No creator fee.'),
+    h('small', { text: ' Fixed at launch.' }),
+    h('span', { class: 'fee-sub' }, 'On ', h('a', { href: STONK, target: '_blank', rel: 'noopener' }, 'Stonkfun'), ' (Raydium LaunchLab) · about 0.009 SOL · no dev buy yet')]);
+}
 function renderFeeBox() {
   const box = $('fee-box');
   box.hidden = launch.chain === 'solana' || !!launchNet().custom;
   renderEthBox();
+  renderStonkBox();
   if (box.hidden) return;
   const hp = holdersPct(), cp = 100 - hp;
   $('fee-holders').disabled = launch.busy;
@@ -712,7 +751,7 @@ const MAX_IMAGE = 4 * 1024 * 1024;   // Vercel function bodies cap at 4.5 MB
 const MAX_DEV_BUY = 10;              // SOL; the server enforces the same cap
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const launch = { file: null, bytes: null, url: null, sha: null, dims: null, busy: false, done: false, dryDone: false, result: null, checks: [],
-  chain: CHAINS.includes(store.get('tweetpad:chain')) ? store.get('tweetpad:chain') : 'solana' };
+  chain: 'solana', venue: 'pump', stonkPair: null };   // the form always opens on Solana, pump.fun
 /* the launch form's EVM chain (when it isn't on Solana) */
 function launchNet() { return EVM_NETS[launch.chain] || EVM_NETS.robinhood; }
 const fmtSize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
@@ -820,6 +859,7 @@ function launchProblem() {
   if (!launch.file) return 'Add an image';
   if (!$('tk-name').value.trim()) return 'Add a name';
   if (!/^[A-Z0-9]{2,10}$/.test($('tk-ticker').value.trim())) return 'Ticker: 2–10 letters or numbers';
+  if (launch.chain === 'solana' && launch.venue === 'stonk' && !currentPair()) return 'Loading Stonkfun pairs…';
   if (!currentPair() && !(devBuy() >= 0 && devBuy() <= MAX_DEV_BUY)) return 'Dev buy: 0–' + MAX_DEV_BUY + ' SOL';
   const links = socialLinks();
   if (links.twitter === null) return 'X link: @handle or an x.com link';
@@ -840,7 +880,10 @@ function renderLaunch() {
   for (const b of document.querySelectorAll('.net-switch [data-net]')) { b.setAttribute('aria-checked', String(b.dataset.net === launch.chain)); b.disabled = launch.busy; }
   $('pair-pick').hidden = rh;
   $('launch-note').textContent = rh && n.custom ? 'Launches on Ethereum through Launch Party · ' + ethOpts.feePct + '% fee to you · 0.001 ETH launch fee + gas'
-    : rh ? 'Launches on ' + n.name + ' · 1% trading fee · 0.0005 ' + n.symbol + ' launch fee + gas' : 'Launches on pump.fun · 0 pad fee · network fees apply';
+    : rh ? 'Launches on ' + n.name + ' · 1% trading fee · 0.0005 ' + n.symbol + ' launch fee + gas'
+    : launch.venue === 'stonk' ? 'Launches on Stonkfun' + (currentPair() ? ', paired with ' + (currentPair().symbol === 'SOL' ? 'SOL' : '$' + currentPair().symbol) : '') + ' · '
+      + (stonkOpts.mode === 'standard' ? 'your share of the 1% fee forwarded by Stonkfun' : stonkOpts.taxBps / 100 + '% holder tax, paid out by Stonkfun') + ' · about 0.009 SOL'
+    : 'Launches on pump.fun · 0 pad fee · network fees apply';
   renderEvmWallet();
   renderFeeBox();
   if (rh) {
@@ -851,7 +894,7 @@ function renderLaunch() {
   } else btn.textContent = launch.busy ? 'Launching…'
     : launch.done ? 'Launch another'
     : !active ? (list.length || !settled ? 'Connect wallet' : 'Get a wallet')
-    : problem || 'Launch $' + $('tk-ticker').value.trim() + (!currentPair() && devBuy() > 0 ? ' · buy ' + devBuy() + ' SOL' : '');
+    : problem || 'Launch $' + $('tk-ticker').value.trim() + (launch.venue === 'stonk' ? ' on Stonkfun' : !currentPair() && devBuy() > 0 ? ' · buy ' + devBuy() + ' SOL' : '');
   /* coins paired with the platform token: show the pairing, hide the SOL dev buy (it would need a SOL → quote swap) */
   const pair = currentPair();
   /* after a launch, the next move is sharing it: its link plays as its own card on X */
@@ -966,7 +1009,7 @@ async function onLaunch(ev) {
   const feature = wallet.kind === 'standard' && wallet.ref.features['solana:signTransaction'];
   Object.assign(launch, { busy: true, done: false, result: null, checks: [] });
   if (!feature) { launch.busy = false; return check('bad', wallet.name + ' cannot sign transactions here. Use Phantom, Solflare or Backpack.'); }
-  const pair = currentPair();
+  const pair = currentPair(), stonk = isStonk(pair), bundle = !stonk && jitoOn();
   const meta = { name: $('tk-name').value.trim(), symbol: $('tk-ticker').value.trim(), description: $('tk-desc').value.trim(), ...socialLinks() };
   let signature = null;
   try {
@@ -977,13 +1020,17 @@ async function onLaunch(ev) {
     if (ipfs.sha256 !== launch.sha) throw new Error('IPFS step hashed a different image');
     check('ok', 'Image and metadata on IPFS', ipfs.uri, 'JSON ↗');
 
-    /* 2. a fresh mint, and the create transaction built by PumpPortal (checked server side) */
-    check('warn', 'Building the pump.fun transaction…');
+    /* 2. a fresh mint, and the create transaction: pump.fun's (PumpPortal or its SDK), or LaunchLab's for Stonkfun (checked server side) */
+    check('warn', stonk ? 'Building the Stonkfun transaction…' : 'Building the pump.fun transaction…');
     const mintKeys = await newKeypair();
     const mint = b58encode(mintKeys.publicKey);
-    const built = await api('/api/create', { json: { publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image,
-      thumb: launch.thumb, devBuy: pair ? 0 : devBuy(), quote: pair ? pair.mint : 'sol', jito: jitoSpeed() || false } });
-    check('ok', 'Transaction built · mint ' + shortAddr(mint) + (pair ? ' · paired with $' + pair.symbol : ''));
+    const built = stonk
+      ? await api('/api/stonk', { json: { publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image, thumb: launch.thumb, quote: pair.mint,
+        mode: stonkOpts.mode, taxBps: stonkOpts.mode === 'standard' ? 0 : stonkOpts.taxBps } })
+      : await api('/api/create', { json: { publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image,
+        thumb: launch.thumb, devBuy: pair ? 0 : devBuy(), quote: pair ? pair.mint : 'sol', jito: jitoSpeed() || false } });
+    check('ok', 'Transaction built · mint ' + shortAddr(mint) + (pair && pair.symbol !== 'SOL' ? ' · paired with $' + pair.symbol : '')
+      + (stonk ? ' · ' + STONK_MODES[stonkOpts.mode] + (stonkOpts.mode === 'standard' ? '' : ' ' + stonkOpts.taxBps / 100 + '%') : '') + (stonk && built.startUsd ? ' · opens at ' + fmtUsd(built.startUsd) : ''));
 
     /* 3. wallet signs first (it may add instructions), then the mint signs whatever the wallet returned */
     check('warn', 'Approve in ' + wallet.name + '…');
@@ -999,15 +1046,16 @@ async function onLaunch(ev) {
     check('ok', 'Signed by ' + wallet.name + ' and the new mint');
 
     /* 4. send and wait for confirmation */
-    check('warn', jitoOn() ? 'Sending as a Jito bundle…' : 'Sending to Solana…');
-    signature = await sendTx(tx, jitoOn());
+    check('warn', bundle ? 'Sending as a Jito bundle…' : 'Sending to Solana…');
+    signature = await sendTx(tx, bundle);
     check('warn', 'Confirming…', 'https://solscan.io/tx/' + signature, 'Tx ↗');
     await confirm(signature);
     check('ok', 'Confirmed on mainnet', 'https://solscan.io/tx/' + signature, 'Tx ↗');
 
     /* 5. list it: the server re-checks the transaction on chain before it goes in the list */
     const rec = await api('/api/launches', { json: { signature, mint } });
-    check('ok', '$' + meta.symbol + ' is live', 'https://pump.fun/coin/' + mint, 'pump.fun ↗');
+    check('ok', '$' + meta.symbol + ' is live', venueLink(rec.launch), stonk ? 'Stonkfun ↗' : 'pump.fun ↗');
+    if (stonk) check('ok', 'Stonkfun picks it up within a minute or two');
     Object.assign(launch, { done: true, result: rec.launch });
     setVerdict('ok', 'Token launched!', 'Share it: the link plays as its own card on X');
     tokens.loaded = false;
@@ -1088,7 +1136,7 @@ function renderDevBuy(pair) {
   /* presets follow the network: ETH and BNB amounts are far smaller than SOL ones */
   const presets = rh ? n.presets : ['0', '0.1', '0.5', '1'];
   box.querySelectorAll('[data-buy]').forEach((b, i) => { b.dataset.buy = presets[i]; b.textContent = i ? presets[i] : 'None'; });
-  box.hidden = rh && !!n.custom;   // Ethereum's custom launch carries no dev buy: buy on the coin page once it is live
+  box.hidden = rh ? !!n.custom : launch.venue === 'stonk';   // no dev buy on Ethereum's custom launch or Stonkfun: buy on the coin page once it is live
   if (box.hidden) return;
   if (rh) {
     for (const b of box.querySelectorAll('[data-buy]')) { b.disabled = launch.busy; b.setAttribute('aria-pressed', String(Number(b.dataset.buy) === sol && ($('tk-buy').value !== '' || sol === 0))); }
@@ -1125,24 +1173,43 @@ function renderDevBuy(pair) {
 
 /* ---------- crafting: pair the new coin with SOL or any coin launched here; the server checks pump.fun admits it ---------- */
 /* the same grid also tags a coin in a feed post: mode 'pair' (the launch form) or 'tag' (the feed composer) */
-const pairs = { mode: 'pair', list: [], total: 0, q: '', loading: false, error: null, checking: null, bad: {}, seq: 0, cache: new Map() };
+const pairs = { mode: 'pair', venue: 'all', list: [], total: 0, q: '', loading: false, error: null, checking: null, bad: {}, seq: 0, cache: new Map(), stonk: null };
+async function loadStonkPairs() {
+  if (pairs.stonk) return;
+  try {
+    const res = await fetch('/api/stonk');
+    const out = await res.json();
+    if (!res.ok) return;
+    pairs.stonk = out.pairs;
+    Object.assign(stonkInfo, { tiers: out.tiers.length ? out.tiers : stonkInfo.tiers, shareBps: out.shareBps || stonkInfo.shareBps });
+    if (!stonkInfo.tiers.includes(stonkOpts.taxBps)) stonkOpts.taxBps = stonkInfo.tiers[0];
+    if (!$('pairs').hidden) renderPairs();
+    if (launch.venue === 'stonk' && !launch.stonkPair) { setStonkDefault(); renderLaunch(); }
+  } catch { /* the tweetpad pairs still show */ }
+}
 /* undefined until someone picks, so a QUOTE_MINT default still applies; null = SOL */
-const currentPair = () => (launch.pair !== undefined ? launch.pair : pad.quote);
+const currentPair = () => (launch.chain === 'solana' && launch.venue === 'stonk' ? launch.stonkPair : launch.pair !== undefined ? launch.pair : pad.quote);
 const solIcon = (cls) => h('span', { class: 'sol-ico ' + (cls || ''), role: 'img', 'aria-label': 'Solana' });
 function renderPairPick() {
   const pair = currentPair();
   const known = pair && (tokens.list.find(l => l.mint === pair.mint) || pair);
   /* compact, in the form's header: "Pair [logo] SOL ▾" */
-  $('pair-pick').replaceChildren(h('small', { text: 'Pair' }), pair ? coinPic(known, 'pair-img') : solIcon('pair-img'),
-    h('b', { text: pair ? '$' + pair.symbol : 'SOL' }), h('span', { class: 'caret', text: '▾' }));
-  $('pair-pick').title = 'Paired with ' + (pair ? '$' + pair.symbol + ' (' + (known.name || 'tweetpad coin') + ')' : 'SOL') + ' · click to change';
+  const sol = !pair || pair.symbol === 'SOL';
+  /* the launchpad has its own switch above the form; a Stonkfun pair still loading shows as "…" */
+  const waiting = launch.chain === 'solana' && launch.venue === 'stonk' && !pair;
+  $('pair-pick').replaceChildren(...[h('small', { text: 'Pair' }), waiting ? null : sol ? solIcon('pair-img') : coinPic(known, 'pair-img'),
+    h('b', { text: waiting ? '…' : sol ? 'SOL' : '$' + pair.symbol }), h('span', { class: 'caret', text: '▾' })].filter(Boolean));
+  $('pair-pick').title = (launch.venue === 'stonk' ? 'On Stonkfun, paired with ' : 'On pump.fun, paired with ') + (sol ? 'SOL' : '$' + pair.symbol + ' (' + (known.name || 'tweetpad coin') + ')') + ' · click to change';
   $('pair-pick').disabled = launch.busy;
 }
 function openPairs(mode) {
   pairs.mode = mode === 'tag' ? 'tag' : 'pair';
   if (pairs.mode === 'pair' && launch.busy) return;
   $('pairs-title').textContent = pairs.mode === 'tag' ? 'Tag a coin' : 'Pair with';
-  $('pairs-note').textContent = pairs.mode === 'tag' ? 'Any coin launched on tweetpad. It shows as a card in your post.' : 'SOL or any tweetpad coin.';
+  pairs.venue = 'all';
+  $('pairs-note').textContent = pairs.mode === 'tag' ? 'Any coin launched on tweetpad. It shows as a card in your post.'
+    : 'The pair picks the launchpad: pump.fun, or Stonkfun for stocks, USDC and holder rewards.';
+  if (pairs.mode === 'pair') loadStonkPairs();
   $('pairs').hidden = false;
   $('pairs-status').textContent = '';
   $('pairs-search').value = pairs.q;
@@ -1179,37 +1246,71 @@ async function loadPairs() {
 }
 function renderPairs() {
   const tagging = pairs.mode === 'tag';
-  const pair = tagging ? feed.coin : currentPair();
   const q = pairs.q.trim().toLowerCase().replace(/^\$/, '');
+  /* the pick on the form, per launchpad: pump.fun's pair (null = SOL), or Stonkfun's */
+  const pumpPair = launch.pair !== undefined ? launch.pair : pad.quote;
+  const picked = (venue, mint) => tagging ? !!feed.coin && feed.coin.mint === mint
+    : launch.venue === venue && (venue === 'stonk' ? !!launch.stonkPair && launch.stonkPair.mint === mint : mint ? !!pumpPair && pumpPair.mint === mint : !pumpPair);
   /* compact tiles: image, ticker, one line of detail; the full name rides in the tooltip */
   const tile = (pressed, img, title, tip, detail, onclick, bad) => h('li', {},
     h('button', { class: 'pair-tile' + (bad ? ' bad' : ''), role: 'option', 'aria-selected': String(pressed), title: bad || tip,
                   disabled: pairs.checking != null, onclick }, img, h('b', { text: title }), detail));
+  /* every pair in one grid, by launchpad: pump.fun (SOL or a tweetpad coin), then Stonkfun (SOL, the stocks, USDC) */
+  const venue = tagging ? 'pump' : pairs.venue, show = (v) => venue === 'all' || venue === v;
+  const head = (label, sub) => venue === 'all' ? h('li', { class: 'pairs-sec' }, h('b', { text: label }), h('small', { text: sub })) : null;
   const tiles = [];
-  if (!tagging && (!q || 'sol solana'.includes(q))) tiles.push(tile(!pair, solIcon('pair-tile-img'), 'SOL', 'SOL · the default pair', h('small', { text: 'Default' }), () => pickPair(null)));
-  for (const l of pairs.list) {
-    const detail = pairs.checking === l.mint ? h('small', { text: 'Checking…' })
-      : pairs.bad[l.mint] ? h('small', { class: 'no', text: 'Can’t pair' })
-      : l.quote ? h('small', { text: '⇄ $' + l.quote.symbol }) : h('small', { class: mcapOf(l) ? 'pair-mcap' : '', text: mcapOf(l) ? fmtUsd(mcapOf(l)) : ago(l.time) });
-    tiles.push(tile(!!pair && pair.mint === l.mint, coinImg(l, 'pair-tile-img'), '$' + l.symbol, l.name + ' · $' + l.symbol, detail, () => pickPair(l), pairs.bad[l.mint]));
+  for (const b of document.querySelectorAll('[data-pvenue]')) b.setAttribute('aria-pressed', String(b.dataset.pvenue === pairs.venue));
+  $('pairs-venue').hidden = tagging;
+  if (show('pump')) {
+    if (!tagging && (!q || 'sol solana'.includes(q))) tiles.push(tile(picked('pump', null), solIcon('pair-tile-img'), 'SOL', 'SOL on pump.fun · the default pair', h('small', { text: 'Default' }), () => pickPair(null)));
+    for (const l of pairs.list) {
+      const detail = pairs.checking === l.mint ? h('small', { text: 'Checking…' })
+        : pairs.bad[l.mint] ? h('small', { class: 'no', text: 'Can’t pair' })
+        : l.quote ? h('small', { text: '⇄ $' + l.quote.symbol }) : h('small', { class: mcapOf(l) ? 'pair-mcap' : '', text: mcapOf(l) ? fmtUsd(mcapOf(l)) : ago(l.time) });
+      tiles.push(tile(picked('pump', l.mint), coinImg(l, 'pair-tile-img'), '$' + l.symbol, l.name + ' · $' + l.symbol, detail, () => pickPair(l), pairs.bad[l.mint]));
+    }
+    /* each launchpad's heading, only over tiles of its own */
+    if (tiles.length && !tagging) tiles.unshift(head('pump.fun', 'SOL or any coin launched on tweetpad'));
   }
-  $('pairs-grid').replaceChildren(...tiles);
-  const status = $('pairs-status');
-  status.className = 'status' + (pairs.error ? ' bad' : '');
-  status.textContent = pairs.error ? 'Search failed: ' + pairs.error : pairs.loading ? 'Loading…'
-    : tiles.length ? (pairs.total > pairs.list.length ? 'Showing ' + pairs.list.length + ' of ' + pairs.total + '. Search to narrow it down.' : '')
-    : 'No tweetpad coin matches “' + pairs.q.trim() + '”.';
+  /* Stonkfun: holder rewards or creator fees; Community Mode on the stocks */
+  const stonks = tagging || !show('stonk') ? [] : (pairs.stonk || []).filter(p => !q || (p.symbol + ' ' + p.name + ' ' + p.mint).toLowerCase().includes(q));
+  if (stonks.length) tiles.push(head('Stonkfun', 'SOL, tokenized stocks or USDC · creator fees or holder rewards'));
+  for (const p of stonks) {
+    tiles.push(tile(picked('stonk', p.mint), p.symbol === 'SOL' ? solIcon('pair-tile-img') : coinPic(p, 'pair-tile-img'), p.symbol === 'SOL' ? 'SOL' : '$' + p.symbol,
+      p.name + ' on Stonkfun', h('small', { class: 'stonk', text: p.community ? 'Stock' : 'Stonkfun' }), () => pickStonkPair(p)));
+  }
+  $('pairs-grid').replaceChildren(...tiles.filter(Boolean));
+  const status = $('pairs-status'), pump = show('pump'), stonkOnly = !pump;
+  status.className = 'status' + (pump && pairs.error ? ' bad' : '');
+  status.textContent = pump && pairs.error ? 'Search failed: ' + pairs.error
+    : (pump && pairs.loading) || (show('stonk') && !tagging && !pairs.stonk) ? 'Loading…'
+    : tiles.filter(Boolean).length ? (pump && pairs.total > pairs.list.length ? 'Showing ' + pairs.list.length + ' of ' + pairs.total + ' tweetpad coins. Search to narrow it down.' : '')
+    : stonkOnly ? 'No Stonkfun pair matches “' + pairs.q.trim() + '”.' : 'No pair matches “' + pairs.q.trim() + '”.';
+}
+/* switched to Stonkfun from the form, before any Stonkfun pair was picked: a stock, TSLAx, until one is */
+function setStonkDefault() {
+  const p = (pairs.stonk || []).find(x => x.symbol === 'TSLAx') || (pairs.stonk || [])[0];
+  if (p) launch.stonkPair = { ...p, stonk: true };
+}
+function pickStonkPair(p) {
+  launch.venue = 'stonk';
+  launch.stonkPair = { ...p, stonk: true };
+  /* Community Mode pays holders of the pair token: only the stocks offer it */
+  if (stonkOpts.mode === 'community' && !p.community) stonkOpts.mode = 'reward';
+  log('ok', 'new coin will launch on Stonkfun, paired with ' + (p.symbol === 'SOL' ? 'SOL' : '$' + p.symbol));
+  closePairs();
+  renderLaunch();
 }
 async function pickPair(l) {
   /* tagging needs no pump.fun check: any listed coin can be embedded */
   if (pairs.mode === 'tag') { feed.coin = l; closePairs(); return renderFeed(); }
-  if (!l) { launch.pair = null; closePairs(); return renderLaunch(); }
+  if (!l) { Object.assign(launch, { venue: 'pump', pair: null }); closePairs(); return renderLaunch(); }
   pairs.checking = l.mint; renderPairs();
   try {
     const res = await fetch('/api/launches?pair=' + l.mint);
     const out = await res.json();
     if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
-    launch.pair = { mint: l.mint, symbol: l.symbol, name: l.name, image: l.image, thumb: l.thumb };
+    Object.assign(launch, { venue: 'pump', pair: { mint: l.mint, symbol: l.symbol, name: l.name, image: l.image, thumb: l.thumb } });
     delete pairs.bad[l.mint];
     log('ok', 'new coin will pair with $' + l.symbol);
     closePairs();
@@ -1243,6 +1344,8 @@ setInterval(() => {
   const mints = [...(!$('tab-tokens').hidden ? [...tokens.list, ...(tokens.pin ? [tokens.pin] : [])].map(l => l.mint) : []), ...inventory().map(l => l.mint)];
   if (mints.length) loadMarket(mints);
 }, 10000);
+/* where a Solana coin trades outside tweetpad: pump.fun, or Stonkfun's page for its coins */
+const venueLink = (l) => (isStonk(l) ? STONK + '/token/' : 'https://pump.fun/coin/') + l.mint;
 /* IPFS links go through our cached gateway proxy; anything else is shown as is */
 const imageSrc = (url, w) => { const m = /\/ipfs\/([A-Za-z0-9]+)/.exec(url || ''); return m ? '/api/image?cid=' + m[1] + (w ? '&w=' + w : '') : url; };
 const coinPic = (l, cls) => (l.thumb || l.image)
@@ -1722,12 +1825,12 @@ async function sendPost() {
   }
 }
 async function loadChart() {
-  const m = tokens.market[coin.mint];
-  if (!m || !m.pair) { coin.error = 'No market data yet. New coins take a minute to show up.'; return renderCoin(); }
+  const m = tokens.market[coin.mint], pool = (m && m.pair) || (coin.launch && coin.launch.pool);
+  if (!pool) { coin.error = 'No market data yet. New coins take a minute to show up.'; return renderCoin(); }
   coin.loading = true;
   renderCoinBody();
   try {
-    const res = await fetch('/api/chart?pool=' + m.pair + '&tf=' + coin.tf + (isEvm(coin.mint) ? '&net=' + coinChain(coin.launch) : ''));
+    const res = await fetch('/api/chart?pool=' + pool + '&tf=' + coin.tf + (isEvm(coin.mint) ? '&net=' + coinChain(coin.launch) : ''));
     const out = await res.json();
     if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
     const live = coin.trades.filter(t => t.live && !out.trades.some(x => x.tx === t.tx));
@@ -1790,7 +1893,7 @@ function openImage(l, from) {
   img.onload = () => { img.hidden = false; $('lightbox-note').hidden = true; };
   img.onerror = () => { $('lightbox-note').textContent = 'Image unavailable right now.'; };
   img.src = l.image ? imageSrc(l.image, 256) : l.thumb;
-  $('lightbox-open').href = 'https://pump.fun/coin/' + l.mint;
+  $('lightbox-open').href = venueLink(l);
   $('lightbox').hidden = false;
   $('lightbox-close').focus();
 }
@@ -1832,10 +1935,41 @@ async function claimHolderRewards() {
     setVerdict('bad', 'Claim failed', /reject|declin|denied|cancel/i.test(text) ? 'Cancelled in the wallet' : text);
   } finally { holder.claiming = false; loadHolderRewards(); }
 }
+/* a Stonkfun reward coin's payouts so far, from Stonkfun (through /api/stonk, cached a minute) */
+const stonkRewards = {};
+async function loadStonkRewards(mint) {
+  if (stonkRewards[mint] && Date.now() - stonkRewards[mint].at < 60000) return;
+  stonkRewards[mint] = { ...(stonkRewards[mint] || {}), at: Date.now() };
+  try {
+    const res = await fetch('/api/stonk?rewards=' + mint);
+    const out = await res.json();
+    if (res.ok) stonkRewards[mint] = { ...out, at: Date.now() };
+  } catch { /* the setup still shows */ }
+  if (coin.launch && coin.launch.mint === mint) renderCoinFees();
+}
+/* a Stonkfun coin: its fee setup, and for a reward coin what its holders have been paid */
+function renderStonkFees(box, l) {
+  const pair = l.quote && l.quote.symbol !== 'SOL' ? '$' + l.quote.symbol : 'SOL';
+  const site = h('span', { class: 'fee-sub' }, 'Launched on ', h('a', { href: venueLink(l), target: '_blank', rel: 'noopener' }, 'Stonkfun'), ' (Raydium LaunchLab)');
+  if ((l.mode || 'standard') === 'standard') return box.replaceChildren(h('div', { class: 'coin-fees-line' }, h('b', { text: '1% curve fee' }), ' · its creator’s share forwarded by Stonkfun · no transfer tax'), site);
+  const r = stonkRewards[l.mint];
+  if (!r || !r.at) loadStonkRewards(l.mint);
+  const paid = r && r.rewards, pend = r && r.pending;
+  const owed = pend ? Number(pend.undistributedTokens || 0) + Number(pend.queuedTokens || 0) + Number(pend.inFlightTokens || 0) : 0;
+  box.replaceChildren(...[
+    h('div', { class: 'coin-fees-line' }, h('b', { text: (l.taxBps / 100) + '% transfer tax' }), ' · paid to holders in ' + pair + ' by Stonkfun'),
+    l.mode === 'community' ? h('div', { class: 'coin-fees-line' }, 'Community Mode: ' + Math.round((l.shareBps || 3300) / 100) + '% of each payout goes to ' + pair + ' holders') : null,
+    h('div', { class: 'rewards compact' }, h('span', { class: 'rewards-label', text: 'Paid to holders' }),
+      h('b', { text: !r || !r.at ? '…' : !paid ? 'not counted yet' : fmtQty(paid.distributedTokens || 0) + ' ' + pair.replace(/^\$/, '') }),
+      paid && paid.walletsPaid ? h('span', { class: 'dim', text: ' · ' + paid.walletsPaid + ' wallet' + (paid.walletsPaid === 1 ? '' : 's') }) : null),
+    owed >= 1e-6 ? h('div', { class: 'coin-fees-line' }, 'Waiting to be paid: ' + fmtQty(owed) + ' ' + pair.replace(/^\$/, '')) : null,
+    site].filter(Boolean));
+}
 function renderCoinFees() {
   const box = $('coin-fees'), l = coin.launch;
-  box.hidden = !l || !isEvm(l.mint) || !l.feeBps;
+  box.hidden = !l || !(isStonk(l) || (isEvm(l.mint) && l.feeBps));
   if (box.hidden) return;
+  if (isStonk(l)) return renderStonkFees(box, l);
   /* Ethereum: the hook's fee, and what a buyer should know: whether its creator can still change the hook, and any team share */
   if (l.chain === 'ethereum') return box.replaceChildren(...[h('div', { class: 'coin-fees-line' }, h('b', { text: (l.feeBps / 100) + '% trading fee' }), ' · to its creator, in ETH and $' + l.symbol),
     l.upgradeable ? h('div', { class: 'coin-fees-line warn' }, h('b', { text: 'Upgradeable hook' }), ': its creator can change it or freeze it, in public') : null,
@@ -1857,6 +1991,15 @@ function renderCoinFees() {
    that has graduated trades through Jupiter's free swap API, straight from the page. Robinhood: in the coin's Uniswap v4 pool,
    built by /api/evm-trade. Either way the user's wallet signs and pays; tweetpad takes nothing and holds nothing. */
 const JUP = 'https://lite-api.jup.ag/swap/v1';
+/* Stonkfun coins trade through Jupiter Ultra: its regular swap API only routes the buy side of a stock-paired LaunchLab curve */
+const ULTRA = 'https://lite-api.jup.ag/ultra/v1';
+async function ultraOrder(side, raw, taker) {
+  const res = await fetch(ULTRA + '/order?' + new URLSearchParams({ inputMint: side === 'buy' ? SOL_MINT : trade.mint, outputMint: side === 'buy' ? trade.mint : SOL_MINT,
+    amount: raw.toString(), ...(taker && { taker }) }));
+  const o = await res.json();
+  if (!res.ok || !o.outAmount || o.outAmount === '0') throw new Error(o.errorMessage || o.error || 'no route for this trade');
+  return o;
+}
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const SLIPPAGES = [1, 3, 5, 10, 20];
 const BUY_PRESETS = ['0.05', '0.1', '0.5', '1'];   // SOL; each EVM chain has its own (EVM_NETS tradePresets)
@@ -1876,7 +2019,7 @@ const fmtQty = (n) => n >= 1e3 ? fmtAmount(n) : n >= 1 ? n.toFixed(2).replace(/\
 const tradeWallet = () => isEvm(trade.mint) ? evm.address : state.active && state.active.account.address;
 /* what the open coin is paired with: SOL, ETH or BNB, or a tweetpad coin it was crafted with */
 const tradeQuote = () => isEvm(trade.mint) ? { symbol: netOf(coin.launch).symbol, decimals: 18 }
-  : coin.launch && coin.launch.quote ? { symbol: coin.launch.quote.symbol, decimals: 6, mint: coin.launch.quote.mint } : { symbol: 'SOL', decimals: 9 };
+  : coin.launch && coin.launch.quote && !isStonk(coin.launch) ? { symbol: coin.launch.quote.symbol, decimals: 6, mint: coin.launch.quote.mint } : { symbol: 'SOL', decimals: 9 };
 const coinDecimals = () => (isEvm(trade.mint) ? 18 : 6);
 
 /* the connected wallet's balances: the open coin, and what it pays with (SOL, ETH or BNB; a crafted pair's coin is not read) */
@@ -1936,6 +2079,7 @@ async function fetchQuote() {
     if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
     return { out: BigInt(out.expected) };
   }
+  if (isStonk(coin.launch)) return { out: BigInt((await ultraOrder(side, tradeAmountRaw())).outAmount) };
   if (!trade.graduated) {
     const res = await fetch('/api/trade?' + new URLSearchParams({ mint: trade.mint, side, amount }));
     const out = await res.json();
@@ -1976,13 +2120,18 @@ async function runTrade() {
       const feature = wallet.kind === 'standard' && wallet.ref.features['solana:signTransaction'];
       if (!feature) throw new Error(wallet.name + ' cannot sign transactions here. Use Phantom, Solflare or Backpack.');
       say('warn', 'Getting the best price…');
-      let txB64, bundle = false, expected;
-      if (!trade.graduated) {
+      let txB64, bundle = false, expected, ultra = null;
+      if (isStonk(l)) {
+        /* Jupiter Ultra builds it, and lands it through its own execute call */
+        ultra = await ultraOrder(side, tradeAmountRaw(), wallet.account.address);
+        if (!ultra.transaction) throw new Error(ultra.errorMessage || ultra.error || 'Jupiter could not build the swap');
+        txB64 = ultra.transaction; expected = BigInt(ultra.outAmount);
+      } else if (!trade.graduated) {
         const built = await api('/api/trade', { json: { wallet: wallet.account.address, mint, side, amount, slippage: trade.slip, jito: jitoSpeed() || false } });
         if (built.graduated) trade.graduated = true;
         else { txB64 = built.tx; bundle = jitoOn(); expected = BigInt(built.expected); }
       }
-      if (trade.graduated) {
+      if (!ultra && trade.graduated) {
         /* graduated: Jupiter quotes and builds it (no Jito: its pool route leaves no room for the tip) */
         const { jup } = await fetchQuote();
         const res = await fetch(JUP + '/swap', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ quoteResponse: jup,
@@ -1994,7 +2143,13 @@ async function runTrade() {
       say('warn', 'Approve in ' + wallet.name + '…');
       const [signed] = await feature.signTransaction({ account: wallet.account.raw, transaction: b64dec(txB64), chain: CHAIN });
       say('warn', bundle ? 'Sending as a Jito bundle (' + JITO_SPEEDS[jitoSpeed()].label + ')…' : 'Sending…');
-      sig = await sendTx(new Uint8Array(signed.signedTransaction), bundle);
+      if (ultra) {
+        const res = await fetch(ULTRA + '/execute', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ signedTransaction: b64enc(new Uint8Array(signed.signedTransaction)), requestId: ultra.requestId }) });
+        const out = await res.json();
+        sig = out.signature || null;
+        if (!res.ok || out.status !== 'Success') throw new Error(out.error || 'the swap failed' + (out.code != null ? ' (' + out.code + ')' : ''));
+      } else sig = await sendTx(new Uint8Array(signed.signedTransaction), bundle);
       say('warn', 'Confirming…', 'https://solscan.io/tx/' + sig);
       await confirm(sig);
       say('ok', side === 'buy' ? 'Bought ≈ ' + fmtQty(Number(expected) / 1e6) + ' $' + l.symbol : 'Sold for ≈ ' + fmtQty(Number(expected) / 10 ** q.decimals) + ' ' + q.symbol, 'https://solscan.io/tx/' + sig);
@@ -2061,8 +2216,10 @@ function renderTrade() {
   const bal = !owner ? null : buy ? (native != null ? h('span', null, 'Balance ', h('b', { text: fmtQty(native) + ' ' + q.symbol }), usd(native) ? ' · ' + usd(native) : '') : null)
     : holding != null ? h('span', null, 'You hold ', h('b', { text: fmtQty(holding) + ' $' + l.symbol }), usd(holding, true) ? ' · ' + usd(holding, true) : '') : null;
   const feeLine = coin.launch && coin.launch.chain === 'ethereum' ? (coin.launch.feeBps / 100) + '% coin fee, to its creator · tweetpad takes nothing'
-    : rh ? '1% coin fee, to its creator and holders · tweetpad takes nothing' : 'pump.fun’s fees only · tweetpad takes nothing';
-  const jito = !rh && !trade.graduated;
+    : rh ? '1% coin fee, to its creator and holders · tweetpad takes nothing'
+    : isStonk(l) ? (l.taxBps ? l.taxBps / 100 + '% transfer tax to holders, ' : '') + 'LaunchLab’s 1% fee and Jupiter’s 0.1% · tweetpad takes nothing'
+    : 'pump.fun’s fees only · tweetpad takes nothing';
+  const jito = !rh && !trade.graduated && !isStonk(l);
   let action;
   if (!owner) {
     if (rh) {
@@ -2131,11 +2288,11 @@ function renderCoinHead() {
       m.change1h != null ? h('span', { class: m.change1h >= 0 ? 'up' : 'down', text: fmtPct(m.change1h) + ' 1h' }) : null),
   ]));
   $('coin-links').replaceChildren(...(!l ? [] : [
-    isEvm(coin.mint) ? null : h('span', { class: 'live' + (coin.live ? ' on' : ''), title: coin.live ? 'Live trades connected' : 'Live trades offline' }, coin.live ? 'LIVE' : 'OFFLINE'),
+    isEvm(coin.mint) || isStonk(l) ? null : h('span', { class: 'live' + (coin.live ? ' on' : ''), title: coin.live ? 'Live trades connected' : 'Live trades offline' }, coin.live ? 'LIVE' : 'OFFLINE'),
     ...(isEvm(coin.mint)
       ? [h('a', { class: 'chiplink', href: 'https://dexscreener.com/' + netOf(l).dex + '/' + coin.mint, target: '_blank', rel: 'noopener' }, 'Uniswap ↗'),
          h('a', { class: 'chiplink', href: netOf(l).explorer + '/token/' + coin.mint, target: '_blank', rel: 'noopener' }, 'Explorer ↗')]
-      : [h('a', { class: 'chiplink', href: 'https://pump.fun/coin/' + coin.mint, target: '_blank', rel: 'noopener' }, 'pump.fun ↗')]),
+      : [h('a', { class: 'chiplink', href: venueLink(l), target: '_blank', rel: 'noopener' }, isStonk(l) ? 'Stonkfun ↗' : 'pump.fun ↗')]),
   ].filter(Boolean)));
   $('coin-share').replaceChildren(...(l ? [shareBox(l)] : []));
 }
@@ -3111,13 +3268,21 @@ $('link-newtab').href = STANDALONE;
 
 $('launch-btn').addEventListener('click', onLaunch);
 $('pair-pick').addEventListener('click', () => openPairs('pair'));
+setTimeout(loadStonkPairs, 3000);   // the stock pairs, ready before the picker opens (cached at the CDN)
 $('fee-holders').addEventListener('input', renderLaunch);
+for (const b of document.querySelectorAll('[data-pvenue]')) b.addEventListener('click', () => { pairs.venue = b.dataset.pvenue; renderPairs(); });
+for (const b of document.querySelectorAll('[data-venue]')) b.addEventListener('click', () => {
+  if (launch.busy || launch.venue === b.dataset.venue) return;
+  Object.assign(launch, { venue: b.dataset.venue, done: false, result: null, checks: [] });
+  if (launch.venue === 'stonk' && !launch.stonkPair) { setStonkDefault(); loadStonkPairs(); }
+  renderLaunch();
+});
+for (const b of document.querySelectorAll('[data-smode]')) b.addEventListener('click', () => { stonkOpts.mode = b.dataset.smode; renderLaunch(); });
 for (const b of document.querySelectorAll('[data-ethfee]')) b.addEventListener('click', () => { ethOpts.feePct = Number(b.dataset.ethfee); renderLaunch(); });
 for (const b of document.querySelectorAll('[data-ethstart]')) b.addEventListener('click', () => { ethOpts.start = b.dataset.ethstart; renderLaunch(); });
 for (const b of document.querySelectorAll('.net-switch [data-net]')) b.addEventListener('click', () => {
   if (launch.busy || launch.chain === b.dataset.net) return;
   launch.chain = b.dataset.net;
-  store.set('tweetpad:chain', launch.chain);
   $('tk-buy').value = '';
   Object.assign(launch, { done: false, result: null, checks: [] });
   evm.picking = false;

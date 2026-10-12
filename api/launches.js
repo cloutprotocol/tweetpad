@@ -7,7 +7,8 @@
 // GET ?pair=<mint>: whether a new coin can be paired with this one ({ ok, symbol } or { error }), before building.
 // GET ?curve=new: a fresh SOL curve's reserves and buy fee, so the form can estimate what a dev buy gets.
 // POST { signature, mint }: list a launch, but only after checking on chain that the transaction succeeded,
-// is a pump.fun create for that mint, was paid by the wallet that built it here, and was built here (pending).
+// is a pump.fun create (or a Stonkfun LaunchLab create, api/stonk.js) for that mint, was paid by the wallet that built it here,
+// and was built here (pending).
 const { PUMP_PROGRAM, cors, readJson, isPubkey, isEvmAddress, isCoinId, EVM_CHAINS, b58decode, redis, rpc, connection, quoteConfig, pairQuote, marketData, rateLimit, fail } = require('./_lib');
 
 const PAGE = 24;
@@ -66,7 +67,7 @@ async function newCurve(res) {
 /* search reads a slim index (launchidx: mint → name, ticker, image link, pair, time), never the full records with their
    thumbnails, so it stays a few hundred bytes per coin however many launch; results are capped and carry no thumbs */
 const SEARCH_SHOW = 48;
-const slim = (l) => ({ mint: l.mint, name: l.name, symbol: l.symbol, image: l.image || '', quote: l.quote || null, time: l.time, ...(l.chain && { chain: l.chain }) });
+const slim = (l) => ({ mint: l.mint, name: l.name, symbol: l.symbol, image: l.image || '', quote: l.quote || null, time: l.time, ...(l.chain && { chain: l.chain }), ...(l.venue && { venue: l.venue }) });
 async function searchIndex() {
   const [raw, count] = await redis(['HGETALL', 'launchidx'], ['ZCARD', 'launches']);
   const idx = {};
@@ -197,16 +198,35 @@ async function record(req, res) {
   const signers = msg.accountKeys.slice(0, msg.header.numRequiredSignatures);
   if (signers[0] !== pending.creator) return fail(res, 400, 'transaction was not paid by the launching wallet');
   if (!signers.includes(mint)) return fail(res, 400, 'transaction did not create this mint');
-  if (!keys.includes(PUMP_PROGRAM)) return fail(res, 400, 'not a pump.fun transaction');
+  /* a Stonkfun launch (api/stonk.js) is a LaunchLab create under Stonkfun's platform, with the pool built here */
+  const stonk = pending.venue === 'stonk';
+  const program = stonk ? require('./stonk').LAUNCHLAB : PUMP_PROGRAM;
+  if (!keys.includes(program)) return fail(res, 400, stonk ? 'not a LaunchLab transaction' : 'not a pump.fun transaction');
+  if (stonk && (!keys.includes(pending.platform) || !keys.includes(pending.pool))) return fail(res, 400, 'transaction is not the Stonkfun launch built here');
   if (pending.quote && !keys.includes(pending.quote.mint)) return fail(res, 400, 'transaction is not paired with $' + pending.quote.symbol);
-  /* the pump.fun create itself carries name, symbol and uri: they must be what was built here */
-  const pumpData = msg.instructions.filter(ix => keys[ix.programIdIndex] === PUMP_PROGRAM).map(ix => Buffer.from(b58decode(ix.data) || []));
+  /* the create itself carries name, symbol and uri: they must be what was built here */
+  const pumpData = msg.instructions.filter(ix => keys[ix.programIdIndex] === program).map(ix => Buffer.from(b58decode(ix.data) || []));
   const carries = (text) => pumpData.some(d => d.includes(Buffer.from(String(text), 'utf8')));
   if (!carries(pending.uri) || !carries(pending.name) || !carries(pending.symbol)) return fail(res, 400, 'transaction metadata does not match what was built here');
 
+  /* a Stonkfun coin's fee setup is on its mint: a taxed one must withhold at the rate built here, for Stonkfun's reward
+     authority (anything else would tax holders for nobody); a standard one must carry no tax at all */
+  if (stonk) {
+    const { unpackMint, getTransferFeeConfig, TOKEN_2022_PROGRAM_ID } = require('@solana/spl-token');
+    const { PublicKey } = require('@solana/web3.js');
+    const info = await connection().getAccountInfo(new PublicKey(mint), 'confirmed');
+    if (!info || !info.owner.equals(TOKEN_2022_PROGRAM_ID)) return fail(res, 400, 'this coin is not a LaunchLab mint');
+    const fee = getTransferFeeConfig(unpackMint(new PublicKey(mint), info, TOKEN_2022_PROGRAM_ID));
+    const taxed = (pending.mode || 'standard') !== 'standard';
+    if (!taxed ? !!fee : !fee || !fee.withdrawWithheldAuthority.equals(new PublicKey(pending.withholder))
+      || fee.newerTransferFee.transferFeeBasisPoints !== pending.taxBps || fee.olderTransferFee.transferFeeBasisPoints !== pending.taxBps) {
+      return fail(res, 400, 'this coin\'s transfer tax is not the one built here');
+    }
+  }
+
   const time = tx.blockTime ? tx.blockTime * 1000 : Date.now();
   const launch = { mint, name: pending.name, symbol: pending.symbol, image: pending.image, thumb: pending.thumb || '', uri: pending.uri,
-    creator: pending.creator, devBuy: pending.devBuy, quote: pending.quote || null, signature, time };
+    creator: pending.creator, devBuy: pending.devBuy, quote: pending.quote || null, signature, time, ...(stonk && { venue: 'stonk', pool: pending.pool, mode: pending.mode || 'standard', taxBps: pending.taxBps || 0, shareBps: pending.shareBps || 0 }) };
   await redis(['SET', 'launch:' + mint, JSON.stringify(launch)], ['ZADD', 'launches', time, mint], ['ZADD', 'creator:' + pending.creator, time, mint],
     ['HSET', 'launchidx', mint, JSON.stringify(slim(launch))], ['DEL', 'pending:' + mint]);
   return res.status(200).json({ ok: true, launch });

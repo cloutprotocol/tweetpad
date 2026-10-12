@@ -54,11 +54,11 @@ h1 .gem { display: inline-block; width: 9px; height: 9px; margin: 0 7px 0 3px; b
 
 /* ---------- stage: the center window, with toast + chat overlaid on it ---------- */
 .stage { position: relative; flex: 1; min-height: 0; }
-main { position: absolute; inset: 0; overflow: auto; padding: 4px 10px 40px; overscroll-behavior: contain;
+main { position: absolute; inset: 0; overflow: auto; padding: 4px 8px 40px; overscroll-behavior: contain;
        scrollbar-width: thin; scrollbar-color: #4b7a84 transparent; }
 section[hidden], .hud[hidden] { display: none; }
 #tab-wallets:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-.pane { width: 100%; max-width: 330px; }
+.pane { width: 100%; max-width: 363px; }
 
 /* "Challenge Complete!" toast, floats over the stage and slides away on its own */
 .toast { position: absolute; top: 2px; right: 8px; z-index: 5; max-width: min(300px, calc(100% - 16px)); cursor: pointer;
@@ -524,11 +524,21 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 .launch-head .pair-pick[hidden] { display: none; }
 .launch-head .pair-pick { flex: none; gap: 5px; padding: 2px 6px 2px 5px; letter-spacing: 0; text-transform: none; border-width: 1px; box-shadow: none; }
 .launch-head .pair-pick small { flex: none; font: 13px/1 var(--mono); color: var(--dim); }
+/* a long ticker ($GOOGLx, $ELONCOIN) ends in "…" rather than pushing the chip past the panel */
+.launch-head .pair-pick { flex: 0 1 auto; min-width: 0; max-width: 128px; }
+.launch-head .pair-pick b { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 400px) { .launch-head .pair-pick small { display: none; } }   /* narrow: the ticker keeps the room, "Pair" goes */
 .launch-head .pair-img { width: 16px; height: 16px; }
 .pairs-card { width: min(100%, 360px); background: #10232a; }   /* solid: the form behind would show through the HUD glass */
 .pairs-search { width: 100%; padding: 6px 8px; color: var(--text); font: 16px/1 var(--mono); background: rgba(5, 12, 14, .75);
                 border: 2px solid var(--panel-lo); box-shadow: inset 2px 2px 0 rgba(0, 0, 0, .4); }
 .pairs-search:focus { outline: none; border-color: var(--accent); }
+/* "Pair with": the launchpad filter, and a heading per launchpad across the grid */
+.pairs-venue { margin: 6px 0 2px; }
+.pairs-venue[hidden] { display: none; }
+.pairs-venue button { flex: 1; padding-block: 5px; }
+.pairs-sec { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 6px; padding: 6px 2px 0; }
+.pairs-sec small { color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pairs-grid { list-style: none; margin: 0; padding: 0 2px 2px 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;
               max-height: min(260px, calc(100vh - 200px)); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #4b7a84 transparent; }
 .pair-tile { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 3px 4px; appearance: none; cursor: pointer;
@@ -543,12 +553,21 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 .pair-tile-img { width: 26px; height: 26px; object-fit: cover; border: 1px solid #000; font-size: 15px; }
 .pair-tile small.pair-mcap { color: var(--gold); }
 .pair-tile small.no { color: var(--bad); }
+.pair-tile small.stonk { color: var(--ok); }
 #pairs-status:empty { display: none; }
 
 /* ---------- dev buy: its own block above the launch button ---------- */
 .devbuy-box { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: rgba(5, 12, 14, .45); border: 1px dashed var(--line); }
 .devbuy-box[hidden] { display: none; }   /* Ethereum's custom launch has no dev buy */
 #eth-box .buy-chips button { padding-block: 5px; }
+/* Solana's launchpad switch, at the top of the form, and Stonkfun's fee setup */
+.venue-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; }
+.venue-row[hidden] { display: none; }
+.venue-row .buy-chips { flex: 1; }
+.venue-row .buy-chips button { flex: 1; padding-block: 5px; }
+#stonk-box [hidden] { display: none; }
+#stonk-box .buy-chips button { padding-block: 5px; }
+
 .devbuy-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .devbuy-hint { font: 13px/1 var(--mono); color: var(--dim); }
 .devbuy-row { display: flex; gap: 6px; }
@@ -598,7 +617,6 @@ a.btn.disabled { opacity: .4; pointer-events: none; }
 .post-text { margin: 2px 0 0; font: 15px/1.1 var(--mono); overflow-wrap: anywhere; }
 
 /* ---------- token list: wider, with each coin's day drawn behind its row ---------- */
-#tab-tokens .pane { max-width: 363px; }   /* the original 330px, 10% wider */
 .spark { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
 .spark-line { fill: none; stroke-width: 1.5; stroke-linejoin: round; }
 .spark.up .spark-line { stroke: rgba(125, 255, 154, .4); } .spark.down .spark-line { stroke: rgba(255, 107, 107, .4); }
@@ -648,7 +666,6 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 
 /* ---------- feed: the pad-wide timeline ---------- */
 #tab-feed:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; align-items: center; }
-#tab-feed .pane { max-width: 363px; }
 .feed { padding: 10px; border-top: 2px solid var(--gold); display: flex; flex-direction: column; gap: 8px; }
 .composer-foot .spacer { flex: 1; }
 .tag-coin { appearance: none; padding: 3px 7px; cursor: pointer; color: var(--accent); font: 14px/1 var(--mono); background: transparent;
@@ -696,7 +713,6 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .tweet-acts.big .tw-act svg { width: 14px; height: 14px; }
 .post-text .hashtag, .post-text .mention { color: var(--accent); }
 #tab-thread:not([hidden]) { min-height: 100%; display: flex; flex-direction: column; align-items: center; }
-#tab-thread .pane { max-width: 363px; }
 .thread { padding: 10px; border-top: 2px solid var(--gold); display: flex; flex-direction: column; gap: 8px; }
 .posts-list.big .post { border-top: 0; }
 .posts-list.big .post-text { font-size: 18px; }
@@ -870,7 +886,6 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 /* the skins' panel padding and edge-to-edge head margins are for their own panels: the Agents card sets its own edges */
 #tab-agents .agents { padding: 0; overflow: hidden; }
 #tab-agents .agents .launch-head { margin: 0; padding: 12px 16px; border-radius: 0; }
-#tab-agents .pane { max-width: 363px; }
 
 /* ---------- games: a tile per game, and the player (wider than the other panes while a game runs) ---------- */
 #tab-games .pane.playing { max-width: 960px; }
