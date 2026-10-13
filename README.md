@@ -40,7 +40,7 @@ shareable card that plays inside X again. No app to install and no tab to open.
 | **Auto-claim** | `/autoclaim`: turn it on in Profile with one free signature, and tweetpad's keeper (`api/keeper.js`, Vercel Cron every 5 minutes) claims the wallet's Solana creator fees to it once 0.005 SOL is waiting (`AUTOCLAIM_MIN_SOL`), paying the network fee itself. Only pump.fun's permissionless sweeps, `transfer_creator_fees_to_pump` and `collect_creator_fee`, so the fees can only go to the creator, and they arrive as SOL. Each claim is simulated before it is sent. Needs `KEEPER_SECRET` (a funded keeper wallet) and `CRON_SECRET`. The page has its own X player card (`?embed`) and card image. |
 | **Settings** | Skins: **2012** (default: blue bar, white cards, dark tab bar), **Tweetcraft** (the pixel HUD) or **Lights out** (pure black, hairlines, flat pills, like today's X, under tweetpad's own marks). Saved per browser. |
 | **Agents** | Coming soon: a Grok-powered agent tied to a coin, watchable live in its card inside a post. The page shows a preview; the dev kit in `agents/` is real (spec, skill file template, manifest schema, an example, and a local runner on xAI's Responses API with your own key). |
-| **Games** | Coming soon: a placeholder grid for now. |
+| **Games** | `/games` (its own X card), tweetpad's games on [Gamba](https://gamba.so), Solana's on-chain casino protocol (`api/gamba.js`, `assets/gamba-kit.js`): **Pump or Dump** (`/games/pumpordump`: call the next candle at 2×, 3× or 5×, bets up to 0.1 SOL) and **Mines** (`/games/mines`: a 5×5 board with 3, 5 or 10 mines; each tile is its own Gamba play at the true odds of the tiles left, riding what the last tile won, and the server only lets a tile ride what the player's Game account shows the tile before it won; rounds start at up to 0.1 SOL and stop at 2 SOL; cashing out just stops). The house is Gamba's public SOL pool; Gamba's program holds each bet and its RNG settles it in about a second. Gamba commits to each seed (SHA-256) before the bet and reveals it when it settles; the page recomputes every result (HMAC-SHA256 of the seed, your seed and the play's number) and checks the hash. Plays are built server side from Gamba's IDL (compared byte for byte with `gamba-core-v2`), simulated, and decoded again in the browser before anything signs. **⚡ Instant play**: one free signature of a fixed message makes a game-balance key (its seed is the signature's SHA-256, so the same wallet makes the same key in any browser); the wallet tops it up (at most 1 SOL), it signs plays with no pop-ups, and Withdraw sends everything, the Gamba seat's rent included, back to that wallet only. Without it each play is a wallet approval. Every play names tweetpad's wallet as Gamba's creator (`GAMBA_CREATOR`; the plays show under it on Gamba's explorer): 1% of a Pump or Dump call, 0.5% of a Mines tile; without it the games are practice only. Practice (no money, the same odds and formula) is open everywhere; real plays need the 18+ box and are refused in the countries in `GAMBA_BLOCKED` (withdrawing never is). Fees on top of each play: tweetpad's, Gamba's 0.9% and the pool's 1.8% (read from chain), and 0.1% for the pool's jackpot on Pump or Dump. A player's first play takes Gamba's player seat first (about 0.0097 SOL, refunded on withdraw), so even that one has a committed seed. Each game has its own X player card (`?embed`) and card image, and the app's Games tab opens them in the card's frame (`?popup`). Five (BO1 zombies) opens on vel.gg. |
 | **Winamp** | `/winamp`: [Webamp](https://github.com/captbaritone/webamp) (MIT) with the Sony 2000 SE skin, a playlist of tracker classics fetched from [The Mod Archive](https://modarchive.org) and rendered in the browser with libopenmpt, random skins from the [Winamp Skin Museum](https://skins.webamp.org), and Upload track for your own modules, MP3s and `.wsz` skins. A tweetpad-sized frame on the full page, the X player card (`?embed`), and the pop-out window (`?popup`) that More → Winamp and ⧉ Pop out open. |
 | **Debug** | The original wallet-in-an-iframe probe: sign tests, environment, report, popup bridge. |
 
@@ -106,6 +106,9 @@ api/                   Vercel functions, one per route; _lib.js (shared) and _ev
   trade · evm-trade                                              buying and selling (Solana curve; Robinhood, BNB, Base v4 pools); _jito.js adds Jito tips
   card · card-image                                              share pages and their per-coin card images
   chat · social · reactions · profile · rewards                  chat, feed, posts, likes/retweets, profiles, creator fees
+  gamba                                                          the games on Gamba: plays, the game balance, the plays list
+games/                 /games (index.html), /games/pumpordump and /games/mines; assets/gamba-kit.js (what they share), pumpordump.js,
+                       mines.js, games.css
 scripts/check.js       `npm run check`: syntax and wiring smoke test
 scripts/preview.html   source for preview.png (render command inside)
 scripts/lockup.html    source for the README header lockup (docs/brand/lockup-*.png)
@@ -123,7 +126,7 @@ npm run local                    # http://localhost:3000/embed.html
 npm run check
 ```
 
-Settings live in [`.env.example`](.env.example): `QUOTE_MINT` (pairing token; empty means SOL), `RPC_URL`, `PINATA_JWT`.
+Settings live in [`.env.example`](.env.example): `QUOTE_MINT` (pairing token; empty means SOL), `RPC_URL`, `PINATA_JWT`, `GAMBA_CREATOR` and `GAMBA_BLOCKED` (Pump or Dump).
 
 ### Put it in a tweet
 
@@ -137,6 +140,7 @@ Settings live in [`.env.example`](.env.example): `QUOTE_MINT` (pairing token; em
 - Launches create real tokens on mainnet and cost real SOL. The card says so; the wallet shows the cost.
 - The page never holds a user's keys. The only key it creates is the new coin's mint key, used once and discarded.
 - Write endpoints are rate-limited per IP (Redis, fixed window).
+- The games are real-money betting once `GAMBA_CREATOR` is set. Check where it may be offered before switching it on; `GAMBA_BLOCKED` is a starting list, not legal advice.
 - Fresh `*.vercel.app` domains get phishing warnings in MetaMask. Use your own domain before going public.
 
 ## License

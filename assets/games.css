@@ -1,0 +1,183 @@
+/* tweetpad's games (/games, /games/pumpordump, /games/mines), on top of feature.css: the 2012 frame around a dark game screen.
+   The gk- parts are every game's (assets/gamba-kit.js): the screen, the stamp, the Practice | Real SOL switch, the game balance,
+   the seeds, the plays. Then each game's own: pod- (Pump or Dump's chart and calls), mines- (the board), hub- (the list). */
+:root { --up: #2e9e4f; --up-hi: #4fd06f; --dn: #d0343a; --dn-hi: #ff6a6a; --gold: #f5c542; --screen: #0c141b; }
+.up { color: var(--up); }
+.dn { color: var(--dn); }
+
+/* the bar's game mark and sound switch */
+.gk-mark { font: bold 9px/1 var(--ui); letter-spacing: -1px; color: #b8ffcf; text-shadow: 0 1px 0 rgba(0, 0, 0, .3); }
+.head .title { margin-left: auto; }
+.head .sound { width: 26px; height: 26px; padding: 0; color: #fff; font: bold 14px/1 var(--ui); text-shadow: 0 -1px 0 rgba(0, 0, 0, .3); background: rgba(0, 0, 0, .18);
+  border: 1px solid rgba(255, 255, 255, .35); border-radius: 50%; box-shadow: none; }
+.head .sound:hover { background: rgba(0, 0, 0, .28); }
+.head .sound[aria-pressed="false"] { opacity: .6; }
+
+/* ---------- the screen ---------- */
+.gk-screen { position: relative; overflow: hidden; padding: 7px 8px 6px; color: #cfe0ea; background: radial-gradient(120% 90% at 50% 0%, #17283a 0%, var(--screen) 70%);
+  border: 1px solid #08131b; border-radius: 5px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 1px 2px rgba(0, 0, 0, .2); }
+.gk-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gk-num { display: flex; align-items: baseline; gap: 6px; font: 20px/1 "VT323", Menlo, monospace; }
+.gk-num b { color: #fff; font-weight: normal; letter-spacing: .02em; }
+.gk-num small { color: #8fa9b8; font: bold 9px/1 var(--ui); letter-spacing: .08em; }
+.gk-num .up { color: var(--up-hi); }
+.gk-num .dn { color: var(--dn-hi); }
+.gk-jack { display: flex; align-items: baseline; gap: 5px; padding: 3px 8px; background: rgba(245, 197, 66, .08); border: 1px solid rgba(245, 197, 66, .35); border-radius: 12px;
+  animation: gk-glow 2.4s ease-in-out infinite; }
+.gk-jack small { color: #cfa93b; font: bold 9px/1 var(--ui); letter-spacing: .08em; }
+.gk-jack b { color: var(--gold); font: 19px/1 "VT323", Menlo, monospace; text-shadow: 0 0 8px rgba(245, 197, 66, .6); }
+@keyframes gk-glow { 50% { box-shadow: 0 0 12px rgba(245, 197, 66, .35); } }
+.gk-status { min-height: 17px; color: #8fa9b8; font: bold 12px/17px var(--ui); text-align: center; }
+.gk-status.ok { color: var(--up-hi); }
+.gk-status.bad { color: var(--dn-hi); }
+.gk-screen.rolling .gk-status { color: #fff; animation: gk-blink .5s steps(2) infinite; }
+@keyframes gk-blink { 50% { opacity: .55; } }
+/* a result: the screen flashes (a loss shakes it), the stamp lands */
+.gk-screen.flash-win { animation: gk-flash-win .9s ease-out; }
+.gk-screen.flash-lose { animation: gk-flash-lose .9s ease-out; }
+.gk-screen.flash-jack { animation: gk-flash-jack 1.6s ease-out; }
+.gk-screen.shake { animation: gk-flash-lose .9s ease-out, gk-shake .4s ease; }
+@keyframes gk-flash-win { 0% { box-shadow: inset 0 0 60px rgba(79, 208, 111, .8); } }
+@keyframes gk-flash-lose { 0% { box-shadow: inset 0 0 60px rgba(255, 90, 95, .8); } }
+@keyframes gk-flash-jack { 0%, 40% { box-shadow: inset 0 0 80px rgba(245, 197, 66, .9); } }
+@keyframes gk-shake { 20% { transform: translate(-5px, 2px); } 40% { transform: translate(5px, -2px); } 60% { transform: translate(-4px, -1px); } 80% { transform: translate(3px, 1px); } }
+.gk-stamp { position: absolute; left: 50%; top: 54%; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 14px 5px; pointer-events: none;
+  border: 3px solid currentColor; border-radius: 6px; transform: translate(-50%, -50%) rotate(-8deg) scale(.4); opacity: 0; background: rgba(8, 14, 20, .78); }
+.gk-stamp.show { animation: gk-stamp 2.6s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.gk-stamp b { font: bold 26px/1 var(--ui); letter-spacing: .02em; white-space: nowrap; }
+.gk-stamp span { font: 22px/1 "VT323", Menlo, monospace; }
+.gk-stamp.win { color: var(--up-hi); text-shadow: 0 0 10px rgba(79, 208, 111, .7); }
+.gk-stamp.lose { color: var(--dn-hi); text-shadow: 0 0 10px rgba(255, 90, 95, .7); }
+.gk-stamp.jack { color: var(--gold); text-shadow: 0 0 14px rgba(245, 197, 66, .9); }
+@keyframes gk-stamp {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(2.2); }
+  12% { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg) scale(1); }
+  85% { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(.96); }
+}
+/* the card image's headline over the screen */
+.gk-still { position: absolute; inset: 30px 0 22px; z-index: 2; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; align-items: baseline; gap: 4px 10px;
+  background: radial-gradient(closest-side, rgba(12, 20, 27, .85), rgba(12, 20, 27, .25)); }
+.gk-still b { color: var(--up-hi); font: bold 40px/1 var(--ui); letter-spacing: -.01em; text-shadow: 0 0 16px rgba(79, 208, 111, .6); }
+.gk-still b.dn { color: var(--dn-hi); text-shadow: 0 0 16px rgba(255, 90, 95, .6); }
+.gk-still span { color: #cfe0ea; font: 26px/1 "VT323", Menlo, monospace; }
+.gk-still small { flex-basis: 100%; color: #cfe0ea; font: bold 13px/1.2 var(--ui); text-align: center; }
+
+/* ---------- the controls: who plays, the game balance, the game's own picks ---------- */
+.gk-controls { gap: 6px; }
+.gk-mode { display: flex; align-items: center; }
+.gk-mode button { padding: 5px 10px; margin-left: -1px; color: #555; border-radius: 0; box-shadow: none; }
+.gk-mode button:first-child { margin-left: 0; border-radius: 4px 0 0 4px; }
+.gk-mode button:nth-child(2) { border-radius: 0 4px 4px 0; }
+.gk-mode button[aria-pressed="true"] { color: #fff; text-shadow: 0 -1px 0 rgba(0, 0, 0, .25); background: linear-gradient(#2c8fd6, #4aa9e9); border-color: #1d6aa5;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .3); }
+.gk-wallet { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; color: var(--soft); font-size: 12px; white-space: nowrap; }
+.gk-wallet span { overflow: hidden; text-overflow: ellipsis; }
+.linkish { padding: 0; color: var(--accent); font: bold 12px/1 var(--ui); text-shadow: none; background: none; border: 0; box-shadow: none; }
+.linkish:hover { text-decoration: underline; background: none; }
+.gk-bank { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 8px; color: var(--soft); font-size: 12px; background: #f4f9fd;
+  border: 1px solid #d4e6f3; border-radius: 4px; }
+.gk-bank b { color: var(--text); }
+.gk-bank .btn { padding: 5px 9px; font-size: 11px; }
+.gk-topup { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; flex-basis: 100%; }
+.gk-pick { flex-wrap: nowrap; gap: 6px; }
+.gk-pick .field-label { width: 30px; flex: none; color: var(--dim); font-size: 11px; text-transform: uppercase; }
+.gk-pick .chips { flex-wrap: nowrap; }
+.gk-pick .chips button { padding: 5px 8px; }
+.gk-wallets { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.gk-wallets img { border-radius: 3px; }
+.gk-wallets.nudge, .gk-gate.nudge { animation: gk-nudge .35s ease 2; }
+@keyframes gk-nudge { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.gk-gate { display: flex; align-items: center; justify-content: center; gap: 6px; color: #555; font-size: 12px; cursor: pointer; }
+.gk-line { text-align: center; font-size: 11px; }
+.gk-built { display: flex; align-items: center; justify-content: center; gap: 5px; color: #555; font-size: 13px; }
+.gk-built b { color: var(--text); }
+/* the big play buttons */
+.gk-big { flex-direction: column; gap: 2px; height: 52px; color: #fff; text-shadow: 0 -1px 0 rgba(0, 0, 0, .3); border-radius: 6px; transition: transform .06s ease, filter .15s ease; }
+.gk-big b { font: 900 19px/1 var(--ui); letter-spacing: .02em; }
+.gk-big span { font: bold 11px/1 var(--ui); opacity: .9; }
+.gk-big.up { background: linear-gradient(var(--up-hi), var(--up)); border-color: #237a3d; border-bottom-color: #1b6230; }
+.gk-big.dn { background: linear-gradient(var(--dn-hi), var(--dn)); border-color: #a6262b; border-bottom-color: #8a1f24; }
+.gk-big.up:hover { background: linear-gradient(#5edc7d, #2a9147); }
+.gk-big.dn:hover { background: linear-gradient(#ff7b7b, #c22d33); }
+.gk-big:active:not(:disabled) { transform: translateY(1px) scale(.98); filter: brightness(.95); }
+.gk-big:disabled { opacity: .55; }
+.gk-controls:not(.busy) .gk-big.breathe { animation: gk-breathe 2.8s ease-in-out infinite; }
+.gk-controls:not(.busy) .gk-big.breathe.dn { animation-delay: 1.4s; }
+@keyframes gk-breathe { 50% { box-shadow: 0 0 0 3px rgba(0, 0, 0, .04), 0 2px 10px rgba(0, 0, 0, .18); } }
+
+/* ---------- under the fold ---------- */
+.gk-session .stat b.up { color: var(--up); }
+.gk-session .stat b.dn { color: var(--dn); }
+.gk-session .stat b.pop { animation: gk-pop .4s ease; }
+@keyframes gk-pop { 40% { transform: scale(1.35); color: var(--up); } }
+.gk-kv { display: grid; gap: 3px; }
+.gk-kv > span:first-child { color: var(--dim); font: bold 10px/1.2 var(--ui); letter-spacing: .03em; text-transform: uppercase; }
+.gk-kv code { padding: 5px 7px; color: #333; font: 11px/1.35 Menlo, Monaco, monospace; word-break: break-all; background: #fafafa; border: 1px solid #ddd; border-radius: 4px; }
+.gk-kv .row { flex-wrap: nowrap; gap: 6px; }
+.gk-kv .btn { padding: 6px 10px; }
+.gk-recent { gap: 5px; }
+.gk-recent .feed { border: 0; }
+.gk-recent .feed li { padding: 6px 2px; font-size: 12px; }
+.gk-recent .feed .call { color: inherit; font-weight: bold; }
+.gk-recent .feed .call.up { color: var(--up); }
+.gk-recent .feed .call.dn { color: var(--dn); }
+.gk-recent .feed .amt.lost { color: var(--dim); font-weight: normal; }
+.gk-gamba { display: flex; align-items: center; gap: 10px; padding: 9px 10px; color: var(--text); background: var(--card); border: 1px solid var(--edge); border-radius: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.gk-gamba:hover { text-decoration: none; border-color: #f0866b; }
+.gk-gamba img { flex: none; }
+.gk-gamba span { display: grid; gap: 2px; }
+.gk-gamba b { font: bold 13px/1.1 var(--ui); }
+.gk-gamba small { color: var(--soft); font-size: 11px; }
+
+/* ---------- Pump or Dump ---------- */
+#pod-chart { display: block; width: 100%; height: 140px; margin-top: 4px; }
+.pod-go { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pod-odds { text-align: right; white-space: nowrap; }
+
+/* ---------- Mines ---------- */
+.mines-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: min(100%, 210px); margin: 5px auto 3px; }
+.mine-tile { position: relative; aspect-ratio: 1; padding: 0; border-radius: 6px; perspective: 300px; background: linear-gradient(#2a3d50, #1b2a39); border: 1px solid #0a141c;
+  border-bottom-width: 3px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); transition: transform .08s ease, background .2s ease; }
+.mine-tile:hover:not(:disabled):not(.gem):not(.boom):not(.ghost) { background: linear-gradient(#34506a, #22374b); transform: translateY(-1px); }
+.mine-tile:active:not(:disabled) { transform: translateY(1px); border-bottom-width: 2px; }
+.mine-tile:disabled { opacity: 1; cursor: default; }
+.mine-tile .face { display: grid; place-items: center; width: 100%; height: 100%; font-size: 19px; line-height: 1; }
+.mine-tile.rolling { animation: mines-spin .5s linear infinite; background: linear-gradient(#3d5d7a, #284256); }
+@keyframes mines-spin { 50% { transform: rotateY(90deg) scale(.92); } }
+.mine-tile.gem { background: radial-gradient(circle at 50% 40%, #2f7a4c, #173d27); border-color: #0f2a1a; box-shadow: 0 0 12px rgba(79, 208, 111, .45), inset 0 1px 0 rgba(255, 255, 255, .15);
+  animation: mines-pop .35s cubic-bezier(.2, 1.6, .4, 1); }
+.mine-tile.boom { background: radial-gradient(circle at 50% 40%, #a8333a, #4a1216); border-color: #2a080a; box-shadow: 0 0 16px rgba(255, 90, 95, .6);
+  animation: mines-pop .35s cubic-bezier(.2, 1.6, .4, 1); }
+.mine-tile.ghost { background: #241417; opacity: .7; }
+.mine-tile.spent { opacity: .45; }
+@keyframes mines-pop { 0% { transform: scale(.6); } 100% { transform: scale(1); } }
+.mines-cash { width: 100%; height: 46px; }
+.mines-picks { flex-wrap: wrap; row-gap: 6px; }
+.mines-picks .field-label + .chips { margin-right: 6px; }
+.mines-picks .field-label:nth-of-type(2) { width: auto; }
+.mines-cash.ready { animation: gk-breathe 1.6s ease-in-out infinite; }
+.gk-big.cash { background: linear-gradient(#ffd45e, #e2a51f); border-color: #b07c10; border-bottom-color: #8e630b; color: #3d2a00; text-shadow: 0 1px 0 rgba(255, 255, 255, .35); }
+.gk-big.cash:hover { background: linear-gradient(#ffdc77, #d99a12); }
+
+/* ---------- the games list (/games) ---------- */
+.hub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hub-tile { position: relative; display: block; overflow: hidden; color: #fff; background: #000; border: 1px solid var(--edge); border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.hub-tile:hover { text-decoration: none; }
+.hub-tile img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; transition: transform .3s ease; }
+.hub-tile:hover img { transform: scale(1.04); }
+.hub-tile .hub-main { position: absolute; left: 0; right: 0; bottom: 0; display: grid; gap: 2px; padding: 22px 10px 8px; background: linear-gradient(transparent, rgba(0, 0, 0, .8)); }
+.hub-tile b { font: bold 16px/1.1 var(--ui); }
+.hub-tile small { color: #d5dee5; font-size: 11px; line-height: 1.25; }
+.hub-tile .hub-play { position: absolute; top: 8px; right: 8px; padding: 5px 10px; font: bold 12px/1 var(--ui); background: rgba(46, 158, 79, .92); border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 9999px; }
+
+/* ---------- modes ---------- */
+/* the card image: the screen and the controls as they stand, nothing that moves */
+html[data-mode="card"] .gk-status, html[data-mode="card"] .gk-wallet { visibility: hidden; }
+html[data-mode="card"] #gk-line, html[data-mode="card"] #gk-bank { display: none; }
+@media (max-width: 380px) {
+  .gk-pick .chips button { padding: 5px 6px; }
+  .pod-odds { display: none; }
+}

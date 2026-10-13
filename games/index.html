@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Games · tweetpad</title>
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/tweetpad-hash-32.png">
+<link rel="apple-touch-icon" href="/assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#1da1f2">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : /[?&]popup\b/.test(location.search) ? 'popup' : 'page';</script>
+
+<!-- posted on X, the list plays in the post: the player card loads ?embed. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Games on tweetpad">
+<meta name="twitter:description" content="Pump or Dump and Mines, settled on chain by Gamba and provably fair. Practice free, or play with SOL, in the post.">
+<meta name="twitter:player" content="https://www.tweetpad.io/games?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/games-card.png?v=1">
+<meta name="twitter:image:alt" content="tweetpad games: Pump or Dump and Mines, built on Gamba">
+<meta property="og:title" content="Games on tweetpad">
+<meta property="og:description" content="Pump or Dump and Mines, settled on chain by Gamba and provably fair.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/games-card.png?v=1">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
+<link rel="stylesheet" href="/assets/feature.css">
+<link rel="stylesheet" href="/assets/games.css">
+</head>
+<body>
+<a class="brand" href="/"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad <span>· Games</span></a>
+<main class="frame tall">
+  <div class="head">
+    <a class="home" href="/" title="Back to tweetpad"><span class="back" aria-hidden="true">‹</span><img class="gem" src="/assets/brand/tweetpad-hash-180.png" alt=""><span class="word">tweetpad</span></a>
+    <h1 class="title"><span class="gk-mark" aria-hidden="true">▲▼</span>Games</h1>
+  </div>
+  <div class="scroll">
+  <!-- tweetpad's own games, on Gamba; each link keeps the mode (the X card, the app's frame) -->
+  <div class="hub-grid">
+  <a class="hub-tile" href="/games/pumpordump" data-game><img src="/assets/games/pumpordump.jpg" alt="">
+    <span class="hub-main"><b>Pump or Dump</b><small>Call the next candle, up to 5×</small></span><span class="hub-play">▶ Play</span></a>
+  <a class="hub-tile" href="/games/mines" data-game><img src="/assets/games/mines.jpg" alt="">
+    <span class="hub-main"><b>Mines</b><small>Find gems, cash out before a mine</small></span><span class="hub-play">▶ Play · New</span></a>
+  </div>
+  <a class="gk-gamba" href="https://gamba.so" target="_blank" rel="noopener"><img src="/assets/games/gamba.svg" alt="" width="28" height="28"><span><b>Built on Gamba</b><small>Solana's on-chain casino protocol: every result settled on chain and checked in your browser</small></span></a>
+  <p class="fine">Practice is free and open to everyone. Real plays are SOL on Solana, 18+, and only where betting is legal; ⚡ Instant play skips the
+    wallet pop-ups. Bet only what you can lose. tweetpad runs these games on Gamba's open protocol; Gamba doesn't run or endorse tweetpad.</p>
+  </div>
+</main>
+<script>
+  /* the games open in the same mode (the X card, the app's frame); the bar goes back to tweetpad's own page in a frame */
+  const mode = document.documentElement.dataset.mode;
+  if (mode === 'embed' || mode === 'popup') {
+    for (const a of document.querySelectorAll('[data-game]')) a.href += '?' + mode;
+    document.querySelector('.head .home').href = mode === 'popup' ? '/embed.html?tab=games' : '/embed.html';
+  }
+</script>
+</body>
+</html>

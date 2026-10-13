@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mines · tweetpad</title>
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/tweetpad-hash-32.png">
+<link rel="apple-touch-icon" href="/assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#1da1f2">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : /[?&]popup\b/.test(location.search) ? 'popup' : 'page';</script>
+
+<!-- posted on X, the game plays in the post: the player card loads ?embed. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Mines on tweetpad">
+<meta name="twitter:description" content="Find gems, dodge the mines, cash out when you like. Every tile settled on chain by Gamba, provably fair. Play in the post.">
+<meta name="twitter:player" content="https://www.tweetpad.io/games/mines?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/mines-card.png?v=1">
+<meta name="twitter:image:alt" content="Mines: find gems, dodge the mines, built on Gamba">
+<meta property="og:title" content="Mines on tweetpad">
+<meta property="og:description" content="Find gems, dodge the mines, cash out when you like. Settled on chain by Gamba, provably fair.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/mines-card.png?v=1">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
+<link rel="stylesheet" href="/assets/feature.css">
+<link rel="stylesheet" href="/assets/games.css">
+</head>
+<body>
+<a class="brand" href="/games"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad <span>· Mines</span></a>
+<main class="frame tall">
+  <!-- the bar: back to the games on the left, the game and its sound on the right -->
+  <div class="head">
+    <a class="home" href="/games" title="All games"><span class="back" aria-hidden="true">‹</span><img class="gem" src="/assets/brand/tweetpad-hash-180.png" alt=""><span class="word">tweetpad</span></a>
+    <h1 class="title"><span aria-hidden="true">💣</span>Mines</h1>
+    <button class="sound" id="gk-sound" type="button" aria-pressed="true" title="Sound">♪</button>
+  </div>
+  <div class="scroll">
+
+  <!-- the board: each tile is its own Gamba play; the next tile's odds and what rides on it above -->
+  <section class="gk-screen" id="gk-screen">
+    <div class="gk-top">
+      <span class="gk-num"><small>NEXT</small><b id="mines-next">×1.14</b><span class="up" id="mines-chance"></span></span>
+      <span class="gk-num"><small>RIDING</small><b id="mines-value">—</b><span class="up" id="mines-mult"></span></span>
+    </div>
+    <div class="mines-board" id="mines-board" role="group" aria-label="Board"></div>
+    <div class="gk-stamp" id="gk-stamp" hidden><b></b><span></span></div>
+    <div class="gk-status" id="gk-status">Pick a tile</div>
+    <div class="gk-still still"><b>FIND GEMS</b><b class="dn">DODGE MINES</b><small>cash out when you like · every tile on chain</small></div>
+  </section>
+
+  <!-- the round: who plays, stake, mines, then the tiles and Cash out -->
+  <section class="box gk-controls">
+    <div class="gk-mode" role="group" aria-label="Play with">
+      <button type="button" data-play="practice">Practice</button><button type="button" data-play="real">Real SOL</button>
+      <span class="gk-wallet grow" id="gk-wallet"></span>
+    </div>
+    <div class="gk-bank" id="gk-bank" hidden></div>
+    <div class="row gk-pick mines-picks"><span class="field-label">Bet</span><div class="chips" id="mines-bets" role="group" aria-label="Bet"></div>
+      <span class="field-label">Mines</span><div class="chips" id="mines-count" role="group" aria-label="Mines"></div></div>
+    <button type="button" class="gk-big cash mines-cash" id="mines-cash"><b>PICK A TILE</b><span></span></button>
+    <div class="gk-wallets" id="gk-wallets" hidden></div>
+    <label class="gk-gate" id="gk-gate" hidden><input type="checkbox" id="gk-age"> I'm 18 or older, and betting is legal where I live</label>
+    <p class="note gk-line" id="gk-line"></p>
+    <p class="note gk-line gk-built still"><img src="/assets/games/gamba.svg" alt="" width="16" height="16"><b>Built on Gamba</b> · every tile settled on chain · provably fair</p>
+  </section>
+
+  <!-- this session: best cash out, rounds cashed, net -->
+  <div class="stats gk-session live">
+    <div class="stat"><b id="mines-best">—</b><span>Best cash out</span></div>
+    <div class="stat"><b id="mines-rounds">0</b><span>Cashed out</span></div>
+    <div class="stat"><b id="gk-net">0</b><span id="gk-net-label">Net (practice)</span></div>
+  </div>
+
+  <!-- provably fair: Gamba's committed seed, your seed, and the last tile recomputed here -->
+  <section class="box live">
+    <div class="row"><span class="field-label grow">Provably fair</span><a href="https://explorer.gamba.so" target="_blank" rel="noopener" id="gk-explorer">Gamba explorer ↗</a></div>
+    <p class="note">Every tile is its own Gamba play at the true odds of the tiles left. Before each one, Gamba commits to its next seed
+      (you see its SHA-256); your seed and the play's number go in too. When it settles, the seed is revealed and this page checks it.</p>
+    <div class="gk-kv"><span>Gamba's next seed (SHA-256)</span><code id="gk-next">connect to see yours</code></div>
+    <div class="gk-kv"><span>Your seed</span><span class="row"><input class="text grow" id="gk-seed" maxlength="32" spellcheck="false" autocomplete="off" aria-label="Your seed"><button type="button" class="btn" id="gk-reseed" title="New random seed">New</button></span></div>
+    <ul class="checks" id="gk-checks"></ul>
+  </section>
+
+  <!-- tiles played on tweetpad, newest first (each one read back from the chain) -->
+  <section class="box gk-recent live">
+    <div class="row"><span class="field-label grow">Recent tiles</span><span class="note" id="gk-totals"></span></div>
+    <ul class="feed" id="gk-feed"><li class="empty">Loading…</li></ul>
+  </section>
+
+  <ol class="steps">
+    <li><b>Pick a bet and the mines</b> <span>3 mines pay ×1.14 for the first tile, 10 mines ×1.67. Rounds start at up to 0.1 SOL.</span></li>
+    <li><b>Reveal tiles</b> <span>a gem rides your winnings into the next tile, at better odds each time; a mine ends the round.</span></li>
+    <li><b>Cash out whenever you like</b> <span>each gem is paid as it lands, so stopping costs nothing. ⚡ Instant play skips the wallet pop-ups.</span></li>
+  </ol>
+
+  <a class="gk-gamba" href="https://gamba.so" target="_blank" rel="noopener"><img src="/assets/games/gamba.svg" alt="" width="28" height="28"><span><b>Built on Gamba</b><small>Solana's on-chain casino protocol · the house is its public SOL pool</small></span></a>
+
+  <p class="fine"><span id="gk-fees">Each play costs your bet plus fees (0.5% tweetpad, 0.9% Gamba, 1.8% the pool).</span> Every tile is a play, and its fees are on what
+    rides on it; a gem pays the tiles left over the safe ones left, so over time the house wins. A round stops at 2 SOL. Bet only what you can lose.
+    18+, and only where betting is legal. Practice uses no money. ⚡ Instant play keeps up to 1 SOL in a key your wallet's signature makes; it
+    withdraws only to that wallet. Where the other mines lay is drawn for show after a round. tweetpad runs this game on Gamba's open protocol;
+    Gamba doesn't run or endorse tweetpad.</p>
+  </div>
+</main>
+<script src="/assets/gamba-kit.js"></script>
+<script src="/assets/mines.js"></script>
+</body>
+</html>

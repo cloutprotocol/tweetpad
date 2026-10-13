@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pump or Dump · tweetpad</title>
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/tweetpad-hash-32.png">
+<link rel="apple-touch-icon" href="/assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#1da1f2">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : /[?&]popup\b/.test(location.search) ? 'popup' : 'page';</script>
+
+<!-- posted on X, the game plays in the post: the player card loads ?embed. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Pump or Dump on tweetpad">
+<meta name="twitter:description" content="Call the next candle. Up to 5×, settled on chain in a second by Gamba, provably fair. Play in the post.">
+<meta name="twitter:player" content="https://www.tweetpad.io/games/pumpordump?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/pumpordump-card.png?v=2">
+<meta name="twitter:image:alt" content="Pump or Dump: call the next candle, built on Gamba">
+<meta property="og:title" content="Pump or Dump on tweetpad">
+<meta property="og:description" content="Call the next candle. Up to 5×, settled on chain in a second by Gamba, provably fair.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/pumpordump-card.png?v=2">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
+<link rel="stylesheet" href="/assets/feature.css">
+<link rel="stylesheet" href="/assets/games.css">
+</head>
+<body>
+<a class="brand" href="/games"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad <span>· Pump or Dump</span></a>
+<main class="frame tall">
+  <!-- the bar: back to the games on the left, the game and its sound on the right -->
+  <div class="head">
+    <a class="home" href="/games" title="All games"><span class="back" aria-hidden="true">‹</span><img class="gem" src="/assets/brand/tweetpad-hash-180.png" alt=""><span class="word">tweetpad</span></a>
+    <h1 class="title"><span class="gk-mark" aria-hidden="true">▲▼</span>Pump or Dump</h1>
+    <button class="sound" id="gk-sound" type="button" aria-pressed="true" title="Sound">♪</button>
+  </div>
+  <div class="scroll">
+
+  <!-- the chart: candles for show while nobody plays; a call's candle is drawn from Gamba's result -->
+  <section class="gk-screen" id="gk-screen">
+    <div class="gk-top">
+      <span class="gk-num"><b>$CANDLE</b><span id="pod-price">1.0000</span></span>
+      <span class="gk-jack live" title="Gamba's jackpot for this pool: every call has a tiny chance at it"><small>JACKPOT</small><b id="gk-jackpot">—</b></span>
+    </div>
+    <canvas id="pod-chart" aria-hidden="true"></canvas>
+    <div class="gk-stamp" id="gk-stamp" hidden><b></b><span></span></div>
+    <div class="gk-status" id="gk-status">Call the next candle</div>
+    <div class="gk-still still"><b>PUMP</b><span>or</span><b class="dn">DUMP</b><small>call the next candle · up to 5×</small></div>
+  </section>
+
+  <!-- the call: who plays, stake, leverage, then Pump or Dump -->
+  <section class="box gk-controls">
+    <div class="gk-mode" role="group" aria-label="Play with">
+      <button type="button" data-play="practice">Practice</button><button type="button" data-play="real">Real SOL</button>
+      <span class="gk-wallet grow" id="gk-wallet"></span>
+    </div>
+    <div class="gk-bank" id="gk-bank" hidden></div>
+    <div class="row gk-pick"><span class="field-label">Bet</span><div class="chips" id="pod-bets" role="group" aria-label="Bet"></div></div>
+    <div class="row gk-pick"><span class="field-label">Lev</span><div class="chips" id="pod-levs" role="group" aria-label="Leverage"></div><span class="note grow pod-odds" id="pod-odds"></span></div>
+    <div class="pod-go">
+      <button type="button" class="gk-big up breathe" id="pod-pump"><b>▲ PUMP</b><span></span></button>
+      <button type="button" class="gk-big dn breathe" id="pod-dump"><b>▼ DUMP</b><span></span></button>
+    </div>
+    <div class="gk-wallets" id="gk-wallets" hidden></div>
+    <label class="gk-gate" id="gk-gate" hidden><input type="checkbox" id="gk-age"> I'm 18 or older, and betting is legal where I live</label>
+    <p class="note gk-line" id="gk-line"></p>
+    <p class="note gk-line gk-built still"><img src="/assets/games/gamba.svg" alt="" width="16" height="16"><b>Built on Gamba</b> · settled on chain in a second · provably fair</p>
+  </section>
+
+  <!-- this session: streak, best, net -->
+  <div class="stats gk-session live">
+    <div class="stat"><b id="pod-streak">0</b><span>Streak</span></div>
+    <div class="stat"><b id="pod-best">0</b><span>Best streak</span></div>
+    <div class="stat"><b id="gk-net">0</b><span id="gk-net-label">Net (practice)</span></div>
+  </div>
+
+  <!-- provably fair: Gamba's committed seed, your seed, and the last result recomputed here -->
+  <section class="box live">
+    <div class="row"><span class="field-label grow">Provably fair</span><a href="https://explorer.gamba.so" target="_blank" rel="noopener" id="gk-explorer">Gamba explorer ↗</a></div>
+    <p class="note">Before you bet, Gamba commits to its next seed (you see its SHA-256). Your seed and the play's number go in too, so
+      neither side can pick the result. When it settles, the seed is revealed and this page checks it.</p>
+    <div class="gk-kv"><span>Gamba's next seed (SHA-256)</span><code id="gk-next">connect to see yours</code></div>
+    <div class="gk-kv"><span>Your seed</span><span class="row"><input class="text grow" id="gk-seed" maxlength="32" spellcheck="false" autocomplete="off" aria-label="Your seed"><button type="button" class="btn" id="gk-reseed" title="New random seed">New</button></span></div>
+    <ul class="checks" id="gk-checks"></ul>
+  </section>
+
+  <!-- plays on tweetpad, newest first (each one read back from the chain) -->
+  <section class="box gk-recent live">
+    <div class="row"><span class="field-label grow">Recent plays</span><span class="note" id="gk-totals"></span></div>
+    <ul class="feed" id="gk-feed"><li class="empty">Loading…</li></ul>
+  </section>
+
+  <ol class="steps">
+    <li><b>Pick a bet and leverage</b> <span>2× wins half the time, 5× one time in five. Bets up to 0.1 SOL.</span></li>
+    <li><b>Call it</b> <span>Gamba's program holds the bet; its seed was committed before you called.</span></li>
+    <li><b>Settled in about a second</b> <span>a win is paid straight back by Gamba's pool. ⚡ Instant play skips the wallet pop-ups.</span></li>
+  </ol>
+
+  <a class="gk-gamba" href="https://gamba.so" target="_blank" rel="noopener"><img src="/assets/games/gamba.svg" alt="" width="28" height="28"><span><b>Built on Gamba</b><small>Solana's on-chain casino protocol · the house is its public SOL pool</small></span></a>
+
+  <p class="fine"><span id="gk-fees">Each play costs your bet plus fees (1% tweetpad, 0.9% Gamba, 1.8% the pool, 0.1% the jackpot).</span> A win pays bet × leverage;
+    the chance is 1 in the leverage, so over time the house wins. Bet only what you can lose. 18+, and only where betting is legal. Practice uses no money.
+    ⚡ Instant play keeps up to 1 SOL in a key your wallet's signature makes; it withdraws only to that wallet. The chart is for show: results come
+    from Gamba. tweetpad runs this game on Gamba's open protocol; Gamba doesn't run or endorse tweetpad.</p>
+  </div>
+</main>
+<script src="/assets/gamba-kit.js"></script>
+<script src="/assets/pumpordump.js"></script>
+</body>
+</html>

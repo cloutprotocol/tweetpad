@@ -232,7 +232,7 @@
             <span class="more-main"><b>Agents</b><small>Launch a Grok agent inside a tweet, tied to a coin</small></span><span class="tag">Soon</span><kbd>I</kbd><span class="chev" aria-hidden="true">›</span></button></li>
           <li><button class="more-row-btn" data-goto="games"><span class="more-ico" aria-hidden="true">
             <svg viewBox="0 0 8 8"><path d="M1 2h6v1h1v4H6V6H2v1H0V3h1zm1 1v1H1v1h1v1h1V5h1V4H3V3zm3 1v1h1V4zm1-1v1h1V3z" fill="currentColor" fill-rule="evenodd"/></svg></span>
-            <span class="more-main"><b>Games</b><small>Play with your coins</small></span><span class="tag dim">Soon</span><kbd>G</kbd><span class="chev" aria-hidden="true">›</span></button></li>
+            <span class="more-main"><b>Games</b><small>Pump or Dump and Mines, on Gamba</small></span><span class="tag">New</span><kbd>G</kbd><span class="chev" aria-hidden="true">›</span></button></li>
           <li><button class="more-row-btn" id="custom-pop"><span class="more-ico" aria-hidden="true">
             <svg viewBox="0 0 16 16"><path d="M8 1.5 3.5 8.6 8 11.2l4.5-2.6zM8 12.3 3.5 9.7 8 14.5l4.5-4.8z" fill="currentColor"/></svg></span>
             <span class="more-main"><b>Custom launch</b><small>Ethereum, your own fee hook, fixed or upgradeable, or your agent</small></span><span class="chev" aria-hidden="true">›</span></button></li>
@@ -286,15 +286,27 @@
     <section id="tab-games" hidden>
       <div class="pane panel games">
         <div class="launch-head"><span>Games</span><button class="menu-x" id="games-close" aria-label="Back" title="Back (Esc)">×</button></div>
-        <!-- games are other sites' browser games, framed: nothing is copied here but a preview still. The frame loads only on Play. -->
+        <!-- games are tweetpad's own (Pump or Dump and Mines, on /games/… in this same frame) and other sites' browser games, framed:
+             nothing is copied here but a preview still. The frame loads only on Play. -->
         <div class="games-wrap" id="games-list">
+          <button class="game-tile" type="button" data-game="pumpordump">
+            <img src="assets/games/pumpordump.jpg" alt="" loading="lazy">
+            <span class="game-tile-main"><b>Pump or Dump</b><small>Call the next candle, up to 5× · built on Gamba</small></span>
+            <span class="game-play new" aria-hidden="true">▶ Play · New</span>
+          </button>
+          <button class="game-tile" type="button" data-game="mines">
+            <img src="assets/games/mines.jpg" alt="" loading="lazy">
+            <span class="game-tile-main"><b>Mines</b><small>Find gems, dodge the mines, cash out · built on Gamba</small></span>
+            <span class="game-play new" aria-hidden="true">▶ Play · New</span>
+          </button>
           <button class="game-tile" type="button" data-game="five">
             <img src="assets/games/bo1z-five.jpg" alt="" loading="lazy">
             <span class="game-tile-main"><b>Five</b><small>Black Ops zombies in your browser · opens on vel.gg</small></span>
             <span class="game-play" aria-hidden="true">▶ Play ↗</span>
           </button>
           <ul class="games-grid" aria-hidden="true"><li></li><li></li><li></li></ul>
-          <p class="note fine games-more">Five runs on vel.gg in its own tab. Not affiliated with vel.gg or Activision.<br>More games soon, including ones you play with the coins in your hotbar.</p>
+          <p class="note fine games-more">Pump or Dump and Mines run on Gamba's open protocol (practice is free; real plays are 18+). Five runs on vel.gg in its own tab.
+            Not affiliated with vel.gg or Activision.<br>More games soon, including ones you play with the coins in your hotbar.</p>
         </div>
         <div class="game-view" id="game-view" hidden>
           <div class="game-bar"><button class="linkish" id="game-back" type="button">← Games</button><b id="game-title"></b>

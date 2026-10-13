@@ -3036,6 +3036,8 @@ $('games-close').addEventListener('click', () => { closeGame(); selectTab('more'
    Pointer lock (mouse look in shooters) needs the frame's sandbox to allow it; X's player card doesn't, so inside X a
    framed game offers a full-screen tab instead. ---------- */
 const GAMES = {
+  pumpordump: { title: 'Pump or Dump', url: '/games/pumpordump?popup', here: true },   // tweetpad's own, in this same frame; its ‹ comes back to Games
+  mines: { title: 'Mines', url: '/games/mines?popup', here: true },
   five: { title: 'Five · BO1 Zombies', url: 'https://vel.gg/bo1z/five', ownTab: true },
 };
 /* a cross-origin parent is X (our landing page embeds us same-origin) */
@@ -3043,6 +3045,7 @@ const IN_X_FRAME = window.self !== window.top && (() => { try { return !window.t
 function openGame(id) {
   const g = GAMES[id];
   if (!g) return;
+  if (g.here) return void (location.href = g.url);
   if (g.ownTab) return window.open(g.url, '_blank', 'noopener');
   $('games-list').hidden = true;
   $('game-view').hidden = false;

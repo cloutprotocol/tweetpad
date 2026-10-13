@@ -897,6 +897,8 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .game-tile-main b { font: 700 17px/1.1 var(--px); }
 .game-tile-main small { font: 12px/1.2 var(--px); color: #ccc; }
 .game-play { position: absolute; top: 8px; right: 8px; padding: 5px 10px; color: #fff; font: 700 12px/1 var(--px); background: rgba(0, 0, 0, .65); border: 1px solid rgba(255, 255, 255, .35); border-radius: 9999px; }
+.game-play.new { background: rgba(46, 158, 79, .9); border-color: rgba(255, 255, 255, .55); }
+.game-tile + .game-tile { margin-top: 8px; }
 #games-list .games-grid { margin-top: 8px; }
 #games-list .games-grid li { aspect-ratio: 16 / 9; }
 .games-more { margin: 6px 0 0; text-align: center; }
