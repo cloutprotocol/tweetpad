@@ -30,7 +30,7 @@ const GAMES = {
 };
 const MAX_BALANCE = 1 * SOL;   // a game balance holds at most this much: it is a key in a browser
 /* real-money play is refused where it is clearly not allowed (practice is open everywhere): Vercel's country header,
-   GAMBA_BLOCKED (comma separated ISO codes) replaces the default list */
+   GAMBA_BLOCKED (comma separated ISO codes) replaces the default list, and GAMBA_BLOCKED=none blocks nowhere */
 const BLOCKED = (process.env.GAMBA_BLOCKED || 'US,GB,FR,NL,AU,ES,IT,BE,DE,SG,CU,IR,KP,SY').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
 const PLAY_CU = 140000;     // playGame uses ~92k (simulated on mainnet), ~104k on a wallet's first play
 const SEAT_CU = 40000;
