@@ -306,7 +306,7 @@ async function record(req, res, signature) {
   for (const x of gambaEvents(tx.meta.logMessages || [])) if (x.creator === CREATOR && (meta = parseMeta(x.metadata))) { e = x; break; }
   if (!e) return fail(res, 400, 'not a tweetpad game play');
   const play = { sig: signature, user: e.user, ...meta, wager: Number(e.wager), payout: Number(e.payout), jackpot: Number(e.jackpotPayoutToUser),
-    at: (tx.blockTime || Date.now() / 1000) * 1000 };
+    fees: Number(e.creatorFee + e.gambaFee + e.poolFee + e.jackpotFee), at: (tx.blockTime || Date.now() / 1000) * 1000 };
   const key = 'gamba:' + meta.id;
   const [fresh] = await redis(['SET', 'gamba:seen:' + signature, '1', 'NX', 'EX', 7 * 86400]);
   if (fresh === 'OK') await redis(['LPUSH', key + ':plays', JSON.stringify(play)], ['LTRIM', key + ':plays', 0, LIST_MAX - 1],

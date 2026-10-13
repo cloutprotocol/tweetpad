@@ -612,9 +612,12 @@ const kit = {
     $('gk-totals').textContent = st.plays ? st.plays.toLocaleString() + ' plays · ' + sol(st.volume / 1e9) + ' SOL' : '';
     const ago = (t) => { const s = Math.max(1, (Date.now() - t) / 1000 | 0); return s < 60 ? s + 's' : s < 3600 ? (s / 60 | 0) + 'm' : s < 86400 ? (s / 3600 | 0) + 'h' : (s / 86400 | 0) + 'd'; };
     $('gk-feed').replaceChildren(...(info.plays.length ? info.plays.map(p => {
-      const win = p.payout + p.jackpot > 0;
+      /* what the play left the player with: the payout less the bet and its fees (plays listed before fees were kept: the game's rate) */
+      const fees = p.fees != null ? p.fees : p.wager * this.feeBps() / 10000, net = (p.payout + p.jackpot - p.wager - fees) / 1e9;
       return el('li', {}, el('span', { className: 'who', textContent: short(p.user) }), this.opts.feedCall(p), el('span', { textContent: sol(p.wager / 1e9) + ' · ' + ago(p.at) }),
-        el('a', { className: 'amt' + (win ? '' : ' lost'), href: EXPLORER + '/tx/' + p.sig, target: '_blank', rel: 'noopener', textContent: (win ? '+' + sol((p.payout + p.jackpot) / 1e9) : 'lost') + ' ↗' }));
+        el('a', { className: 'amt' + (net > 0 ? '' : ' lost'), href: EXPLORER + '/tx/' + p.sig, target: '_blank', rel: 'noopener',
+          title: p.payout ? 'Paid ' + sol((p.payout + p.jackpot) / 1e9) + ' SOL on a ' + sol(p.wager / 1e9) + ' SOL bet + ' + sol(fees / 1e9) + ' fees' : 'Lost the bet and its fees',
+          textContent: signed(net) + ' ↗' }));
     }) : [el('li', { className: 'empty', textContent: info.live ? 'No plays yet. Yours is the first.' : 'Real plays open soon. Practice meanwhile.' })]));
     const f = info.pool.fees;
     $('gk-fees').textContent = 'Each play costs your bet plus fees (' + f.creatorBps / 100 + '% tweetpad, ' + f.gambaBps / 100 + '% Gamba, ' + f.poolBps / 100 + '% the pool'
