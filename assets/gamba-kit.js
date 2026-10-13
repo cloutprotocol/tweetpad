@@ -127,7 +127,7 @@ function checkTx(tx, me, programs, check) {
     if (ix.program === COMPUTE) {
       const r = reader(ix.data, 1);
       if (ix.data[0] === 3 && r.u64() > 1000000n) throw new Error('the transaction sets a large priority fee');
-      if (ix.data[0] === 2 && r.u32() > 400000) throw new Error('the transaction asks for too much compute');
+      if (ix.data[0] === 2 && r.u32() > 600000) throw new Error('the transaction asks for too much compute');   // api/gamba.js MAX_CU
     } else if (!programs.includes(ix.program)) throw new Error('the transaction calls other programs');
   }
   check(t.ixs.filter(ix => ix.program !== COMPUTE));

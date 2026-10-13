@@ -32,9 +32,10 @@ const MAX_BALANCE = 1 * SOL;   // a game balance holds at most this much: it is 
 /* real-money play is refused where it is clearly not allowed (practice is open everywhere): Vercel's country header,
    GAMBA_BLOCKED (comma separated ISO codes) replaces the default list, and GAMBA_BLOCKED=none blocks nowhere */
 const BLOCKED = (process.env.GAMBA_BLOCKED || 'US,GB,FR,NL,AU,ES,IT,BE,DE,SG,CU,IR,KP,SY').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
-const PLAY_CU = 140000;     // playGame uses ~92k (simulated on mainnet), ~104k on a wallet's first play
-const SEAT_CU = 40000;
-const CU_PRICE = 100000;    // micro-lamports per CU: about 0.000014 SOL priority fee at the limit
+/* compute: a play is simulated with MAX_CU, then sent with what it used plus a margin (playGame used ~92k simulated on
+   mainnet, more when it has to create token accounts the player or the creator doesn't have yet) */
+const MAX_CU = 600000;
+const CU_PRICE = 100000;    // micro-lamports per CU: about 0.00002 SOL priority fee at 200k
 const LIST_MAX = 30;
 
 const pda = (...seeds) => PublicKey.findProgramAddressSync(seeds.map(s => (typeof s === 'string' ? Buffer.from(s) : s.toBuffer())), GAMBA)[0];
@@ -152,18 +153,20 @@ const seatIx = (user) => new TransactionInstruction({ programId: GAMBA, data: Bu
 const closeIx = (user) => new TransactionInstruction({ programId: GAMBA, data: Buffer.from(DISC.playerClose), keys: [
   { pubkey: user, isSigner: true, isWritable: true }, ...seatKeys(user)] });
 
-/* a transaction that would fail on chain never reaches the signer (Phantom flags dApps whose transactions fail) */
-async function simulationError(tx) {
+/* a transaction that would fail on chain never reaches the signer (Phantom flags dApps whose transactions fail); the
+   simulation also says how much compute it used */
+async function simulate(tx) {
   let sim;
   try {
     sim = await rpc('simulateTransaction', [tx.toString('base64'), { encoding: 'base64', sigVerify: false, replaceRecentBlockhash: true, commitment: 'confirmed' }]);
-  } catch { return null; }
+  } catch { return { error: null, units: null }; }
   const v = sim && sim.value;
-  if (!v || !v.err) return null;
+  if (!v) return { error: null, units: null };
+  if (!v.err) return { error: null, units: v.unitsConsumed || null };
   const logs = v.logs || [];
-  if (logs.some(l => /insufficient lamports|insufficient funds/i.test(l)) || /InsufficientFunds|AccountNotFound/.test(JSON.stringify(v.err))) return 'not enough SOL for the bet and fees';
+  if (logs.some(l => /insufficient lamports|insufficient funds/i.test(l)) || /InsufficientFunds|AccountNotFound/.test(JSON.stringify(v.err))) return { error: 'not enough SOL for the bet and fees' };
   const hint = [...logs].reverse().find(l => /Error Message|error|failed/i.test(l));
-  return 'Gamba would refuse this' + (hint ? ': ' + hint.replace(/^Program log: (AnchorError.*Error Message: )?/, '').slice(0, 160) : '');
+  return { error: 'Gamba would refuse this' + (hint ? ': ' + hint.replace(/^Program log: (AnchorError.*Error Message: )?/, '').slice(0, 160) : '') };
 }
 async function txOf(user, cu, ixs) {
   const { blockhash } = await connection().getLatestBlockhash('confirmed');
@@ -171,10 +174,16 @@ async function txOf(user, cu, ixs) {
   const message = new TransactionMessage({ payerKey: user, recentBlockhash: blockhash, instructions: [...budget, ...ixs] }).compileToV0Message();
   return Buffer.from(new VersionedTransaction(message).serialize());
 }
+/* a Gamba transaction: simulated at MAX_CU, then built again with the compute it used plus 20% */
+async function fitted(res, user, ixs, extra) {
+  const { error, units } = await simulate(await txOf(user, MAX_CU, ixs));
+  if (error) return fail(res, 400, error);
+  const cu = units ? Math.min(MAX_CU, Math.ceil(units * 1.2) + 5000) : MAX_CU;
+  return finish(res, await txOf(user, cu, ixs), user.toBase58(), extra, true);
+}
 const isWallet = (s) => isPubkey(s) && PublicKey.isOnCurve(new PublicKey(s).toBytes());
-async function finish(res, tx, signer, extra) {
-  const simErr = await simulationError(tx);
-  if (simErr) return fail(res, 400, simErr);
+async function finish(res, tx, signer, extra, simulated) {
+  if (!simulated) { const { error } = await simulate(tx); if (error) return fail(res, 400, error); }
   const parsed = signerKeys(tx);
   if (parsed.signers.length !== 1 || parsed.signers[0] !== signer) return fail(res, 502, 'built an unexpected transaction');
   return res.status(200).json({ ok: true, tx: tx.toString('base64'), ...extra });
@@ -195,7 +204,7 @@ async function build(req, res) {
 
   if (b.seat) {
     if (await connection().getAccountInfo(gameOf(user))) return fail(res, 409, 'this wallet already has its Gamba seat');
-    return finish(res, await txOf(user, SEAT_CU, [seatIx(user)]), b.publicKey, { game: gameOf(user).toBase58() });
+    return fitted(res, user, [seatIx(user)], { game: gameOf(user).toBase58() });
   }
 
   const id = b.game == null ? 'pumpordump' : b.game, rules = GAMES[id];
@@ -234,11 +243,9 @@ async function build(req, res) {
   const cap = Math.min(pool.maxPayout, rules.maxPayout || Infinity);
   if (wager * top / 10000 > cap) return fail(res, 400, 'that would pay more than ' + (cap / SOL).toFixed(2) + ' SOL: cash out');
 
-  let tx;
-  try { tx = await txOf(user, PLAY_CU, [playIx(user, wager, bet, clientSeed, metadata, rules.creatorBps, rules.jackpotBps)]); }
-  catch (err) { return fail(res, 502, 'could not build the play: ' + err.message); }
   const f = feesOf(id, pool), feeBps = f.creatorBps + f.gambaBps + f.poolBps + f.jackpotBps;
-  return finish(res, tx, b.publicKey, { game: gameOf(user).toBase58(), bet, cost: wager + Math.ceil(wager * feeBps / 10000) });
+  return fitted(res, user, [playIx(user, wager, bet, clientSeed, metadata, rules.creatorBps, rules.jackpotBps)],
+    { game: gameOf(user).toBase58(), bet, cost: wager + Math.ceil(wager * feeBps / 10000) });
 }
 
 /* ---------- the game balance: a top-up from the wallet, and everything back to it ---------- */
