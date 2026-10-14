@@ -1,5 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/t", "destination": "/c/BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN", "permanent": false },
+    { "source": "/t/", "destination": "/c/BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN", "permanent": false }
+  ],
   "rewrites": [
     {
       "source": "/c/:mint",

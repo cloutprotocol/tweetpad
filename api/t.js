@@ -7,6 +7,7 @@
 // GET /api/t?chain&address         → the page (HTML)
 // GET /api/t?chain&address&img=1   → its card image, a 1080×1080 PNG in the 2012 skin with the chain on it (/<chain>/<address>/card.png)
 // GET /api/t?find=<address>        → /t/<address>: to the token's page on the chain it trades on (a Solana address is Solana's)
+//                                    (nothing found: home, the Menu; a bare /t or /t/ goes to $TP's card, vercel.json)
 const { isPubkey, isEvmAddress, redis, rateLimit } = require('./_lib');
 const { token, findChain, chainOf, fitsChain, SHORT, NAME } = require('./token');
 
@@ -206,12 +207,13 @@ module.exports = async (req, res) => {
   const q = req.query || {};
   const origin = (req.headers['x-forwarded-proto'] || 'https').split(',')[0] + '://' + (req.headers['x-forwarded-host'] || req.headers.host || 'www.tweetpad.io');
   const frame = q.embed != null ? 'embed' : q.popup != null ? 'popup' : '';
-  /* /t/<address>: find its chain, then its page */
+  /* /t/<address>: find its chain, then its page. The link gets posted (and X links a bare or mistyped one too), so one that finds
+     nothing goes home to the Menu, which plays as a card, rather than to an error */
   if (q.find != null) {
     const address = String(q.find);
     let chain = null;
     if (isPubkey(address) || isEvmAddress(address)) chain = await findChain(address).catch(() => null);
-    if (!chain) { res.setHeader('content-type', 'text/html; charset=utf-8'); res.setHeader('cache-control', 'public, s-maxage=60'); return res.status(404).send(missing(null, address)); }
+    if (!chain) return elsewhere(req, res, frame ? '/?' + frame : '/');
     return elsewhere(req, res, '/' + SHORT[chain] + '/' + address + (frame ? '?' + frame : ''));
   }
   const chain = chainOf(String(q.chain || ''));
