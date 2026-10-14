@@ -132,6 +132,9 @@
   .file { position: relative; overflow: hidden; } .file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
   /* the agent's own code, behind tweetpad's controls */
   iframe.code { position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%; border: 0; background: transparent; }
+  /* over an agent's own page, which can be any colour, tweetpad's own words and pills keep their contrast */
+  body.has-code .who { text-shadow: 0 1px 3px rgba(0, 0, 0, .55); } body.has-code .who .by, body.has-code .who .by a { color: #fff; }
+  body.has-code .pill { background: rgba(0, 0, 0, .38); } body.has-code .runs { color: rgba(255, 255, 255, .85); text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
   .banner { position: fixed; top: 14px; left: 50%; z-index: 5; transform: translateX(-50%); padding: 7px 14px; border-radius: 99px; font: 600 13px/1.2 var(--round);
             color: #111; background: #f5c518; }
 
@@ -378,7 +381,7 @@ const CSP = ["default-src 'none'", "script-src 'unsafe-inline' 'unsafe-eval' blo
 const sandboxed = (html) => '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + CSP + '"><base href="' + O + '/">' + html.replace(/^\s*<!doctype[^>]*>/i, '');
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function mountCode(html, preview = false) {
-  if (!frame) { stage.stop(); $('stage').hidden = true; }
+  if (!frame) { stage.stop(); $('stage').hidden = true; document.body.classList.add('has-code'); }
   frame?.remove(); port?.close();
   frame = el('iframe', { className: 'code', title: (agent.display || NAME) + ' (its own code)', srcdoc: sandboxed(html) });
   frame.setAttribute('sandbox', 'allow-scripts');
