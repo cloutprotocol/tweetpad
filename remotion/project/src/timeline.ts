@@ -830,3 +830,46 @@ export const SHILL_COPY = {
     end: "tweetpad.io · demo tokens and numbers throughout · not financial advice.",
   },
 } as const;
+
+/* =========================================================================================
+ * Film 18: "Walkthrough" (TweetpadWalkthrough)
+ * Everything tweetpad does, one channel at a time from the home Menu (index.html's open/close): launch on five chains, Hooks Launch
+ * (a custom Uniswap v4 fee hook on Ethereum), Bordrless tokens, Games on Gamba, the social side (Feed, Profile). Any-token links
+ * and shilling are film 17's. Frames are absolute, as in film 16. 1585 f = 52.8 s.
+ * ========================================================================================= */
+export const WALK = {
+  title: { from: 0, dur: 75 },
+  menu: { from: 75, dur: 75 },
+  launch: { at: 165, len: 250 },     // the form; the chain switch steps Solana → Robinhood → BNB → Base → Ethereum
+  hooks: { at: 435, len: 170 },      // /custom: the Ethereum launch with its own fee hook; the fee and the start are picked
+  bordrless: { at: 625, len: 170 },  // /borderless: every Bordrless token, rules in every trade
+  games: { at: 815, len: 190 },      // /games: Pump or Dump and Mines, on Gamba
+  feed: { at: 1025, len: 180 },      // a post with a coin tagged; it lands on the timeline
+  profile: { at: 1225, len: 170 },   // creator fees and holder rewards, claimed
+  outro: { from: 1395, dur: 40 },
+  end: { from: 1435, dur: 150 },
+} as const;
+export const WALK_TOTAL = WALK.end.from + WALK.end.dur; // 1585 f = 52.8 s
+
+export const WALK_COPY = {
+  title: { line: "The first launchpad inside an @X post." },
+  menu: { tag: "TWEETPAD", head: "Everything, inside the tweet.", head2: "Pick a channel." },
+  launch: { tag: "LAUNCH", head: "Launch on five chains.", chains: ["Solana · pump.fun", "Robinhood Chain", "BNB Chain", "Base", "Ethereum · Launch Party"] },
+  hooks: { tag: "HOOKS LAUNCH", head: "Your own fee hook.", head2: "Uniswap v4 on Ethereum." },
+  bordrless: { tag: "BORDRLESS", head: "Tokens with their own rules.", head2: "Launch and trade them here." },
+  games: { tag: "GAMES", head: "Games, on Gamba.", head2: "Pump or Dump. Mines. In the post." },
+  feed: { tag: "SOCIAL", head: "Post, retweet, like.", head2: "Tag a coin in your post." },
+  profile: { tag: "PROFILE", head: "Your coins and rewards.", head2: "Claimed from the card." },
+  outro: { head: "One card.", head2: "Every chain." },
+  end: { tagline: "The first launchpad inside an @X post.", cc: "Solana · Robinhood Chain · BNB Chain · Base · Ethereum" },
+  fine: {
+    menu: "tweetpad.io",
+    launch: "Demo coin. Launch and network fees vary by chain. Robinhood, BNB, Base: 1% creator fee, 10% of the fee to Launch Party SDK.",
+    hooks: "Demo coin. Hooks Launch goes through Launch Party on Ethereum: 0.001 ETH launch fee + gas · fixed or upgradeable in public.",
+    bordrless: "Demo coins. Bordrless launch about 0.035 SOL · Bordrless doesn't run or endorse tweetpad · tweetpad takes nothing.",
+    games: "Built on Gamba's open protocol; Gamba doesn't run or endorse tweetpad. Practice free; real plays SOL, 18+, only where legal.",
+    feed: "Demo posts.",
+    profile: "Demo numbers. Robinhood Chain: 1% creator fee, 10% of the fee to Launch Party SDK; holders earn ETH rewards.",
+    end: "tweetpad.io · demo coins and numbers throughout · not financial advice.",
+  },
+} as const;

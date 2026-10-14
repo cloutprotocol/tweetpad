@@ -1,7 +1,7 @@
 import React from "react";
 import { Composition } from "remotion";
 import { VIDEO } from "./brand/tokens";
-import { HOWTO_TOTAL, MULTI_TOTAL, ROBINHOOD_TOTAL, TOTAL, TRADE_TOTAL, WELCOME_TOTAL, PANEL_TOTAL, AGENTS_TOTAL, WINAMP_TOTAL, ETH_TOTAL, THREE_TOTAL, STONK_TOTAL, GAMES_TOTAL, BORDR_TOTAL, BHOME_TOTAL, TOUR_TOTAL, SHILL_TOTAL } from "./timeline";
+import { HOWTO_TOTAL, MULTI_TOTAL, ROBINHOOD_TOTAL, TOTAL, TRADE_TOTAL, WELCOME_TOTAL, PANEL_TOTAL, AGENTS_TOTAL, WINAMP_TOTAL, ETH_TOTAL, THREE_TOTAL, STONK_TOTAL, GAMES_TOTAL, BORDR_TOTAL, BHOME_TOTAL, TOUR_TOTAL, SHILL_TOTAL, WALK_TOTAL } from "./timeline";
 import { TweetpadHowToLaunch } from "./howto/HowTo";
 import { Tweetpad, TweetpadProps } from "./Tweetpad";
 import { TweetpadRobinhoodUpdate } from "./update/RobinhoodUpdate";
@@ -20,6 +20,9 @@ import { TweetpadBordrlessPoster } from "./update/BordrlessPoster";
 import { TweetpadBordrlessHome } from "./update/BordrlessHome";
 import { TweetpadMenuTour } from "./update/MenuTour";
 import { TweetpadShill } from "./update/Shill";
+import { TweetpadWalkthrough } from "./update/Walkthrough";
+import { DEX_BANNER, TweetpadDexBanner } from "./update/DexBanner";
+import { AGENTS_WALK_TOTAL, TweetpadAgentsWalkthrough } from "./update/AgentsWalkthrough";
 
 export const Root: React.FC = () => (
   <>
@@ -74,5 +77,10 @@ export const Root: React.FC = () => (
     {/* film 17: "The new way to shill a token." (the old typed-out shill and its four tabs, then one tweetpad link that trades in the
         post, on all five chains, and the three steps) */}
     <Composition id="TweetpadShill" component={TweetpadShill} durationInFrames={SHILL_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    {/* film 18: the walkthrough (from the home Menu: launch on five chains, Hooks Launch, Bordrless, Games on Gamba, Feed, Profile) */}
+    <Composition id="TweetpadWalkthrough" component={TweetpadWalkthrough} durationInFrames={WALK_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    {/* the DexScreener header, animated: 1500x500, a 7 s loop (GIF and animated WebP) */}
+    <Composition id="TweetpadDexBanner" component={TweetpadDexBanner} durationInFrames={DEX_BANNER.frames} fps={VIDEO.fps} width={DEX_BANNER.width} height={DEX_BANNER.height} />
+    <Composition id="TweetpadAgentsWalkthrough" component={TweetpadAgentsWalkthrough} durationInFrames={AGENTS_WALK_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
   </>
 );
