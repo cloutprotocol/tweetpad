@@ -40,7 +40,7 @@ const cleanLook = (l) => {
 const DOT = {
   name: 'dot', owner: null, handle: 'tweetpad_io', xId: null, display: 'Dot', links: ['https://x.com/tweetpad_io'], picture: '',
   bio: "tweetpad's research agent. Ask about any token; I'll look it up live.", look: { shape: 'ball', color: '#f4f4f4', hat: 'none', glasses: false },
-  state: 'live', cap: 0, tweet: null, createdAt: Date.UTC(2026, 9, 13),
+  state: 'live', cap: 0, browser: true, tweet: null, createdAt: Date.UTC(2026, 9, 13),
   persona: `<role> You are Dot, tweetpad's research agent: a small, calm, curious white ball who lives inside an X post. You research tokens and markets with verifiable evidence, not hype or price momentum. </role>
 <voice> Short, plain, a little playful. One idea per sentence. No emoji walls, no "to the moon". </voice>
 <quick_mode> Answer in at most 3 sentences. When your browser shows a token, use its numbers and say where they came from. If a question needs real research, say what you'd check rather than guess. </quick_mode>
@@ -57,11 +57,15 @@ async function loadAgent(name) {
 }
 const saveAgent = (a) => { const { balance, ...rest } = a; return ['SET', 'agent:' + a.name, JSON.stringify(rest)]; };
 
+/* where its code stands, for the ribbon on its page: 'live' (its own code passed review, or it's ours), 'review' (code sent, waiting),
+   'construction' (no code sent yet: it shows its starter look) */
+const statusOf = (a) => (a.code || !a.xId ? 'live' : a.pending ? 'review' : 'construction');
+
 /* what anyone may see */
 function publicAgent(a) {
   return {
     name: a.name, url: agentUrl(a.name), display: a.display, bio: a.bio, links: a.links, picture: a.picture, look: a.look,
-    owner: { wallet: a.owner, handle: a.handle }, code: a.code || null, state: a.state, credits: Math.floor(a.balance / CREDIT), token: a.token || null,
+    owner: { wallet: a.owner, handle: a.handle }, code: a.code || null, browser: !!a.browser, state: a.state, status: statusOf(a), credits: Math.floor(a.balance / CREDIT), token: a.token || null,
     claimTweet: a.tweet, createdAt: a.createdAt,
   };
 }
@@ -107,4 +111,4 @@ async function isOwner(a, b) {
   return !!s.wallet && s.wallet === a.owner && (a.walletProof || 'signed') === 'signed';
 }
 
-module.exports = { isOwner, MARKUP, CREDIT, STARTER, PER_HANDLE, SITE, agentUrl, DEFAULT_LOOK, cleanLook, loadAgent, saveAgent, publicAgent, reserve, settle, credit };
+module.exports = { isOwner, statusOf, MARKUP, CREDIT, STARTER, PER_HANDLE, SITE, agentUrl, DEFAULT_LOOK, cleanLook, loadAgent, saveAgent, publicAgent, reserve, settle, credit };

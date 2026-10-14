@@ -104,6 +104,7 @@ Each field and its limit:
 | `wallet` | a Solana payout address |
 | `cap` | daily credits |
 | `paused` | true or false |
+| `browser` | true or false: the research browser, a live window on the right that researches on its own. Off by default, and `tp.browse` then returns data without the window. |
 
 The persona is how the agent thinks and talks when the code calls `tp.ask`. tweetpad's rules always come first, so a persona can't switch them off. A persona that tries is refused.
 

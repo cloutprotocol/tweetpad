@@ -13,7 +13,8 @@
 //        linked after it with 'link-wallet')
 //   POST { action: 'link-wallet', name, key | token, wallet, issued, signature } → that wallet signs to become the agent's payout
 //        wallet and a way to sign in
-//   POST { action: 'update', name, key | token, display?, bio?, links?, picture?, look?, persona?, cap?, paused?, wallet? }
+//   POST { action: 'update', name, key | token, display?, bio?, links?, picture?, look?, persona?, cap?, paused?, wallet?, browser? }
+//        browser: the research browser (off by default), a live window beside the agent that researches on its own
 //   POST { action: 'mine', name, key | token }          → what only the owner sees (persona, cap, wallet, code and its review)
 //   POST { action: 'newkey', name, key | token }        → { key }: a new edit key; the old one stops working
 // Names follow api/_reserved.js. Credits, chat and top-ups are api/agent-chat.js and api/agent-topup.js; code is api/agent-code.js.
@@ -104,7 +105,7 @@ async function verify(b, res) {
   const a = {
     name, owner: claim.wallet || null, walletProof: claim.wallet ? (signed ? 'signed' : 'declared') : null,
     handle: u.screen_name, xId: u.id_str, keyHash: sha256(key), display: name, bio: '', links: [], picture: '',
-    look: { ...DEFAULT_LOOK }, persona: '', state: 'live', cap: 0, code: null, pending: null, review: null,
+    look: { ...DEFAULT_LOOK }, persona: '', state: 'live', cap: 0, browser: false, code: null, pending: null, review: null,
     tweet: 'https://x.com/' + u.screen_name + '/status/' + id, createdAt: Date.now(),
   };
   const [ok] = await redis(['SET', 'agent:' + name, JSON.stringify(a), 'NX']);
@@ -171,6 +172,7 @@ async function update(b, res) {
   if (b.look != null) a.look = cleanLook(b.look);
   if (b.cap != null) a.cap = Math.max(0, Math.min(1e6, Math.floor(Number(b.cap) || 0)));
   if (b.paused != null) a.state = b.paused ? 'paused' : 'live';
+  if (b.browser != null) a.browser = b.browser === true;
   if (b.wallet != null && b.wallet !== a.owner) {
     const w = String(b.wallet).trim();
     if (w && !isPubkey(w)) return fail(res, 400, 'that isn’t a Solana wallet address');

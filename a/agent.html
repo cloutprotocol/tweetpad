@@ -130,11 +130,27 @@
   .flags { margin: 6px 0 0; padding-left: 18px; font-size: 12px; color: #f5c518; }
   .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; } .btns .btn { display: inline-flex; align-items: center; padding: 10px 14px; font-size: 14px; text-decoration: none; }
   .file { position: relative; overflow: hidden; } .file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  /* the corner ribbon: an agent with no code sent yet is under construction (caution tape), one whose code waits for review says
+     so in blue; the words run along it like a marquee */
+  .ribbon { position: fixed; top: 38px; right: -78px; z-index: 3; width: 320px; padding: 7px 0; overflow: hidden; transform: rotate(38deg); pointer-events: none;
+            color: #111; background: #f5c518; border-block: 5px solid transparent;
+            border-image: repeating-linear-gradient(-45deg, #111 0 7px, #f5c518 7px 14px) 5; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+  .ribbon.review { color: #fff; background: #1d6ff2; border-image: repeating-linear-gradient(-45deg, #fff 0 7px, #1d6ff2 7px 14px) 5; }
+  .ribbon .track { display: flex; width: max-content; animation: marquee 9s linear infinite; font: 600 13px/1 var(--round); letter-spacing: .1em; white-space: nowrap; }
+  .ribbon .track span { padding: 0 12px; }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+  html[data-mode="embed"] .ribbon { top: 24px; right: -74px; width: 250px; padding: 5px 0; border-width: 4px; }
+  html[data-mode="embed"] .ribbon .track { font-size: 10px; }
+  html[data-mode="card"] .ribbon { display: none; }
+  @media (prefers-reduced-motion: reduce) { .ribbon .track { animation: none; } }
   /* the agent's own code, behind tweetpad's controls */
   iframe.code { position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%; border: 0; background: transparent; }
   /* over an agent's own page, which can be any colour, tweetpad's own words and pills keep their contrast */
-  body.has-code .who { text-shadow: 0 1px 3px rgba(0, 0, 0, .55); } body.has-code .who .by, body.has-code .who .by a { color: #fff; }
-  body.has-code .pill { background: rgba(0, 0, 0, .38); } body.has-code .runs { color: rgba(255, 255, 255, .85); text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+  body.has-code .who { padding: 10px 12px; border-radius: 14px; background: rgba(17, 17, 17, .82); backdrop-filter: blur(8px); }
+  body.has-code .who .by, body.has-code .who .by a { color: #c9cdd2; }
+  body.has-code .pill { background: rgba(17, 17, 17, .82); } body.has-code .say { background: rgba(17, 17, 17, .86); }
+  body.has-code .runs { padding: 3px 7px; border-radius: 99px; color: #c9cdd2; background: rgba(17, 17, 17, .7); }
+  html[data-mode="embed"] body.has-code .who { top: 44px; padding: 6px 9px; border-radius: 10px; }
   .banner { position: fixed; top: 14px; left: 50%; z-index: 5; transform: translateX(-50%); padding: 7px 14px; border-radius: 99px; font: 600 13px/1.2 var(--round);
             color: #111; background: #f5c518; }
 
@@ -147,12 +163,13 @@
   html[data-mode="embed"] .who { top: 44px; left: 12px; max-width: 220px; }
   html[data-mode="embed"] .who h1 { font-size: 16px; } html[data-mode="embed"] .who h1 img { width: 22px; height: 22px; }
   html[data-mode="embed"] .who .by { font-size: 11px; } html[data-mode="embed"] :is(.who p, .who .links, .edit, .runs) { display: none; }
-  html[data-mode="embed"] .bubble { left: 27%; top: 96px; max-width: 230px; padding: 10px 13px; font-size: 14px; border-radius: 16px; }
+  html[data-mode="embed"] .bubble { left: 50%; top: 96px; max-width: 260px; padding: 10px 13px; font-size: 14px; border-radius: 16px; }
+  html[data-mode="embed"] body.has-browser .bubble { left: 27%; max-width: 230px; }
   html[data-mode="embed"] .say { bottom: 10px; width: calc(100% - 20px); padding: 6px; border-radius: 16px; }
   html[data-mode="embed"] .say input { padding: 10px 12px; font-size: 15px; }
   html[data-mode="embed"] .btn { padding: 10px 14px; font-size: 15px; }
   html[data-mode="embed"] .log { bottom: 70px; }
-  html[data-mode="embed"] .zz { left: 27%; }
+  html[data-mode="embed"] body.has-browser .zz { left: 27%; }
   html[data-mode="card"] :is(.say, .log, .bubble, .kit-browser, .top, .edit, .runs) { display: none !important; }
   html[data-mode="card"] .who { top: 7%; left: 0; right: 0; max-width: none; text-align: center; }
   html[data-mode="card"] .who h1 { justify-content: center; font-size: 64px; } html[data-mode="card"] .who h1 img { width: 64px; height: 64px; border-radius: 14px; }
@@ -256,8 +273,16 @@ const stage = createStage($('stage'), { layout: MODE });
 let agent = null, state = 'loading';
 const bubble = $('bubble'), log = $('log'), input = $('msg'), send = $('send');
 
+/* where an agent's own code asked the bubble to point (tp.place); the bubble moves sideways to stay inside the frame */
+let anchor = null;
+function placeBubble() {
+  if (!anchor) return;
+  const w = bubble.offsetWidth, x = Math.min(innerWidth - w / 2 - 8, Math.max(w / 2 + 8, anchor.x * innerWidth));
+  Object.assign(bubble.style, { left: x + 'px', top: 'auto', bottom: (1 - anchor.y) * innerHeight + 'px' });
+}
+addEventListener('resize', placeBubble);
 function say(text, happy = false) {
-  bubble.textContent = text; bubble.classList.remove('gone');
+  bubble.textContent = text; bubble.classList.remove('gone'); placeBubble();
   stage.talk(); if (happy) stage.pleased();
 }
 function thinking() { bubble.replaceChildren(el('span', { className: 'dots', innerHTML: '<i></i><i></i><i></i>' })); bubble.classList.remove('gone'); }
@@ -271,6 +296,13 @@ function renderWho() {
   const links = agent.links && agent.links.length ? el('div', { className: 'links' }, agent.links.map(u => el('a', { href: u, target: '_blank', rel: 'nofollow ugc noopener', textContent: new URL(u).hostname.replace(/^www\./, '') }))) : null;
   const edit = agent.owner.handle && agent.name !== 'dot' && !embed ? el('button', { className: 'pill edit', type: 'button', textContent: 'Edit agent', onclick: () => { forget(); openEdit(); } }) : null;
   w.replaceChildren(...[el('h1', {}, pic, agent.display || agent.name), by, agent.bio ? el('p', { textContent: agent.bio }) : null, links, edit].filter(Boolean));
+}
+function renderRibbon() {
+  document.querySelector('.ribbon')?.remove();
+  if (!agent || agent.status === 'live' || !agent.status) return;
+  const words = agent.status === 'review' ? 'Under review' : 'Under construction';
+  const track = el('div', { className: 'track' }, Array.from({ length: 8 }, () => el('span', { textContent: words + ' ·' })));
+  document.body.append(el('div', { className: 'ribbon' + (agent.status === 'review' ? ' review' : ''), role: 'status', ariaLabel: NAME + ' is ' + words.toLowerCase() }, track));
 }
 function renderFuel() {
   const b = $('topup');
@@ -354,8 +386,8 @@ async function load() {
       const code = await api('/api/agent-code?name=' + encodeURIComponent(NAME)).catch(() => null);
       if (code && code.html) mountCode(code.html);
     }
-    if (!card && !browser && !frame) browser = createBrowser(document.body, { title: (agent.display || agent.name) + "'s browser" });
-    renderWho(); renderFuel();
+    if (agent.browser && !frame) openBrowser();
+    renderWho(); renderFuel(); renderRibbon();
     setState(agent.state === 'paused' ? 'paused' : agent.credits <= 0 ? 'sleeping' : 'live');
     return out;
   }
@@ -367,8 +399,20 @@ async function load() {
   return out;
 }
 
-/* ---------- the browser: only a claimed agent has one; the claim pages show how agents work there instead ---------- */
+/* ---------- the research browser: off unless the owner turns it on (Edit → Research browser); then a live window beside the
+   agent reads tweetpad pages and tokens on its own, and opens what visitors ask about. Without it an agent still looks tokens up,
+   it just doesn't show the window. The claim pages show how agents work there instead. ---------- */
 let browser = null;
+function openBrowser(tour) {
+  if (browser || card) return browser;
+  browser = createBrowser(document.body, { title: (agent.display || agent.name) + "'s browser", ...(tour && { tour }) });
+  document.body.classList.add('has-browser'); stage.setAside(true);
+  return browser;
+}
+/* a token's numbers in one line, for the model, when there's no browser to read them from */
+const seeingOf = (t) => (t && t.market ? '$' + t.symbol + ' on ' + t.chainName + ': ' + usd(t.market.mcap) + ' market cap, ' + usd(t.market.liquidity) + ' liquidity, '
+  + usd(t.market.volume24h) + ' 24h volume' + (t.market.holders ? ', ' + num(t.market.holders) + ' holders' : '') + ' (source: DexScreener via tweetpad)' : '');
+let seeing = '';
 
 /* ---------- its own code (spec: "The runtime"): a sandboxed frame with an opaque origin (no tweetpad.io cookies, storage or
    wallets) and no network (its CSP goes in first, before any of its own markup), reached only through the bridge, /kit/v1/sdk.js.
@@ -404,11 +448,17 @@ async function onBridge({ data: m }) {
     const a0 = (m.args || [])[0];
     if (m.method === 'say') { say(String(a0 == null ? '' : a0).slice(0, 280)); return answer(true, null); }
     if (m.method === 'credits') return answer(true, agent.credits);
+    /* where the speech bubble points: a spot just above the character, as fractions of the frame */
+    if (m.method === 'place') {
+      const k = (v, lo, hi) => Math.min(hi, Math.max(lo, Number(v) || 0));
+      anchor = { x: k(a0 && a0.x, 0, 1), y: k(a0 && a0.y, 0.12, 0.9) }; placeBubble();
+      return answer(true, null);
+    }
     if (m.method === 'ask') {
       if (asks <= 0) throw new Error('ask() is allowed twice per visitor message');
       asks--;
       const messages = (Array.isArray(a0) ? a0 : []).slice(-8).map(x => ({ role: x && x.role === 'assistant' ? 'assistant' : 'user', content: String((x && x.content) || '').slice(0, 500) }));
-      const out = await api('/api/agent-chat', { name: NAME, messages, seeing: browser ? browser.seeing : '' });
+      const out = await api('/api/agent-chat', { name: NAME, messages, seeing: browser ? browser.seeing : seeing });
       if (out.reply) { agent.credits = out.credits; renderFuel(); port.postMessage({ event: 'credits', data: { credits: out.credits } }); return answer(true, { reply: out.reply, credits: out.credits }); }
       if (out.state === 'offline') return answer(true, { reply: lineFor((messages.at(-1) || {}).content || ''), credits: agent.credits, offline: true });
       if (out.state === 'sleeping') { agent.credits = 0; renderFuel(); setState('sleeping'); port.postMessage({ event: 'sleep' }); throw new Error('sleeping: out of credits'); }
@@ -416,7 +466,8 @@ async function onBridge({ data: m }) {
     }
     if (m.method === 'lookup') return answer(true, tokenData(await lookup(String(a0 || ''))));
     if (m.method === 'browse') {
-      if (!browser) browser = createBrowser(document.body, { title: (agent.display || agent.name) + "'s browser", tour: [] });
+      if (!agent.browser) { const t = a0 && a0.token ? await lookup(String(a0.token)) : typeof a0 === 'string' ? await lookup(a0) : null; seeing = seeingOf(t); return answer(true, tokenData(t)); }
+      openBrowser([]);
       const page = a0 && typeof a0.page === 'string' && /^\/(?!\/)[\w\-/?=&.%]*$/.test(a0.page) ? a0.page : null;
       const task = page ? { page, title: String(a0.title || 'tweetpad').slice(0, 40), notes: (Array.isArray(a0.notes) ? a0.notes : []).slice(0, 4).map(n => esc(String(n).slice(0, 120))) }
         : { token: String((a0 && a0.token) || a0 || '') };
@@ -436,7 +487,7 @@ const lineFor = (text) => { for (const [re, l] of LINES) if (re.test(text)) retu
 let busy = false;
 async function reply(text) {
   history.push({ role: 'user', content: text });
-  const out = await api('/api/agent-chat', { name: NAME, messages: history.slice(-8), seeing: browser ? browser.seeing : '' }).catch((e) => ({ error: errText(e) }));
+  const out = await api('/api/agent-chat', { name: NAME, messages: history.slice(-8), seeing: browser ? browser.seeing : seeing }).catch((e) => ({ error: errText(e) }));
   if (out.reply) {
     history.push({ role: 'assistant', content: out.reply });
     agent.credits = out.credits; renderFuel();
@@ -469,6 +520,10 @@ async function talk() {
       const t = await browser.research({ token });
       if (!t) say('couldn’t find a market for that one on our chains 🤔');
       else { thinking(); await reply(text); }
+    } else if (token) {
+      const t = await lookup(token);
+      if (!t || !t.market) say('couldn’t find a market for that one on our chains 🤔');
+      else { seeing = seeingOf(t); await reply(text); }
     } else await reply(text);
   } finally { busy = false; send.disabled = false; if (!embed) input.focus(); }
 }
@@ -719,6 +774,7 @@ async function openEdit() {
         const r = await fetch('/api/agent-code', { method: 'POST', body: await f.arrayBuffer(), headers: { 'content-type': 'application/octet-stream', 'x-agent': NAME, ...(auth.key ? { 'x-key': auth.key } : { 'x-token': auth.token }) } });
         const out = await r.json(); if (!r.ok) throw new Error(out.error);
         mine.pending = out.pending; drawCode();
+        if (!agent.code) { agent.status = 'review'; renderRibbon(); }
       } catch (e) { codeStatus.append(note(errText(e), 'bad')); }
     });
     const btns = [el('label', { className: 'btn blue file' }, mine.pending ? 'Upload a new version' : 'Upload your .html', file),
@@ -748,6 +804,7 @@ async function openEdit() {
   const wallet = el('input', { value: mine.wallet || '', placeholder: 'Solana address (optional)' });
   const cap = el('input', { type: 'number', min: '0', value: mine.cap || '', placeholder: 'no cap' });
   const paused = el('input', { type: 'checkbox', checked: agent.state === 'paused' });
+  const browses = el('input', { type: 'checkbox', checked: !!agent.browser });
   let picture = agent.picture || '';
   const picNote = note(picture ? 'Picture set.' : 'Square PNG, JPG or WebP, up to 4 MB.');
   const pic = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp' });
@@ -773,7 +830,8 @@ async function openEdit() {
     save.disabled = true; status.replaceChildren(note('Saving…'));
     try {
       const out = await api('/api/agent', { action: 'update', name: NAME, ...auth, display: display.value, bio: bio.value, links: links.map(i => i.value).filter(Boolean),
-        picture, look, persona: persona.value, wallet: wallet.value.trim(), cap: Number(cap.value) || 0, paused: paused.checked });
+        picture, look, persona: persona.value, wallet: wallet.value.trim(), cap: Number(cap.value) || 0, paused: paused.checked, browser: browses.checked });
+      if (!!out.agent.browser !== !!agent.browser) { location.reload(); return; }   // the browser comes and goes with a fresh page
       agent = { ...agent, ...out.agent }; renderWho(); renderFuel();
       setState(agent.state === 'paused' ? 'paused' : agent.credits <= 0 ? 'sleeping' : 'live');
       status.replaceChildren(note('Saved.', 'good')); say('ooh, I like it. ☺️', true);
@@ -792,6 +850,8 @@ async function openEdit() {
     el('label', { textContent: 'Persona: how it thinks and talks. tweetpad’s rules always come first.' }), persona,
     el('label', { textContent: 'Payout wallet' }), wallet,
     el('label', { textContent: 'Daily spend cap, in credits' }), cap,
+    el('h3', { textContent: 'Toolkit' }),
+    el('label', { className: 'check' }, browses, 'Research browser: a live window beside it that reads tokens and tweetpad pages on its own, and opens what visitors ask about'),
     el('label', { className: 'check' }, paused, 'Paused (it sleeps and won’t answer)'),
     el('div', { className: 'row' }, save), status,
     el('div', { className: 'or' }, el('a', { href: '#', textContent: 'Make a new edit key', onclick: async (e) => {

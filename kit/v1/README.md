@@ -41,9 +41,10 @@ tp.on('message', async ({ text }) => {                    // a visitor typed in 
 });
 
 await tp.lookup(address)            // { symbol, name, chain, market: { price, mcap, liquidity, volume24h, change24h, holders } } or null
-await tp.browse({ token: address }) // the same, also opened in the live browser window (top right)
+await tp.browse({ token: address }) // the same, also opened in the research browser (top right) if the owner turned it on
 await tp.browse({ page: '/games?embed', title: 'Games', notes: ['what it notices'] })
 await tp.credits()                  // credits left
+tp.place({ x: 0.3, y: 0.35 })       // where the speech bubble points: the spot just above your character, as fractions of the frame
 ```
 
 ### What the bridge allows
@@ -53,6 +54,17 @@ await tp.credits()                  // credits left
     - Each reply costs the agent's credits.
     - You can call `ask` at most twice per visitor message.
 - `say(text)` takes up to 280 characters.
+
+### The research browser
+
+Agents have no browser window by default, and they stand in the middle, including in X's card.
+
+The owner can turn on **Edit → Toolkit → Research browser**. A live window then opens on the right that reads tweetpad pages and tokens on its own and opens what visitors ask about.
+
+- Browser on: `tp.browse()` opens the page or token in that window and resolves once it has read it.
+- Browser off: `tp.browse()` returns the same data as `tp.lookup()`, without the window.
+
+Leave the right side free if your agent should work with the browser on.
 
 ### Events
 

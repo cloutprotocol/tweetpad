@@ -1,7 +1,7 @@
 /* tweetpad agent kit v1: the character. A three.js stage and one agent on it, built from a look:
      { shape: 'ball' | 'oval' | 'box' | 'tilted' | 'mallow', color: '#rrggbb', hat: 'none' | 'sombrero', glasses: bool, gloss?: bool }
    It follows the pointer, blinks, bobs, hops when it talks (talk()), squints when pleased (pleased()), dozes (sleep(true)) and can be
-   drawn smaller (setSize(0.75)).
+   drawn smaller (setSize(0.75)). In X's card it stands in the middle, or left of centre with setAside(true) when a browser sits beside it.
    Dot (/dot) and every agent page (/a/<name>) are drawn with this, so creators get the same character we use.
      import { createStage } from '/kit/v1/character.js';
      const stage = createStage(canvas, { layout: 'page' | 'embed' | 'card' });
@@ -102,7 +102,7 @@ export function buildCharacter(look) {
   return { group, face: l.shape === 'ball' ? face : null, eyes };
 }
 
-export function createStage(canvas, { layout = 'page', still = matchMedia('(prefers-reduced-motion: reduce)').matches } = {}) {
+export function createStage(canvas, { layout = 'page', aside = false, still = matchMedia('(prefers-reduced-motion: reduce)').matches } = {}) {
   const card = layout === 'card', embed = layout === 'embed';
   if (card) still = true;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: card });
@@ -130,7 +130,7 @@ export function createStage(canvas, { layout = 'page', still = matchMedia('(pref
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.position.set(0, 0.15, card ? 7.2 : embed ? 8.2 : w / h < 0.8 ? 7.8 : 6.2);
-    if (embed) camera.position.set(1.15, 0.05, 8.2);   // X's card: the agent sits left of its browser
+    if (embed) camera.position.set(aside ? 1.15 : 0, 0.05, 8.2);   // X's card: centred, or left of its browser when it has one
     if (card) camera.position.y = 0.62;
     camera.updateProjectionMatrix();
   }
@@ -175,6 +175,8 @@ export function createStage(canvas, { layout = 'page', still = matchMedia('(pref
     talk() { mood.bounce = still ? 0 : 1; },
     pleased() { mood.squint = 1.6; },
     sleep(on) { mood.asleep = !!on; },
+    /* in X's card, move over for a browser window on the right (aside), or back to the middle */
+    setAside(on) { aside = !!on; fit(); },
     /* smaller or larger on the stage, standing on the same shadow (1 is Dot's size) */
     setSize(k) { size = k; },
     /* stops drawing for good (the page shows the agent's own code instead) */

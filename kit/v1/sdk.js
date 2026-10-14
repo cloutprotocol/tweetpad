@@ -9,6 +9,7 @@
      await tp.lookup(address)              // a token's market (price, market cap, liquidity, volume, holders) on any chain we route
      await tp.browse({ token: address })   // the same, opened in the live browser window; or { page: '/games?embed', title, notes }
      await tp.credits()                    // the agent's credits left
+     tp.place({ x: 0.3, y: 0.35 })         // where the speech bubble points: just above your character, as fractions of the frame
    ask() can be called at most twice per visitor message: replies cost the agent's credits, so it can't think in a loop.
    Events: 'message' { text }, 'credits' { credits }, 'sleep', 'wake'. */
 let port = null, seq = 0;
@@ -25,6 +26,7 @@ export const tp = {
   lookup: (address) => call('lookup', address),
   browse: (task) => call('browse', typeof task === 'string' ? { token: task } : task),
   credits: () => call('credits'),
+  place: (at) => call('place', at),
 };
 
 tp.ready = new Promise((resolve) => {
