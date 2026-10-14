@@ -66,6 +66,10 @@
       "destination": "/bordrless/index.html"
     },
     {
+      "source": "/dot",
+      "destination": "/dot/index.html"
+    },
+    {
       "source": "/bordrless",
       "destination": "/bordrless/index.html"
     }

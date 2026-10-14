@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dot · tweetpad</title>
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/tweetpad-hash-32.png">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="description" content="Dot, tweetpad's little white friend. Say something.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap">
+<style>
+  /* /dot: one glossy white character in a dark room (three.js), and a message box to talk to it. Dot follows the pointer, blinks,
+     and answers in a speech bubble; its replies are written here (no model behind it yet). */
+  :root { --ink: #f2f3f5; --dim: #8b9096; --glass: rgba(255, 255, 255, .07); --line: rgba(255, 255, 255, .14); --blue: #1da1f2;
+          --round: "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif; --ui: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0c; color: var(--ink); font: 15px/1.4 var(--ui); -webkit-font-smoothing: antialiased; }
+  #stage { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+  /* the soft light behind Dot, as in its portrait */
+  body::before { content: ""; position: fixed; inset: 0; background: radial-gradient(60% 55% at 55% 42%, #2a2b2e, #0b0b0c 70%); }
+
+  .home { position: fixed; top: 14px; left: 14px; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 99px;
+          color: var(--ink); text-decoration: none; font: 600 16px/1 var(--round); background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(10px); }
+  .home img { width: 26px; height: 26px; }
+  .home:hover, .home:focus-visible { border-color: var(--blue); outline: none; }
+
+  /* Dot's speech bubble, above its head */
+  .bubble { position: fixed; left: 50%; top: 12vh; z-index: 2; max-width: min(420px, 86vw); padding: 14px 18px; border-radius: 22px; color: #111;
+            font: 500 19px/1.35 var(--round); background: #fff; box-shadow: 0 12px 40px rgba(0, 0, 0, .45); transform: translateX(-50%) scale(var(--s, 1));
+            transform-origin: 50% 100%; transition: transform .25s cubic-bezier(.45, 0, .2, 1), opacity .25s; text-align: center; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -9px; width: 18px; height: 18px; margin-left: -9px; background: #fff; transform: rotate(45deg); border-radius: 3px; }
+  .bubble.gone { opacity: 0; --s: .9; }
+  .dots i { display: inline-block; width: 8px; height: 8px; margin: 0 3px; border-radius: 50%; background: #111; animation: hop 1s infinite; }
+  .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+  @keyframes hop { 50% { transform: translateY(-5px); opacity: .5; } }
+
+  /* the message box */
+  form { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); z-index: 2; width: min(560px, calc(100% - 32px)); transform: translateX(-50%);
+         display: flex; gap: 8px; padding: 8px; border-radius: 22px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(14px); }
+  form input { flex: 1; min-width: 0; padding: 12px 14px; border: 0; border-radius: 14px; color: var(--ink); font: 16px/1.2 var(--ui); background: rgba(0, 0, 0, .35); outline: none; }
+  form input::placeholder { color: var(--dim); }
+  form input:focus { box-shadow: 0 0 0 2px var(--blue); }
+  form button { padding: 0 20px; border: 0; border-radius: 14px; color: #111; font: 600 16px/1 var(--round); background: #fff; cursor: pointer; }
+  form button:hover, form button:focus-visible { background: #e6f4fd; outline: none; }
+  form button:disabled { opacity: .5; cursor: default; }
+  .log { position: fixed; left: 50%; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 74px); z-index: 2; width: min(560px, calc(100% - 32px)); transform: translateX(-50%);
+         display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
+  .log span { max-width: 80%; padding: 8px 12px; border-radius: 16px 16px 4px 16px; font-size: 14px; color: #fff; background: var(--blue); animation: rise .25s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* Dot's browser, top right: real tweetpad pages in a frame (its address typed in, a load bar, the page scrolled as it reads),
+     and what it finds, read from /api/token, listed under it */
+  .browser { position: fixed; top: 14px; right: 14px; z-index: 3; width: min(360px, 31vw); border-radius: 14px; overflow: hidden;
+             background: #17181a; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0, 0, 0, .55); }
+  .chrome { display: flex; align-items: center; gap: 7px; padding: 9px 10px; background: #222326; border-bottom: 1px solid #2c2d31; }
+  .chrome i { width: 11px; height: 11px; border-radius: 50%; flex: none; } .chrome i:nth-child(1) { background: #ff5f57; } .chrome i:nth-child(2) { background: #febc2e; } .chrome i:nth-child(3) { background: #28c840; }
+  .chrome b { margin-left: 6px; display: flex; align-items: center; gap: 6px; font: 600 13px/1 var(--round); color: var(--ink); }
+  .mini { width: 16px; height: 16px; border-radius: 50%; position: relative; background: radial-gradient(circle at 38% 32%, #fff, #cfd2d6 70%); }
+  .mini::before, .mini::after { content: ""; position: absolute; top: 5px; width: 2.4px; height: 5px; border-radius: 2px; background: #111; transform: rotate(18deg); }
+  .mini::before { left: 5px; } .mini::after { left: 9px; }
+  .live { margin-left: auto; display: flex; align-items: center; gap: 5px; font: 600 10px/1 var(--ui); letter-spacing: .08em; color: #ff6b6b; }
+  .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4d; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .url { display: flex; align-items: center; gap: 6px; margin: 8px 10px 0; padding: 7px 10px; border-radius: 9px; background: #0f1011; color: #c9cdd2;
+         font: 12px/1 Menlo, Monaco, monospace; white-space: nowrap; overflow: hidden; }
+  .url::before { content: "🔒"; font-size: 10px; }
+  .bar { height: 2px; margin: 6px 10px 0; background: #2a2b2e; border-radius: 2px; overflow: hidden; }
+  .bar div { height: 100%; width: 0; background: var(--blue); transition: width .3s; }
+  .view { position: relative; margin: 8px 10px 0; height: calc(min(360px, 31vw) * .75); border-radius: 8px; overflow: hidden; background: #e6e6e6; }
+  .view iframe { position: absolute; left: 0; top: 0; width: 480px; height: 360px; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .view .cursor { position: absolute; z-index: 2; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 38% 32%, #fff, #cfd2d6 70%);
+                  box-shadow: 0 2px 6px rgba(0, 0, 0, .5); transition: left .9s cubic-bezier(.45, 0, .2, 1), top .9s cubic-bezier(.45, 0, .2, 1); }
+  .view .blank { position: absolute; inset: 0; display: grid; place-items: center; color: #888; font: 600 13px/1 var(--round); background: #ececec; transition: opacity .3s; }
+  .notes { padding: 10px 12px 12px; display: grid; gap: 6px; min-height: 92px; }
+  .notes .doing { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+  .notes .doing .dots i { width: 4px; height: 4px; margin: 0 1px; background: var(--dim); }
+  .notes p { margin: 0; font-size: 13px; color: var(--ink); animation: rise .3s ease-out both; }
+  .notes p b { font-weight: 700; } .up { color: #3ccf6e; } .dn { color: #ff6b6b; }
+  @media (max-width: 760px) { .browser { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .bubble, .log span, .dots i, .live::before, .view .cursor { transition: none; animation: none; } }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head>
+<body>
+<canvas id="stage" aria-hidden="true"></canvas>
+<a class="home" href="/" data-menu-home title="Back to the tweetpad Menu"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad</a>
+<div class="bubble gone" id="bubble" role="status" aria-live="polite"></div>
+<div class="log" id="log" aria-hidden="true"></div>
+<form id="say" autocomplete="off">
+  <label class="sr" for="msg">Message Dot</label>
+  <input id="msg" maxlength="140" placeholder="Say something to Dot…" enterkeyhint="send">
+  <button type="submit">Send</button>
+</form>
+
+<aside class="browser" aria-label="Dot's browser">
+  <div class="chrome"><i></i><i></i><i></i><b><span class="mini" aria-hidden="true"></span>Dot's browser</b><span class="live">LIVE</span></div>
+  <div class="url" id="b-url">tweetpad.io</div>
+  <div class="bar"><div id="b-bar"></div></div>
+  <div class="view" id="b-view"><div class="blank" id="b-blank">opening…</div><span class="cursor" id="b-cur" style="left:40%;top:40%"></span></div>
+  <div class="notes" id="b-notes" aria-live="polite"></div>
+</aside>
+
+<script src="/assets/menu-home.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const canvas = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
+camera.position.set(0, 0.15, 6.2);
+
+/* a soft studio for the gloss, plus a key light from the upper left like the portrait */
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(-3, 4, 4); scene.add(key);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x222222, 0.5));
+
+/* Dot: a white glossy ball, two black pill eyes set into its face, a soft shadow under it */
+const dot = new THREE.Group(); scene.add(dot);
+const body = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64),
+  new THREE.MeshPhysicalMaterial({ color: 0xf4f4f4, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.18, sheen: 0.4 }));
+dot.add(body);
+const face = new THREE.Group(); dot.add(face);
+/* the eyes: pill-shaped patches wrapped onto the ball itself, so they follow its curve all the way round (no solid pill to clip
+   through it). Each is a fine grid laid out flat (the pill's outline is an alpha mask), then every vertex is projected onto the
+   sphere just above its surface. A blink or a squint shortens the pill along the surface by re-projecting the grid. */
+const pill = (() => {
+  const c = document.createElement('canvas'); c.width = 64; c.height = 128;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.beginPath(); g.roundRect(4, 4, 56, 120, 28); g.fill();
+  return new THREE.CanvasTexture(c);
+})();
+const eyeMat = new THREE.MeshStandardMaterial({ color: 0x020202, roughness: 0.78, envMapIntensity: 0.25, alphaMap: pill, alphaTest: 0.5,
+  side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+const EYE = { w: 0.17, h: 0.34, r: 1.004, tilt: 0.32, yaw: 0.26, pitch: 0.06 };
+const eyes = [-1, 1].map((side) => {
+  const geo = new THREE.PlaneGeometry(EYE.w, EYE.h, 12, 24);
+  const flat = geo.attributes.position.array.slice();   // the grid as laid out: x across the pill, y along it
+  // where on the ball this eye sits, and its own right/up directions there
+  const centre = new THREE.Vector3(0, 0, 1).applyEuler(new THREE.Euler(-EYE.pitch, side * EYE.yaw, 0));
+  const right = new THREE.Vector3(0, 1, 0).cross(centre).normalize(), up = centre.clone().cross(right).normalize();
+  const mesh = new THREE.Mesh(geo, eyeMat); face.add(mesh);
+  const v = new THREE.Vector3(), cos = Math.cos(EYE.tilt), sin = Math.sin(EYE.tilt);
+  const lay = (open) => {
+    const pos = geo.attributes.position, nor = geo.attributes.normal;
+    for (let i = 0; i < pos.count; i++) {
+      const x = flat[i * 3], y = flat[i * 3 + 1] * open;  // a blink shortens the pill along its length
+      const tx = x * cos - y * sin, ty = x * sin + y * cos; // both eyes lean the same way, as in the portrait
+      v.copy(centre).addScaledVector(right, tx).addScaledVector(up, ty).normalize().multiplyScalar(EYE.r);
+      pos.setXYZ(i, v.x, v.y, v.z); nor.setXYZ(i, v.x / EYE.r, v.y / EYE.r, v.z / EYE.r);   // normals straight out from the centre, as the ball's
+    }
+    pos.needsUpdate = true; nor.needsUpdate = true;
+  };
+  lay(1);
+  return { lay };
+});
+const shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 }));
+shadow.rotation.x = -Math.PI / 2; shadow.position.y = -1.55; shadow.scale.set(0.9, 0.9, 1); scene.add(shadow);
+
+function fit() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.position.z = w / h < 0.8 ? 7.8 : 6.2;            // phones: step back so Dot fits between the bubble and the box
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', fit); fit();
+
+/* where Dot looks: the pointer, eased; and when idle, a slow wander */
+const look = { x: 0, y: 0, tx: 0, ty: 0, last: 0 };
+addEventListener('pointermove', (e) => { look.tx = (e.clientX / innerWidth) * 2 - 1; look.ty = -((e.clientY / innerHeight) * 2 - 1); look.last = performance.now(); });
+
+/* moods: a bounce when it talks, a squint when it's pleased */
+const mood = { bounce: 0, squint: 0, blinkAt: 1.5, blink: 0, lid: 1 };
+const clock = new THREE.Clock();
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  if (performance.now() - look.last > 3000) { look.tx = Math.sin(t * 0.4) * 0.35; look.ty = Math.sin(t * 0.27) * 0.15; }
+  look.x += (look.tx - look.x) * 0.06; look.y += (look.ty - look.y) * 0.06;
+  face.rotation.y = look.x * 0.5; face.rotation.x = -look.y * 0.35;
+  dot.rotation.y = look.x * 0.12; dot.rotation.x = -look.y * 0.08;
+
+  const bob = still ? 0 : Math.sin(t * 1.6) * 0.06;
+  mood.bounce = Math.max(0, mood.bounce - dt * 2.2);
+  const hop = Math.sin(mood.bounce * Math.PI) * 0.35;
+  dot.position.y = bob + hop;
+  const squash = 1 + Math.sin(mood.bounce * Math.PI * 2) * 0.05 * mood.bounce;
+  dot.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
+  shadow.scale.setScalar(0.9 - (bob + hop) * 0.25); shadow.material.opacity = 0.45 - (bob + hop) * 0.3;
+
+  // blink every few seconds; squint (short, flat eyes) while pleased
+  if (t > mood.blinkAt) { mood.blink = 1; mood.blinkAt = t + 2.5 + Math.random() * 3; }
+  mood.blink = Math.max(0, mood.blink - dt * 7);
+  mood.squint = Math.max(0, mood.squint - dt * 0.6);
+  const open = 1 - Math.sin(mood.blink * Math.PI) * 0.9;
+  const lid = Math.max(0.12, open * (1 - 0.55 * Math.min(1, mood.squint)));
+  if (lid !== mood.lid) { for (const e of eyes) e.lay(lid); mood.lid = lid; }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- talking ---------- */
+const bubble = document.getElementById('bubble'), log = document.getElementById('log');
+const form = document.getElementById('say'), input = document.getElementById('msg'), send = form.querySelector('button');
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const REPLIES = [
+  [/\b(gm|good morning)\b/i, ['gm ☀️', 'gm gm. coffee first?']],
+  [/\b(gn|good night)\b/i, ['gn 🌙 see you on the timeline']],
+  [/\b(hi|hey|hello|yo|sup)\b/i, ["hi! I'm Dot.", 'hey you 👋', 'oh, hello!']],
+  [/\b(who|what) are you\b/i, ["I'm Dot. I live on tweetpad and I like round things."]],
+  [/\$?\btp\b|tweetpad/i, ['tweetpad is the launchpad inside a tweet. $TP is its own coin.', 'launch, trade and play without leaving the post 🐦']],
+  [/\blaunch\b/i, ['Tap Launch on the Menu: a name, a ticker, an image. Five chains to pick from.']],
+  [/\b(game|games|play)\b/i, ['Pump or Dump and Mines are in Games. Practice is free!']],
+  [/\b(love|cute|❤|<3)\b/i, ['☺️', 'stop, I’m blushing (I can’t blush, I’m white)']],
+  [/\b(research|browser|browsing)\b/i, ['give me a token: "research $WIF", or paste any address, and I\'ll go look.']],
+  [/\?$/, ['hmm. good question.', "I'm a ball, I don't know everything 🙃", 'ask me again after I roll around a bit']],
+];
+const FALLBACK = ['nice.', 'tell me more 👀', 'ok ok ok', 'I like that.', 'mhm!', 'wow, really?'];
+const replyTo = (text) => { for (const [re, lines] of REPLIES) if (re.test(text)) return pick(lines); return pick(FALLBACK); };
+
+/* ---------- Dot's browser ----------
+   A loop of real pages it "researches" when nobody asks for anything; ask it to research a token ($WIF, or paste any address)
+   and it goes there next. Token pages come with findings read from /api/token (DexScreener and Jupiter's audit, kept 15 s). */
+const TP = 'BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN';
+const KNOWN = { tp: TP, wif: 'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm', bonk: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
+  pepe: '0x6982508145454Ce325dDbE47a25d4ec3d2311933', cake: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82' };
+const TOUR = [{ token: TP }, { page: '/games?embed', title: 'Games', notes: ['🎲 <b>Pump or Dump</b> and <b>Mines</b>, on Gamba', '🔒 every result settled on chain'] },
+  { token: KNOWN.wif }, { page: '/borderless?embed', title: 'Bordrless', notes: ['🧩 tokens with their own rules', '📜 fees, burns and rewards run in every trade'] },
+  { token: KNOWN.pepe }, { token: KNOWN.bonk }];
+const bv = { url: document.getElementById('b-url'), bar: document.getElementById('b-bar'), view: document.getElementById('b-view'), blank: document.getElementById('b-blank'),
+  cur: document.getElementById('b-cur'), notes: document.getElementById('b-notes') };
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const usd = (n) => (n == null ? '—' : n >= 1e9 ? '$' + (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? '$' + (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? '$' + (n / 1e3).toFixed(1) + 'K' : '$' + n.toFixed(2));
+const num = (n) => (n == null ? '—' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n));
+const pct = (n) => (n == null ? '' : `<span class="${n >= 0 ? 'up' : 'dn'}">${n >= 0 ? '▲' : '▼'} ${Math.abs(n).toFixed(1)}%</span>`);
+let queue = [], tourAt = 0, shown = null;
+const note = (html) => { const p = document.createElement('p'); p.innerHTML = html; bv.notes.append(p); };
+const doing = (text) => { bv.notes.replaceChildren(Object.assign(document.createElement('div'), { className: 'doing', innerHTML: text + ' <span class="dots"><i></i><i></i><i></i></span>' })); };
+async function typeUrl(text) { bv.url.textContent = ''; for (const ch of text) { bv.url.textContent += ch; await wait(still ? 0 : 18); } }
+function wander() { bv.cur.style.left = (15 + Math.random() * 70) + '%'; bv.cur.style.top = (15 + Math.random() * 70) + '%'; }
+async function open(path) {
+  bv.bar.style.width = '15%'; bv.blank.style.opacity = 1; bv.blank.textContent = 'loading…';
+  const k = bv.view.clientWidth / 480;
+  const next = Object.assign(document.createElement('iframe'), { src: path, title: "Dot's browser", tabIndex: -1 });
+  next.style.transform = `scale(${k})`; next.style.height = (bv.view.clientHeight / k) + 'px';
+  next.setAttribute('aria-hidden', 'true');
+  const loaded = new Promise((r) => { next.addEventListener('load', r, { once: true }); setTimeout(r, 6000); });
+  bv.view.append(next); bv.bar.style.width = '60%';
+  await loaded; bv.bar.style.width = '100%'; bv.blank.style.opacity = 0;
+  shown?.remove(); shown = next;
+  setTimeout(() => { bv.bar.style.width = '0'; }, 400);
+}
+/* reading: the page scrolled slowly while Dot's cursor moves over it */
+async function read(ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    wander();
+    try { shown.contentWindow.scrollBy({ top: 70, behavior: still ? 'auto' : 'smooth' }); } catch { /* not ours to scroll */ }
+    await wait(1100);
+  }
+}
+async function research(task) {
+  if (task.page) {
+    doing('reading ' + task.title);
+    await typeUrl('tweetpad.io' + task.page.replace('?embed', ''));
+    await open(task.page);
+    for (const n of task.notes) { await wait(700); note(n); }
+    await read(5000);
+    return null;
+  }
+  const address = task.token;
+  doing('looking up ' + address.slice(0, 4) + '…' + address.slice(-4));
+  let t = null;
+  try {
+    const f = await (await fetch('/api/token?find=' + address)).json();
+    if (f.short) t = await (await fetch('/api/token?chain=' + f.short + '&address=' + address)).json();
+  } catch { /* nothing found */ }
+  if (!t || !t.market) {
+    await typeUrl('tweetpad.io/t/' + address.slice(0, 6) + '…'); await open('/t/' + address + '?embed');
+    note('🤔 no market for that on our chains'); await read(3000); return null;
+  }
+  doing('reading $' + t.symbol);
+  await typeUrl('tweetpad.io/' + t.short + '/' + address.slice(0, 4) + '…' + address.slice(-4));
+  await open('/' + t.short + '/' + address + '?embed');
+  const m = t.market, a = t.audit || {};
+  await wait(500); note(`📈 <b>$${t.symbol}</b> on ${t.chainName} · ${usd(m.mcap)} mcap ${pct(m.change24h)}`);
+  await wait(700); note(`💧 ${usd(m.liquidity)} liquidity · ${usd(m.volume24h)} 24h volume`);
+  if (m.holders) { await wait(700); note(`👥 ${num(m.holders)} holders`); }
+  if (a.mintOff != null) { await wait(700); note(`${a.mintOff && a.freezeOff ? '✅' : '⚠️'} mint ${a.mintOff ? 'off' : 'on'} · freeze ${a.freezeOff ? 'off' : 'on'}`); }
+  await read(4500);
+  return t;
+}
+(async function loop() {
+  for (;;) {
+    const task = queue.shift() || TOUR[tourAt++ % TOUR.length];
+    const t = await research(task).catch(() => null);
+    if (task.ask) task.ask(t);
+    await wait(800);
+  }
+})();
+/* "research $WIF", "look up bonk", or any address in the message */
+const ADDR = /\b(0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})\b/;
+function askFor(text) {
+  const a = ADDR.exec(text);
+  if (a) return a[1];
+  const sym = /\$([a-z]{2,10})\b/i.exec(text) || (/\b(research|look ?up|check|find)\b/i.test(text) && /\b(tp|wif|bonk|pepe|cake)\b/i.exec(text));
+  return sym && KNOWN[sym[1].toLowerCase()] || null;
+}
+
+let busy = false;
+function say(text, happy = false) {
+  bubble.textContent = text;
+  bubble.classList.remove('gone');
+  mood.bounce = still ? 0 : 1;
+  if (happy) mood.squint = 1.6;
+}
+function thinking() { bubble.replaceChildren(Object.assign(document.createElement('span'), { className: 'dots', innerHTML: '<i></i><i></i><i></i>', ariaLabel: 'Dot is typing' })); bubble.classList.remove('gone'); }
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text || busy) return;
+  input.value = '';
+  const mine = Object.assign(document.createElement('span'), { textContent: text });
+  log.append(mine); while (log.children.length > 3) log.firstElementChild.remove();
+  setTimeout(() => mine.remove(), 6000);
+  busy = true; send.disabled = true;
+  thinking();
+  const target = askFor(text);
+  if (target) {
+    // a token to research: Dot says so, opens it next in its browser, and reports back
+    setTimeout(() => { say('on it! opening it in my browser 👀', true); busy = false; send.disabled = false; input.focus(); }, 500);
+    queue.unshift({ token: target, ask: (t) => say(t ? `$${t.symbol}: ${usd(t.market.mcap)} market cap, ${t.market.change24h >= 0 ? 'up' : 'down'} ${Math.abs(t.market.change24h || 0).toFixed(1)}% today${t.market.holders ? ', ' + num(t.market.holders) + ' holders' : ''}. not advice!` : "couldn't find a market for that one on our chains 🤔") });
+    return;
+  }
+  setTimeout(() => { const r = replyTo(text); say(r, /☺️|❤|☀️|👋|!/.test(r)); busy = false; send.disabled = false; input.focus(); }, 650 + Math.random() * 500);
+});
+setTimeout(() => say("hi, I'm Dot. say something!", true), 600);
+</script>
+</body>
+</html>
