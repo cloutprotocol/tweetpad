@@ -87,7 +87,7 @@ export const Diamond: React.FC<Face & { size: number; framed?: boolean; style?: 
 };
 
 /** a talking mouth for frames in [a, b): a deterministic syllable pattern that settles shut at both ends */
-const talk = (f: number, windows: [number, number][]) => {
+export const talk = (f: number, windows: [number, number][]) => {
   for (const [a, b] of windows) if (f >= a && f < b) {
     const env = Math.min(1, (f - a) / 3, (b - f) / 3);
     return env * (0.3 + 0.7 * Math.abs(Math.sin(f * 1.05))) * (0.55 + 0.45 * Math.abs(Math.sin(f * 0.41 + 1)));

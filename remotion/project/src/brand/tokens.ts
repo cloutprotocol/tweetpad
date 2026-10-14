@@ -33,7 +33,7 @@ export const FONTS = {
   code: 'Menlo, Monaco, "DejaVu Sans Mono", monospace',
 } as const;
 
-export type SkinName = "2012" | "tweetcraft";
+export type SkinName = "2012" | "tweetcraft" | "wii";
 
 export type Skin = {
   name: SkinName;
@@ -81,6 +81,22 @@ export const SKIN_CRAFT: Skin = {
   segOn: "#6fe7d8", segOff: "transparent",
 };
 
-export const skinOf = (n: SkinName): Skin => (n === "tweetcraft" ? SKIN_CRAFT : SKIN_2012);
+/** skin-wii.css: html[data-skin="wii"], the app's default since the home Menu. The 2012 skin underneath, dressed as the Menu:
+ *  pinstripes, a silver bar with a blue edge, frosted-glass cards with soft bezels, pill buttons, the dock at the bottom. */
+export const SKIN_WII: Skin = {
+  ...SKIN_2012,
+  name: "wii",
+  bg: "repeating-linear-gradient(#f7f9fa 0 3px, #eef1f3 3px 5px)", text: "#3b4146", dim: "#8f9aa1",
+  radius: 16, shadow: "inset 0 0 0 1.5px #fff, 0 0 0 1px rgba(160,175,185,.2), 0 2px 5px rgba(40,60,75,.14)",
+  headerBg: "linear-gradient(#fdfefe, #e8edf0)", headerBorder: "#1da1f2",
+  hudBg: "linear-gradient(#fdfefe, #e3e9ec)",
+  barBtn: "linear-gradient(#fff, #e9eef1)", barBtnActive: "linear-gradient(#fff, #eef6fc)", barBtnBorder: "#c9d0d5",
+  primaryBtn: "linear-gradient(#5cc4ff, #1a8fe0)", primaryBorder: "#1678c0",
+  btn: "linear-gradient(#fff, #e9eef1)",
+  headStrip: "linear-gradient(#fdfefe, #eef2f4)", headText: "#3b4146",
+  segOn: "linear-gradient(#5cc4ff, #1a8fe0)", segOff: "linear-gradient(#fff, #edf1f3)",
+};
+
+export const skinOf = (n: SkinName): Skin => (n === "tweetcraft" ? SKIN_CRAFT : n === "wii" ? SKIN_WII : SKIN_2012);
 
 export const VIDEO = { width: 1080, height: 1080, fps: 30 } as const;

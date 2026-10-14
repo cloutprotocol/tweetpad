@@ -37,7 +37,7 @@ export const ChainBadge: React.FC<{ chain?: Net; rh?: boolean; size: number; lef
   const fg = React.useContext(BadgeMarkCtx)[net] ?? b.fg;
   return (
     <span style={{ position: "absolute", ...(left ? { left: -4 } : { right: -3 }), bottom: -3, width: d, height: d, borderRadius: "50%", display: "grid", placeItems: "center",
-      background: b.bg, boxShadow: s.name === "2012" ? "0 0 0 2px #fff, 0 1px 2px rgba(0,0,0,.3)" : `0 0 0 1.5px ${s.panelLo}` }}>
+      background: b.bg, boxShadow: s.name !== "tweetcraft" ? "0 0 0 2px #fff, 0 1px 2px rgba(0,0,0,.3)" : `0 0 0 1.5px ${s.panelLo}` }}>
       {net === "solana" ? <Img src={staticFile("brand/solana.svg")} style={{ width: d * b.k, height: d * b.k, objectFit: "contain" }} />
         : <NetLogo net={net} c={fg} size={d * b.k} />}
     </span>
@@ -47,7 +47,7 @@ export const ChainBadge: React.FC<{ chain?: Net; rh?: boolean; size: number; lef
 /** badge: the .coin-ico wrapper with its chain badge (badgeLeft: the coin page, where the zoom + sits bottom-right) */
 export const CoinImg: React.FC<{ c: DemoCoin; size: number; badge?: boolean; badgeLeft?: boolean }> = ({ c, size, badge, badgeLeft }) => {
   const s = useSkin();
-  const r = s.name === "2012" ? 5 : 0;
+  const r = s.name !== "tweetcraft" ? 5 : 0;
   const pic = c.img
     ? <Img src={staticFile(c.img)} style={{ width: size, height: size, borderRadius: r, objectFit: "cover", flex: "none" }} />
     : <span style={{ width: size, height: size, borderRadius: r, flex: "none", display: "grid", placeItems: "center", background: c.color, color: "#fff", font: `bold ${size * 0.4}px/1 ${s.px}` }}>{c.symbol[0]}</span>;
@@ -59,7 +59,7 @@ export type ChainFilter = "all" | Net;
 /** .chain-filter (2012): All · one chip per chain (logo), each with its count of the coins loaded (renderTokens: an empty count hides) */
 const ChainFilterRow: React.FC<{ on: ChainFilter; coins: DemoCoin[]; chains: readonly Net[]; pressed?: ChainFilter | null }> = ({ on, coins, chains, pressed }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const items: [ChainFilter, React.ReactNode, number][] = [
     ["all", "All", coins.length],
     ...chains.map((n): [ChainFilter, React.ReactNode, number] => [n, null, coins.filter((c) => chainOf(c) === n).length]),
@@ -86,7 +86,7 @@ export const TokenList: React.FC<{ rows: number; highlight?: number; appear?: (i
   /** the chips after All (default Solana · Robinhood); the chip being tapped */
   filterChains?: readonly Net[]; filterPressed?: ChainFilter | null }> = ({ rows, highlight = -1, appear = () => 1, coins = DEMO_COINS, badges, filter, filterChains = ["solana", "robinhood"], filterPressed }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   // the filter only narrows the list; the counts are of every coin loaded
   const shown = filter && filter !== "all" ? coins.filter((c) => chainOf(c) === filter) : coins;
   return (
@@ -129,7 +129,7 @@ export const CoinView: React.FC<{ drawT: number; chain?: Net; holders?: number; 
   /** film 12, a Stonkfun coin: its pair under the head ("⇄ $NVDAx"), the "Stonkfun ↗" link (no LIVE chip) and its fee box (renderStonkFees) */
   stonk?: { pair: string; fees: React.ReactNode } }> = ({ drawT, chain = "solana", holders = 30, rewards = "0.00120 ETH", rewardsClaimable = true, coin, badge, trade, feePct = 1, stonk }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const c = coin ?? DEMO_COINS[0];
   const shown = Math.floor(candles.length * drawT);
   const rh = chain !== "solana"; // any EVM chain: 0x address, the fee split, holder rewards
@@ -204,7 +204,7 @@ export const CoinView: React.FC<{ drawT: number; chain?: Net; holders?: number; 
 /** .rewards: "CREATOR REWARDS · 0.00340 ETH · [Claim]" (amounts in the film are demo values) */
 export const Rewards: React.FC<{ label: string; amount: string; compact?: boolean; claimable?: boolean; claiming?: boolean; pressed?: boolean }> = ({ label, amount, compact, claimable = true, claiming, pressed }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: compact ? 0 : 10, padding: "9px 10px", background: craft ? "rgba(5,12,14,.45)" : "#f7f9fa", border: `1px solid ${craft ? s.line : "#e3e3e3"}`, borderRadius: craft ? 0 : 5 }}>
       <span style={{ flex: 1, font: craft ? `14px/1 ${s.mono}` : `bold 11px/1 ${s.px}`, color: craft ? s.gold : "#999", textTransform: "uppercase", letterSpacing: ".03em" }}>{label}</span>
@@ -218,7 +218,7 @@ export const Rewards: React.FC<{ label: string; amount: string; compact?: boolea
 export const RobinhoodProfile: React.FC<{ address: string; rewards: string; claimable: boolean; claiming?: boolean; pressed?: boolean;
   status?: { tone: "ok" | "warn"; text: string; tx?: boolean } | null; coin: DemoCoin; holders: number }> = ({ address, rewards, claimable, claiming, pressed, status, coin, holders }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const sec = (children: React.ReactNode) => <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "12px 2px 5px", font: craft ? `14px/1 ${s.mono}` : `bold 12px/1.2 ${s.px}`, color: craft ? s.dim : "#666", textTransform: craft ? "uppercase" : undefined }}>{children}</div>;
   const rh = `url(${staticFile("brand/robinhood.png")})`;
   return (
@@ -256,7 +256,7 @@ export const RobinhoodProfile: React.FC<{ address: string; rewards: string; clai
 export const SolanaProfile: React.FC<{ address: string; rewards: string; auto: { minSol: string } | null; pressed?: boolean;
   status?: { tone: "ok" | "warn"; text: string } | null; coin: DemoCoin }> = ({ address, rewards, auto, pressed, status, coin }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const row = (label: string, value: string, btn: React.ReactNode, info?: boolean, top = 10) => (
     // .rewards (2012): the label on the left, the value right-aligned and filling the row, then its buttons
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: top, padding: "9px 10px", background: craft ? "rgba(5,12,14,.45)" : "#f7f9fa", border: `1px solid ${craft ? s.line : "#e3e3e3"}`, borderRadius: craft ? 0 : 5 }}>
@@ -297,7 +297,7 @@ export const SolanaProfile: React.FC<{ address: string; rewards: string; auto: {
 
 export const FeedView: React.FC<{ text: string; tagged: boolean; posted: number }> = ({ text, tagged, posted }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const c = DEMO_COINS[0];
   const post = (t: string, who: string, time: string, coin?: DemoCoin, a = 1) => (
     <div style={{ display: "flex", gap: 10, padding: 10, borderTop: `1px solid ${craft ? s.line : "#e8e8e8"}`, opacity: a, transform: `translateY(${(1 - a) * -20}px)` }}>
@@ -390,7 +390,7 @@ export const JitoSpeedPicker: React.FC<{ speed: JitoSpeed; pressed?: JitoSpeed |
  * speed: the shipped speed picker and its tip in the hint (renderJitoRow / renderTrade); left out = the row as films 4–6 show it. */
 export const JitoRow: React.FC<{ on: boolean; compact?: boolean; pressed?: boolean; style?: React.CSSProperties; speed?: JitoSpeed; speedPressed?: JitoSpeed | null }> = ({ on, compact, pressed, style, speed, speedPressed }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const tip = speed ? JITO_SPEEDS[speed].sol : "0.0001";
   return (
     <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px 8px", font: craft ? `14px/1.2 ${s.mono}` : `12px/1.3 ${s.px}`, color: craft ? s.dim : "#999", ...style }}>
@@ -512,7 +512,7 @@ export type TradeBoxProps = {
 };
 export const TradeBox: React.FC<TradeBoxProps> = ({ side, symbol, chain = "solana", slip = 5, amount = "", caret, chip = -1, est, jito, button, buttonKind = "trade", pressed, disabled, status, chipsDisabled, sidePressed, chips, bal, jitoSpeed, ghost = {}, feePct }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const rh = chain !== "solana"; // rh: any EVM chain (its own symbol and tradePresets)
   const sell = buttonKind === "trade" && side !== "buy";
   const g = (k: keyof NonNullable<TradeBoxProps["ghost"]>, el: React.ReactNode) =>

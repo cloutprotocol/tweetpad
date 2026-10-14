@@ -736,3 +736,90 @@ export const BHOME_COPY = {
     tokens: "Demo coins. The live list is every Bordrless token, launched on tweetpad or not.",
   },
 } as const;
+
+/* =========================================================================================
+ * Film 16: "One Menu. Every chain." (TweetpadMenuTour)
+ * The update (tweetpad's new home, the Menu; the Wii skin, now the default; any token tradeable) and a walk through what was
+ * already there, every app opened from the Menu the way index.html opens a channel. Frames are absolute: the Menu stays on
+ * screen the whole film, so the visits are one timeline rather than separate Sequences. 1650 f = 55 s.
+ * ========================================================================================= */
+export const TOUR = {
+  title: { from: 0, dur: 60 },          // static: the # and the wordmark, the line, NEW · THE MENU
+  menu: { from: 60, dur: 75 },          // the channels arrive, the dock rises; the hand comes in
+  // each visit: the tile is clicked at `at`, its channel plays for `len` (open, the app, Menu pressed, back into the tile)
+  tokens: { at: 135, len: 250 },        // NEW: paste any token's address, its page, a buy
+  post: { from: 385, dur: 200 },        // NEW: its link posted on X plays as a card; Open to trade, bought from the post
+  launch: { at: 610, len: 190 },        // and launch your own: Solana → Robinhood → BNB → Base → Ethereum
+  outro: { from: 800, dur: 40 },        // the whole Menu again
+  end: { from: 840, dur: 150 },
+} as const;
+export const TOUR_TOTAL = TOUR.end.from + TOUR.end.dur; // 990 f = 33.0 s
+
+export const TOUR_COPY = {
+  title: { tag: "NEW · THE MENU", line: "The launchpad inside a tweet." },
+  menu: { tag: "NEW", head: "tweetpad has a home.", head2: "Every app, one Menu." },
+  launch: { tag: "LAUNCH", head: "Or launch your own.", head2: "From one card.",
+    chains: ["Solana · pump.fun", "Robinhood Chain", "BNB Chain", "Base", "Ethereum · Launch Party"] },
+  tokens: { tag: "NEW", head: "Trade any token.", head2: "On Solana, Base, BNB, Ethereum." },
+  anyToken: { tag: "NEW", head: "Trade any token.", head2: "Paste its address. It's tradeable." },
+  post: { tag: "NEW", head: "Post any token.", head2: "Trade it right from the tweet." },
+  feed: { tag: "FEED", head: "The pad's own timeline.", head2: "Post, retweet, embed a coin." },
+  hooks: { tag: "HOOKS LAUNCH", head: "Your own fee hook.", head2: "Uniswap v4, on Ethereum." },
+  games: { tag: "GAMES", head: "Pump or Dump. Mines.", head2: "Played inside the post." },
+  profile: { tag: "PROFILE", head: "Your coins and rewards.", head2: "Claimed on every chain." },
+  bordrless: { tag: "BORDRLESS", head: "Tokens with their own rules.", head2: "Launch and trade them here." },
+  more: { tag: "NEW DEFAULT", head: "The Wii skin.", head2: "Or 2012, Tweetcraft, Lights out." },
+  outro: { head: "One Menu.", head2: "Every chain." },
+  end: { tagline: "The launchpad inside a tweet.", cc: "Solana · Robinhood Chain · BNB Chain · Base · Ethereum" },
+  fine: {
+    menu: "tweetpad.io · the Menu plays as tweetpad's own card on X.",
+    launch: "Demo coin. Launch fees and network fees vary by chain. Robinhood, BNB, Base: 1% creator fee, 10% of the fee to Launch Party SDK.",
+    tokens: "Demo token and numbers. Any token: Jupiter on Solana, KyberSwap on EVM · tweetpad takes nothing.",
+    post: "Demo token and numbers. The link plays as its own X card; trades open in a tweetpad window · tweetpad takes nothing.",
+    feed: "Demo posts.",
+    hooks: "Demo coin. Ethereum launches go through Launch Party: 0.001 ETH launch fee + gas · your fee, fixed or upgradeable in public.",
+    games: "Built on Gamba's open protocol; Gamba doesn't run or endorse tweetpad. Real plays: SOL, 18+, only where legal.",
+    profile: "Demo numbers. Robinhood Chain: 1% creator fee, 10% of the fee to Launch Party SDK; holders earn ETH rewards.",
+    bordrless: "Demo coins. Bordrless's sphere marks its channel; Bordrless doesn't run or endorse tweetpad.",
+    more: "Skins are saved in your browser. Wii is the default for new visitors.",
+    end: "tweetpad.io · demo coins and numbers throughout · not financial advice.",
+  },
+} as const;
+
+/* =========================================================================================
+ * Film 17: "The new way to shill a token." (TweetpadShill)
+ * The old way (a typed-out shill: the CA, a chart link, a swap link; then the reader's copy, paste and tab maze) against the new:
+ * one tweetpad link (/<chain>/<address>, api/t.js) that plays as the token's own card and trades from the post. Then the same
+ * link on all five chains, and how to do it in three steps. 1160 f = 38.7 s.
+ * ========================================================================================= */
+export const SHILL = {
+  hook: { from: 0, dur: 75 },     // ETH Guy and Agent Inu: "Shilling a token on X?"
+  old: { from: 75, dur: 270 },    // ETH Guy types it out, posts it; then the reader's four tabs
+  neu: { from: 345, dur: 240 },   // Agent Inu drops one link; the card plays; Open to trade; bought
+  chains: { from: 585, dur: 230 },// the same post on Solana, Robinhood Chain, BNB Chain, Base, Ethereum
+  how: { from: 815, dur: 210 },   // 1 copy the address · 2 post tweetpad.io/t/<address> · 3 anyone trades it from the post
+  end: { from: 1025, dur: 150 },  // "The first launchpad inside an @X post.", the cast in the corners
+} as const;
+export const SHILL_TOTAL = SHILL.end.from + SHILL.end.dur; // 1175 f = 39.2 s
+
+export const SHILL_COPY = {
+  hook: { head: "Shilling a token on X?", head2: "There's a better way." },
+  old: { tag: "THE OLD WAY", head: "A wall of text.", head2: "Then four tabs to buy." },
+  oldSteps: ["Copy the CA", "Open the chart", "Find a DEX, connect", "Paste the CA, swap"],
+  neu: { tag: "THE NEW WAY", head: "Drop one link.", head2: "It trades right in the post." },
+  chains: { tag: "ANY TOKEN", head: "Five chains. One link." },
+  how: { tag: "HOW TO", head: "Three steps.", head2: "No wall of text." },
+  steps: [
+    ["1", "Copy any token's address", "Solana or EVM: tweetpad finds its chain."],
+    ["2", "Post it as tweetpad.io/t/…", "tweetpad.io/t/ + the address becomes the token's own card."],
+    ["3", "Anyone can trade it", "Chart, buy and sell, right from the post."],
+  ],
+  end: { tagline: "The first launchpad inside an @X post.", tagline2: "Shill any token with one link." },
+  fine: {
+    old: "Illustration. Demo token and links.",
+    neu: "Demo token and numbers. The link plays as its own X card; trades open in a tweetpad window · tweetpad takes nothing.",
+    chains: "Demo tokens and numbers. Jupiter on Solana, KyberSwap on the EVM chains · tweetpad takes nothing · network fees apply.",
+    how: "Any token with a market on these chains. Not financial advice.",
+    end: "tweetpad.io · demo tokens and numbers throughout · not financial advice.",
+  },
+} as const;

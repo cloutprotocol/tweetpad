@@ -1,7 +1,7 @@
 import React from "react";
 import { Composition } from "remotion";
 import { VIDEO } from "./brand/tokens";
-import { HOWTO_TOTAL, MULTI_TOTAL, ROBINHOOD_TOTAL, TOTAL, TRADE_TOTAL, WELCOME_TOTAL, PANEL_TOTAL, AGENTS_TOTAL, WINAMP_TOTAL, ETH_TOTAL, THREE_TOTAL, STONK_TOTAL, GAMES_TOTAL, BORDR_TOTAL, BHOME_TOTAL } from "./timeline";
+import { HOWTO_TOTAL, MULTI_TOTAL, ROBINHOOD_TOTAL, TOTAL, TRADE_TOTAL, WELCOME_TOTAL, PANEL_TOTAL, AGENTS_TOTAL, WINAMP_TOTAL, ETH_TOTAL, THREE_TOTAL, STONK_TOTAL, GAMES_TOTAL, BORDR_TOTAL, BHOME_TOTAL, TOUR_TOTAL, SHILL_TOTAL } from "./timeline";
 import { TweetpadHowToLaunch } from "./howto/HowTo";
 import { Tweetpad, TweetpadProps } from "./Tweetpad";
 import { TweetpadRobinhoodUpdate } from "./update/RobinhoodUpdate";
@@ -18,6 +18,8 @@ import { TweetpadGames } from "./update/Games";
 import { TweetpadBordrless } from "./update/Bordrless";
 import { TweetpadBordrlessPoster } from "./update/BordrlessPoster";
 import { TweetpadBordrlessHome } from "./update/BordrlessHome";
+import { TweetpadMenuTour } from "./update/MenuTour";
+import { TweetpadShill } from "./update/Shill";
 
 export const Root: React.FC = () => (
   <>
@@ -66,5 +68,11 @@ export const Root: React.FC = () => (
     <Composition id="TweetpadBordrlessPoster" component={TweetpadBordrlessPoster} durationInFrames={120} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
     {/* film 15: "Launch & trade Bordrless tokens (inside a tweet)." (from the new home's Menu: the Bordrless channel, then launch and trade) */}
     <Composition id="TweetpadBordrlessHome" component={TweetpadBordrlessHome} durationInFrames={BHOME_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    {/* film 16: "One Menu. Every chain." (the new home Menu as the segue: Launch on five chains, Tokens and any token, Feed, Hooks Launch,
+        Games, Profile, Bordrless, then More → Themes and the Wii skin, now the default) */}
+    <Composition id="TweetpadMenuTour" component={TweetpadMenuTour} durationInFrames={TOUR_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    {/* film 17: "The new way to shill a token." (the old typed-out shill and its four tabs, then one tweetpad link that trades in the
+        post, on all five chains, and the three steps) */}
+    <Composition id="TweetpadShill" component={TweetpadShill} durationInFrames={SHILL_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
   </>
 );

@@ -87,7 +87,7 @@ const Dock: React.FC = () => (
 /* =========================================================================================
  * /borderless (bordrless/index.html + bhub.css), at 480 px: its bar, its tabs, then a tab's own content
  * ========================================================================================= */
-const SectionHead: React.FC<{ tab: "tokens" | "launch" | "hooks" }> = ({ tab }) => (
+export const SectionHead: React.FC<{ tab: "tokens" | "launch" | "hooks" }> = ({ tab }) => (
   <div style={{ position: "relative", zIndex: 3 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 10px", background: INK }}>
       <span style={{ color: "#fff", font: `700 18px/1 ${SANS}`, opacity: 0.85 }}>‹</span><Hash size={24} />
@@ -110,7 +110,7 @@ const ROWS: { k: keyof typeof PICS; name: string; age: string; holders: number; 
   { k: "PLTH", name: "Plinth", age: "1d", holders: 40, cap: "$9.6K", ch: "+5.8%", up: true, curve: 9 },
   { k: "DUST", name: "Dust", age: "3h", holders: 12, cap: "$5.1K", ch: "+0.9%", up: true, curve: 4 },
 ];
-const TokensTab: React.FC<{ f?: number; tap?: number; stagger?: number }> = ({ f = 999, tap, stagger = 0 }) => (
+export const TokensTab: React.FC<{ f?: number; tap?: number; stagger?: number }> = ({ f = 999, tap, stagger = 0 }) => (
   <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 10 }}>
     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
       <span style={{ flex: 1, padding: "8px 10px", font: `400 12px/1.2 ${MONO}`, color: "#999", background: "#fff", border: `2px solid ${INK}` }}>Search a name, ticker or contract</span>

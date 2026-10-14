@@ -11,7 +11,7 @@ import { APP, toFilm } from "./layout";
 /** app-px targets inside the launch form once scrolled (checked against stills) */
 export const SCROLL_TO_FORM = 216;
 /** Tweetcraft hides the welcome post, so the form sits higher there */
-export const useFormScroll = () => (useSkin().name === "2012" ? SCROLL_TO_FORM : 50);
+export const useFormScroll = () => (useSkin().name !== "tweetcraft" ? SCROLL_TO_FORM : 50);
 export const T = { drop: [117, 120], name: [270, 97], ticker: [270, 135], button: [230, 383] } as const;
 
 export const Solana: React.FC = () => {

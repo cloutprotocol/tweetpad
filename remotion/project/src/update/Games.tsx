@@ -50,7 +50,7 @@ const GStage: React.FC<{ cam: Cam; t?: number; children: React.ReactNode }> = ({
 };
 
 /* ---------- the page: feature.css's blue bar and a column of cards ---------- */
-const GameFrame: React.FC<{ title: string; mark: React.ReactNode; scroll?: number; sound?: boolean; children: React.ReactNode }> = ({ title, mark, scroll = 0, sound = true, children }) => (
+export const GameFrame: React.FC<{ title: string; mark: React.ReactNode; scroll?: number; sound?: boolean; children: React.ReactNode }> = ({ title, mark, scroll = 0, sound = true, children }) => (
   <div style={{ width: GW, height: GH, display: "flex", flexDirection: "column", background: "#e6e6e6", color: "#333", font: `13px/1.35 ${ui}` }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "none", padding: "8px 10px", color: "#fff", background: "linear-gradient(#63b8ee, #3c9ad9 50%, #2b86cc)",
       borderBottom: "1px solid #1d6aa5", boxShadow: "inset 0 1px 0 rgba(255,255,255,.35), 0 1px 3px rgba(0,0,0,.25)", position: "relative", zIndex: 2 }}>
@@ -68,7 +68,7 @@ const GameFrame: React.FC<{ title: string; mark: React.ReactNode; scroll?: numbe
     </div>
   </div>
 );
-const PodMark = <span style={{ font: `bold 9px/1 ${ui}`, letterSpacing: -1, color: "#b8ffcf" }}>▲▼</span>;
+export const PodMark = <span style={{ font: `bold 9px/1 ${ui}`, letterSpacing: -1, color: "#b8ffcf" }}>▲▼</span>;
 const box: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6, padding: 10, background: "#fff", border: "1px solid #c8c8c8", borderRadius: 5, boxShadow: "0 1px 2px rgba(0,0,0,.12)" };
 const btn: React.CSSProperties = { position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "7px 12px", color: "#333", font: `bold 12px/1 ${ui}`,
   textShadow: "0 1px 0 #fff", whiteSpace: "nowrap", background: "linear-gradient(#fff, #e6e6e6)", border: "1px solid #bbb", borderBottomColor: "#a2a2a2", borderRadius: 4 };
@@ -347,7 +347,7 @@ const Intro: React.FC = () => {
 /* =========================================================================================
  * 1. /games: the two tiles; Pump or Dump is tapped
  * ========================================================================================= */
-const HubTile: React.FC<{ img: string; title: string; text: string; play: string; f: number; at?: number }> = ({ img, title, text, play, f, at }) => (
+export const HubTile: React.FC<{ img: string; title: string; text: string; play: string; f: number; at?: number }> = ({ img, title, text, play, f, at }) => (
   <span style={{ position: "relative", display: "block", overflow: "hidden", color: "#fff", background: "#000", border: "1px solid #c8c8c8", borderRadius: 5, boxShadow: "0 1px 2px rgba(0,0,0,.12)",
     transform: at !== undefined && inWin(f, at, at + 5) ? "scale(.98)" : undefined }}>
     <Img src={staticFile(img)} style={{ display: "block", width: "100%", aspectRatio: "4 / 3", objectFit: "cover" }} />
@@ -357,7 +357,7 @@ const HubTile: React.FC<{ img: string; title: string; text: string; play: string
     {at !== undefined ? <Tap f={f} at={at} /> : null}
   </span>
 );
-const GambaCard: React.FC<{ text: string }> = ({ text }) => (
+export const GambaCard: React.FC<{ text: string }> = ({ text }) => (
   <span style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", background: "#fff", border: "1px solid #c8c8c8", borderRadius: 5, boxShadow: "0 1px 2px rgba(0,0,0,.12)" }}>
     <Gamba size={28} /><span style={{ display: "grid", gap: 2 }}><b style={{ font: `bold 13px/1.1 ${ui}` }}>Built on Gamba</b><small style={{ color: "#777", fontSize: 11 }}>{text}</small></span>
   </span>

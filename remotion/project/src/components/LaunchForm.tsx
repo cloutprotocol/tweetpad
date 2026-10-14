@@ -97,7 +97,7 @@ export type LaunchFormProps = {
 
 export const LaunchForm: React.FC<LaunchFormProps> = ({ chain, image, imageT = 1, name = "", ticker = "", caret = null, desc = "launched on tweetpad.io", devBuy = 0, button, pressed, buttonPrimary = true, evmLine = { found: 1 }, holders = 0, checks, width = 330, est, socialsOpen, socials = {}, socialCaret = null, descCaret, jito, nets, ethFee = 2, ethStart = "10", ethPressed = null, ring = null, stonk }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const evm = chain !== "solana";
   const en = evm ? EVM_NETS[chain] : null;
   const custom = !!en?.custom; // Ethereum: the eth-box instead of the fee box and the dev buy (renderFeeBox / renderDevBuy hide them)
@@ -208,7 +208,7 @@ export const LaunchForm: React.FC<LaunchFormProps> = ({ chain, image, imageT = 1
 
 const EvmWallet: React.FC<{ line: EvmLine }> = ({ line }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const base: React.CSSProperties = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, font: craft ? `14px/1.2 ${s.mono}` : `12px/1.3 ${s.px}`, color: craft ? s.dim : "#999" };
   if (line === "none") return <div style={base}>No EVM wallet here. Install MetaMask, Rabby or Phantom, or open tweetpad in your wallet’s browser.</div>;
   if ("found" in line) return <div style={base}>{line.found} EVM wallet{line.found > 1 ? "s" : ""} found</div>;
@@ -225,7 +225,7 @@ const EvmWallet: React.FC<{ line: EvmLine }> = ({ line }) => {
 /** renderDevBuy, Robinhood: "You get ≈ 989.0K $WOW · 0.10% of supply after the 1% fee, guarded at 99% when you sign" */
 const EvmEst: React.FC<{ eth: number; fdv: number; ticker: string }> = ({ eth, fdv, ticker }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const e = evmEstimate(eth, fdv);
   return (
     <span>You get ≈ <b style={{ color: s.ok, fontWeight: craft ? "normal" : "bold" }}>{e.amount} {ticker ? "$" + ticker : "tokens"}</b> · {e.pct}% of supply
@@ -236,7 +236,7 @@ const EvmEst: React.FC<{ eth: number; fdv: number; ticker: string }> = ({ eth, f
 /** renderFeeBox: the creator / holders split of the 1% fee (10% of each fee goes to Launch Party first), fixed at launch */
 const FeeBox: React.FC<{ holders: number; symbol: string; style?: React.CSSProperties }> = ({ holders, symbol, style }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const hp = Math.round(holders / 10) * 10, cp = 100 - hp; // the range snaps to 10% steps
   const share = (p: number) => (0.9 * p / 100).toFixed(2).replace(/\.?0+$/, "") + "%";
   const k = Math.max(0, Math.min(1, holders / 100));
@@ -272,7 +272,7 @@ const FeeBox: React.FC<{ holders: number; symbol: string; style?: React.CSSPrope
  * coin) and the starting value (the market cap the pool opens at), both fixed at launch; no dev buy and no holders split. */
 const EthBox: React.FC<{ fee: number; start: string; pressed?: { fee?: number; start?: string } | null; style?: React.CSSProperties }> = ({ fee, start, pressed, style }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const head = (label: string, hint: string) => (
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
       <span style={{ flex: "none", font: craft ? `15px/1 ${s.mono}` : `bold 12px/1 ${s.px}`, color: craft ? s.dim : "#666", textTransform: craft ? "uppercase" : undefined }}>{label}</span>
@@ -314,7 +314,7 @@ const EthBox: React.FC<{ fee: number; start: string; pressed?: { fee?: number; s
 const SegChips: React.FC<{ items: { key: StonkTapAt; label: string; on: boolean; disabled?: boolean }[]; stretch?: boolean; pressed?: StonkTapAt | null; tapAt: (at: StonkTapAt) => React.ReactNode }> =
   ({ items, stretch, pressed, tapAt }) => {
     const s = useSkin();
-    const craft = s.name !== "2012";
+    const craft = s.name === "tweetcraft";
     return (
       <span style={{ display: "flex", flex: stretch ? 1 : undefined }}>
         {items.map((it, i) => (
@@ -332,7 +332,7 @@ const SegChips: React.FC<{ items: { key: StonkTapAt; label: string; on: boolean;
 /** #venue-row: "Launchpad [pump.fun | Stonkfun]" at the top of the Solana form */
 const VenueRow: React.FC<{ venue: "pump" | "stonk"; pressed?: StonkTapAt | null; tapAt: (at: StonkTapAt) => React.ReactNode }> = ({ venue, pressed, tapAt }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ flex: "none", font: craft ? `15px/1 ${s.mono}` : `bold 12px/1 ${s.px}`, color: craft ? s.dim : "#666", textTransform: craft ? "uppercase" : undefined }}>Launchpad</span>
@@ -345,7 +345,7 @@ const VenueRow: React.FC<{ venue: "pump" | "stonk"; pressed?: StonkTapAt | null;
 const StonkBox: React.FC<{ mode: StonkMode; taxBps: number; shareBps: number; ticker: string; pair: { symbol: string; community?: boolean } | null;
   pressed?: StonkTapAt | null; tapAt: (at: StonkTapAt) => React.ReactNode }> = ({ mode, taxBps, shareBps, ticker, pair, pressed, tapAt }) => {
   const s = useSkin();
-  const craft = s.name !== "2012";
+  const craft = s.name === "tweetcraft";
   const head = (label: string, hint: string) => (
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
       <span style={{ flex: "none", font: craft ? `15px/1 ${s.mono}` : `bold 12px/1 ${s.px}`, color: craft ? s.dim : "#666", textTransform: craft ? "uppercase" : undefined }}>{label}</span>

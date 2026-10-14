@@ -10,7 +10,11 @@ import { FONTS, Skin, SKIN_2012 } from "../brand/tokens";
 
 export const SkinCtx = createContext<Skin>(SKIN_2012);
 export const useSkin = () => useContext(SkinCtx);
-const is2012 = (s: Skin) => s.name === "2012";
+/** the Wii skin is the 2012 skin underneath (skin-2012.css matches it too), dressed by skin-wii.css */
+const is2012 = (s: Skin) => s.name !== "tweetcraft";
+const isWii = (s: Skin) => s.name === "wii";
+const WII_BLUE = "#1da1f2", WII_BEZEL = "#d2d9de", WII_GLOW = "rgba(29,161,242,.25)";
+const WII_GLASS = "linear-gradient(162deg, rgba(255,255,255,.9) 0 22%, rgba(255,255,255,0) 22.3%), linear-gradient(#fff, #f3f6f8)";
 
 /* ---------- icons, verbatim paths from embed.html ---------- */
 export const IcoLaunch = (p: { s?: number; c?: string }) => (
@@ -67,6 +71,12 @@ const BarBtn: React.FC<{ on?: boolean; children: React.ReactNode; primary?: bool
       background: primary ? s.primaryBtn : on ? s.panel : "transparent", border: `2px solid ${on || primary ? s.panelLo : "transparent"}`,
       boxShadow: on ? `inset 0 2px 0 ${s.accent}` : undefined, ...(primary ? { color: s.primaryBtnText, textShadow: "1px 1px 0 rgba(255,255,255,.3)" } : {}) }}>{children}</span>;
   }
+  if (isWii(s)) {
+    return <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 9px", whiteSpace: "nowrap", borderRadius: 99,
+      color: primary ? "#fff" : on ? WII_BLUE : "#59636a", font: `600 13px/1 ${FONTS.round}`, textShadow: primary ? "0 -1px 0 rgba(0,0,0,.2)" : "0 1px 0 #fff",
+      background: primary ? s.primaryBtn : on ? s.barBtnActive : s.barBtn, border: `2px solid ${primary ? s.primaryBorder : on ? WII_BLUE : "#c9d0d5"}`,
+      boxShadow: primary ? "inset 0 1px 0 rgba(255,255,255,.45), 0 1px 4px rgba(29,120,200,.35)" : on ? `inset 0 1px 0 #fff, 0 0 0 3px ${WII_GLOW}` : "inset 0 1px 0 #fff, 0 1px 3px rgba(40,60,75,.15)" }}>{children}</span>;
+  }
   return <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 9px", whiteSpace: "nowrap", color: "#fff", font: `bold 12px/1 ${s.px}`, textShadow: "0 -1px 0 rgba(0,0,0,.35)",
     background: on ? s.barBtnActive : s.barBtn, border: `1px solid ${on ? "#17558a" : s.barBtnBorder}`, borderRadius: 5,
     boxShadow: on ? "inset 0 1px 3px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.2)" : "inset 0 1px 0 rgba(255,255,255,.3), 0 1px 0 rgba(255,255,255,.2)" }}>{children}</span>;
@@ -75,12 +85,13 @@ const BarBtn: React.FC<{ on?: boolean; children: React.ReactNode; primary?: bool
 export const AppHeader: React.FC<{ tab: Tab; tokenCount?: number; connected?: boolean }> = ({ tab, tokenCount, connected }) => {
   const s = useSkin();
   const craft = !is2012(s);
-  const glow = (on: boolean) => (on && !craft ? "#9fdcff" : "currentColor");
+  const wii = isWii(s);
+  const glow = (on: boolean) => (wii ? "currentColor" : on && !craft ? "#9fdcff" : "currentColor");
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 5, padding: craft ? "7px 8px" : "6px 7px", background: s.headerBg, borderBottom: craft ? undefined : `1px solid ${s.headerBorder}`,
-      boxShadow: craft ? undefined : "inset 0 1px 0 rgba(255,255,255,.35), 0 1px 3px rgba(0,0,0,.25)", position: "relative", zIndex: 10 }}>
-      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, color: "#fff",
-        font: craft ? `600 13px/1 ${s.px}` : `600 20px/1 ${FONTS.round}`, letterSpacing: craft ? ".02em" : "-.02em", textShadow: craft ? s.textShadow : "0 -1px 0 rgba(0,0,0,.3)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 5, padding: craft ? "7px 8px" : "6px 7px", background: s.headerBg, borderBottom: craft ? undefined : `${wii ? 2 : 1}px solid ${s.headerBorder}`,
+      boxShadow: craft ? undefined : wii ? "inset 0 1px 0 #fff, 0 1px 6px rgba(29,161,242,.35)" : "inset 0 1px 0 rgba(255,255,255,.35), 0 1px 3px rgba(0,0,0,.25)", position: "relative", zIndex: 10 }}>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, color: wii ? "#3b4146" : "#fff",
+        font: craft ? `600 13px/1 ${s.px}` : `600 20px/1 ${FONTS.round}`, letterSpacing: craft ? ".02em" : "-.02em", textShadow: craft ? s.textShadow : wii ? "0 1px 0 #fff" : "0 -1px 0 rgba(0,0,0,.3)" }}>
         {craft
           ? <span style={{ display: "inline-block", width: 9, height: 9, margin: "0 7px 0 3px", background: s.accent, transform: "rotate(45deg)", boxShadow: `0 0 0 2px ${s.panelLo}, 0 0 10px ${s.accent}` }} />
           : <Img src={staticFile("brand/tweetpad-hash-256.png")} style={{ width: 24, height: 24 }} />}
@@ -88,10 +99,10 @@ export const AppHeader: React.FC<{ tab: Tab; tokenCount?: number; connected?: bo
       </div>
       {/* card widths (<=480px): skin-2012.css shows Launch and Tokens as icons only */}
       <BarBtn on={tab === "launch"}><IcoLaunch s={17} c={glow(tab === "launch")} /></BarBtn>
-      <BarBtn on={tab === "tokens"}><IcoTokens s={17} c={glow(tab === "tokens")} />{tokenCount ? <span style={{ font: `bold 11px/1 ${s.px}`, background: "rgba(0,0,0,.2)", padding: "2px 5px", borderRadius: 8 }}>{tokenCount}</span> : null}</BarBtn>
+      <BarBtn on={tab === "tokens"}><IcoTokens s={17} c={glow(tab === "tokens")} />{tokenCount ? <span style={{ font: `bold 11px/1 ${s.px}`, color: "#fff", background: wii ? WII_BLUE : "rgba(0,0,0,.2)", padding: "2px 5px", borderRadius: 8 }}>{tokenCount}</span> : null}</BarBtn>
       <BarBtn on={tab === "feed"}><IcoFeed s={17} c={glow(tab === "feed")} /></BarBtn>
       <BarBtn on={tab === "more"}>More</BarBtn>
-      <BarBtn primary={craft}>{connected ? <span style={{ width: 16, height: 16, borderRadius: 3, background: "linear-gradient(135deg,#ffd27a,#e8a33c)" }} /> : "Connect"}<span style={{ fontSize: 10, opacity: 0.85 }}>▾</span></BarBtn>
+      <BarBtn primary={craft || (wii && !connected)}>{connected ? <span style={{ width: 16, height: 16, borderRadius: 3, background: "linear-gradient(135deg,#ffd27a,#e8a33c)" }} /> : "Connect"}<span style={{ fontSize: 10, opacity: 0.85 }}>▾</span></BarBtn>
     </div>
   );
 };
@@ -134,17 +145,21 @@ export const netXY = (net: Net, nets: readonly Net[] = NETS_2): [number, number]
 export const Hud: React.FC<{ net?: Net; hover?: Net | null; t?: number; nets?: readonly Net[] }> = ({ net = "solana", hover = null, t, nets = NETS_2 }) => {
   const s = useSkin();
   const craft = !is2012(s);
+  const wii = isWii(s);
   const slots = ["brand/tweetpad-hash-256.png", "brand/agent-inu.jpg", null, null, null, null];
   return (
-    <div style={{ position: "relative", padding: "6px 10px 7px", display: "flex", justifyContent: "center", alignItems: "center", gap: 8, background: s.hudBg, borderTop: craft ? undefined : "1px solid #000",
-      boxShadow: craft ? undefined : "inset 0 1px 0 rgba(255,255,255,.14)" }}>
-      <div style={{ width: 30, height: 30, display: "grid", placeItems: "center", color: craft ? s.accent : "#4bb4ef" }}>
+    <div style={{ position: "relative", padding: "6px 10px 7px", display: "flex", justifyContent: "center", alignItems: "center", gap: 8, background: s.hudBg,
+      borderTop: craft ? undefined : wii ? `2px solid ${WII_BLUE}` : "1px solid #000",
+      boxShadow: craft ? undefined : wii ? "inset 0 2px 0 #fff, 0 -1px 6px rgba(29,161,242,.3)" : "inset 0 1px 0 rgba(255,255,255,.14)" }}>
+      <div style={{ width: 30, height: 30, display: "grid", placeItems: "center", color: craft ? s.accent : wii ? WII_BLUE : "#4bb4ef" }}>
         <svg viewBox="0 0 8 8" width={16} height={16}><path d="M1 1h6v4H4L2 7V5H1z" fill="currentColor" /></svg>
       </div>
       {slots.map((src, i) => (
         <div key={i} style={{ width: 30, height: 30, padding: 3, borderRadius: craft ? 0 : 5,
-          background: i === 0 ? (craft ? "rgba(60,110,120,.8)" : "radial-gradient(ellipse at 50% 100%, rgba(95,185,240,.45), transparent 70%), rgba(255,255,255,.1)") : craft ? "rgba(30,56,64,.7)" : "rgba(255,255,255,.03)",
-          boxShadow: craft ? "inset 2px 2px 0 rgba(0,0,0,.45), inset -1px -1px 0 rgba(140,200,210,.35)" : "inset 0 1px 1px rgba(0,0,0,.5)" }}>
+          background: wii ? (i === 0 ? "linear-gradient(#fff, #eef6fc)" : "rgba(120,140,155,.06)")
+            : i === 0 ? (craft ? "rgba(60,110,120,.8)" : "radial-gradient(ellipse at 50% 100%, rgba(95,185,240,.45), transparent 70%), rgba(255,255,255,.1)") : craft ? "rgba(30,56,64,.7)" : "rgba(255,255,255,.03)",
+          boxShadow: wii ? (i === 0 ? `0 0 0 2px ${WII_BLUE}, 0 0 0 5px ${WII_GLOW}` : "inset 0 1px 2px rgba(40,60,75,.12)")
+            : craft ? "inset 2px 2px 0 rgba(0,0,0,.45), inset -1px -1px 0 rgba(140,200,210,.35)" : "inset 0 1px 1px rgba(0,0,0,.5)" }}>
           {src ? <Img src={staticFile(src)} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: craft ? 0 : 4 }} /> : null}
         </div>
       ))}
@@ -159,27 +174,28 @@ export const Hud: React.FC<{ net?: Net; hover?: Net | null; t?: number; nets?: r
             );
           })}
         </span>
-      ) : <NetPill net={net} hover={hover} t={t} nets={nets} />}
+      ) : <NetPill net={net} hover={hover} t={t} nets={nets} wii={wii} />}
     </div>
   );
 };
 
 /** 2012 tab-bar switch (skin-2012.css .hud-row .net-switch): a recessed dark track, the picked chain on the old blue
  * gradient with a white logo, the others grey. t is the blue's position as an index into nets (0 = Solana, 1 = Robinhood, …). */
-const NetPill: React.FC<{ net: Net; hover: Net | null; t?: number; nets: readonly Net[] }> = ({ net, hover, t, nets }) => {
+const NetPill: React.FC<{ net: Net; hover: Net | null; t?: number; nets: readonly Net[]; wii?: boolean }> = ({ net, hover, t, nets, wii }) => {
   const k = t ?? nets.indexOf(net);
   // a chain the tab bar doesn't list (Ethereum: only the Launch header has it) leaves every button unpicked, as aria-checked does
   const off = t === undefined && !nets.includes(net);
   const c = (n: Net) => {
     const on = Math.max(0, 1 - Math.abs(nets.indexOf(n) - k));
+    if (wii) { const g = Math.round(143 + (255 - 143) * on - (hover === n && on < 0.5 ? 54 : 0)); return on > 0.5 ? "#fff" : `rgb(${g},${g + 11},${g + 18})`; }
     const g = Math.round(138 + (255 - 138) * on + (hover === n && on < 0.5 ? 66 : 0));
     return `rgb(${g},${g},${g})`;
   };
   return (
-    <span style={{ position: "relative", display: "inline-flex", marginLeft: 4, padding: 2, borderRadius: 15, background: "rgba(0,0,0,.45)", border: "1px solid #000",
-      boxShadow: "inset 0 1px 2px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.1)" }}>
-      {off ? null : <span style={{ position: "absolute", top: 2, left: 2 + 32 * k, width: 32, height: 24, borderRadius: 12, background: "linear-gradient(#4aa9e9, #2c8fd6)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,.35), 0 1px 2px rgba(0,0,0,.5)" }} />}
+    <span style={{ position: "relative", display: "inline-flex", marginLeft: 4, padding: 2, borderRadius: 15, background: wii ? "#e3e9ec" : "rgba(0,0,0,.45)", border: wii ? "1.5px solid #c9d0d5" : "1px solid #000",
+      boxShadow: wii ? "inset 0 1px 3px rgba(40,60,75,.18), 0 1px 0 #fff" : "inset 0 1px 2px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.1)" }}>
+      {off ? null : <span style={{ position: "absolute", top: 2, left: 2 + 32 * k, width: 32, height: 24, borderRadius: 12, background: wii ? "linear-gradient(#5cc4ff, #1a8fe0)" : "linear-gradient(#4aa9e9, #2c8fd6)",
+        boxShadow: wii ? "inset 0 1px 0 rgba(255,255,255,.4), 0 1px 3px rgba(29,120,200,.4)" : "inset 0 1px 0 rgba(255,255,255,.35), 0 1px 2px rgba(0,0,0,.5)" }} />}
       {nets.map((n) => (
         <span key={n} style={{ position: "relative", width: 32, height: 24, display: "grid", placeItems: "center" }}><NetLogo net={n} c={c(n)} size={15} /></span>
       ))}
@@ -198,7 +214,7 @@ export const NetSeg: React.FC<{ net: Net; nets?: readonly Net[] }> = ({ net, net
         return (
           <span key={n} style={{ width: craft ? 26 : 30, height: craft ? 20 : 24, marginLeft: craft || i === 0 ? 0 : -1, display: "grid", placeItems: "center", textShadow: "none",
             ...(craft ? { background: on ? s.accent : "transparent", border: `1px solid ${on ? s.accent : s.line}` }
-              : { background: on ? "linear-gradient(#2c8fd6, #4aa9e9)" : "linear-gradient(#fff, #e6e6e6)", border: `1px solid ${on ? "#1d6aa5" : "#bbb"}`,
+              : { background: on ? s.segOn : s.segOff, border: `1px solid ${on ? (isWii(s) ? "#1678c0" : "#1d6aa5") : isWii(s) ? "#c9d0d5" : "#bbb"}`,
                 borderRadius: i === 0 ? "12px 0 0 12px" : i === nets.length - 1 ? "0 12px 12px 0" : 0, boxShadow: on ? "inset 0 1px 3px rgba(0,0,0,.3)" : undefined, position: "relative", zIndex: on ? 1 : 0 }) }}>
             <NetLogo net={n} c={craft ? (on ? "#04200e" : s.dim) : on ? "#fff" : "#888"} size={craft ? 13 : 15} />
           </span>
@@ -213,7 +229,7 @@ export const NetTip: React.FC<{ net: Net; t: number }> = ({ net, t }) => {
   const s = useSkin();
   return (
     <div style={{ position: "absolute", right: 8, bottom: 72, padding: "6px 9px", background: "rgba(20,20,20,.92)", color: "#fff", borderRadius: 5, whiteSpace: "nowrap",
-      font: `12px/1.2 ${s.name === "2012" ? s.px : s.mono}`, boxShadow: "0 4px 12px rgba(0,0,0,.3)", opacity: t, transform: `translateY(${(1 - t) * 6}px)` }}>{NET_TITLE[net]}</div>
+      font: `12px/1.2 ${is2012(s) ? s.px : s.mono}`, boxShadow: "0 4px 12px rgba(0,0,0,.3)", opacity: t, transform: `translateY(${(1 - t) * 6}px)` }}>{NET_TITLE[net]}</div>
   );
 };
 
@@ -222,11 +238,13 @@ export const Panel: React.FC<{ head?: React.ReactNode; right?: React.ReactNode; 
   const s = useSkin();
   const craft = !is2012(s);
   return (
-    <div style={{ width, padding: 10, background: s.panel, border: craft ? `2px solid ${s.panelLo}` : "1px solid #c8c8c8", borderTop: craft ? `2px solid ${s.gold}` : "1px solid #c8c8c8",
+    <div style={{ width, padding: 10, background: isWii(s) ? WII_GLASS : s.panel, border: craft ? `2px solid ${s.panelLo}` : isWii(s) ? `2px solid ${WII_BEZEL}` : "1px solid #c8c8c8",
+      borderTop: craft ? `2px solid ${s.gold}` : isWii(s) ? `2px solid ${WII_BEZEL}` : "1px solid #c8c8c8",
       borderRadius: s.radius, boxShadow: s.shadow, display: "flex", flexDirection: "column", gap: 8, ...style }}>
       {head !== undefined && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
           ...(craft ? { font: `15px/1 ${s.mono}`, letterSpacing: ".08em", textTransform: "uppercase", color: s.gold }
+            : isWii(s) ? { margin: "-10px -10px 0", padding: "8px 10px", font: `600 15px/1.2 ${FONTS.round}`, color: s.headText, textShadow: "0 1px 0 #fff", background: s.headStrip, borderBottom: "1px solid #e1e7ea", borderRadius: "14px 14px 0 0" }
             : { margin: "-10px -10px 0", padding: "8px 10px", font: `bold 13px/1.2 ${s.px}`, color: "#555", textShadow: "0 1px 0 #fff", background: s.headStrip, borderBottom: "1px solid #ddd", borderRadius: "5px 5px 0 0" }) }}>
           <span>{head}</span>{right}
         </div>
@@ -240,11 +258,12 @@ export const Btn: React.FC<{ primary?: boolean; children: React.ReactNode; style
   const s = useSkin();
   const craft = !is2012(s);
   return (
-    <div style={{ textAlign: "center", padding: "7px 12px", font: `bold 12px/1 ${s.px}`, borderRadius: craft ? 0 : 4,
+    <div style={{ textAlign: "center", padding: "7px 12px", font: `bold 12px/1 ${s.px}`, borderRadius: craft ? 0 : isWii(s) ? 10 : 4,
       color: primary ? s.primaryBtnText : craft ? s.text : "#333",
       textShadow: primary ? (craft ? "1px 1px 0 rgba(255,255,255,.3)" : "0 -1px 0 rgba(0,0,0,.25)") : craft ? s.textShadow : "0 1px 0 #fff",
       background: pressed ? (primary ? "#0287c6" : "#e0e0e0") : primary ? s.primaryBtn : s.btn,
-      border: craft ? "2px solid #050b0d" : `1px solid ${primary ? s.primaryBorder : "#bbb"}`, borderBottomColor: craft ? undefined : primary ? "#0466a8" : "#a2a2a2",
+      border: craft ? "2px solid #050b0d" : `${isWii(s) ? 1.5 : 1}px solid ${primary ? s.primaryBorder : isWii(s) ? "#c9d0d5" : "#bbb"}`,
+      borderBottomColor: craft ? undefined : isWii(s) ? undefined : primary ? "#0466a8" : "#a2a2a2",
       boxShadow: pressed ? "inset 0 2px 4px rgba(0,0,0,.25)" : craft ? "inset 0 2px 0 rgba(255,255,255,.22), inset 0 -3px 0 rgba(0,0,0,.38)" : "inset 0 1px 0 rgba(255,255,255,.6), 0 1px 1px rgba(0,0,0,.08)", ...style }}>
       {children}
     </div>
@@ -261,8 +280,8 @@ export const Seg: React.FC<{ items: string[]; on: number; size?: number; style?:
         <span key={t + i} style={{ padding: "4px 8px", marginLeft: craft || i === 0 ? 0 : -1, font: craft ? `14px/1 ${s.mono}` : `bold ${size}px/1 ${s.px}`,
           display: "grid", placeItems: "center",
           color: i === on ? (craft ? "#04200e" : "#fff") : craft ? s.dim : "#555", textShadow: i === on ? (craft ? "none" : "0 -1px 0 rgba(0,0,0,.25)") : craft ? s.textShadow : "0 1px 0 #fff",
-          background: i === on ? s.segOn : s.segOff, border: `1px solid ${i === on ? (craft ? s.accent : "#1d6aa5") : craft ? s.line : "#bbb"}`,
-          borderRadius: craft ? 0 : i === 0 ? "4px 0 0 4px" : i === items.length - 1 ? "0 4px 4px 0" : 0,
+          background: i === on ? s.segOn : s.segOff, border: `1px solid ${i === on ? (craft ? s.accent : isWii(s) ? "#1678c0" : "#1d6aa5") : craft ? s.line : isWii(s) ? "#c9d0d5" : "#bbb"}`,
+          borderRadius: craft ? 0 : i === 0 ? (isWii(s) ? "99px 0 0 99px" : "4px 0 0 4px") : i === items.length - 1 ? (isWii(s) ? "0 99px 99px 0" : "0 4px 4px 0") : 0,
           boxShadow: i === on && !craft ? "inset 0 1px 3px rgba(0,0,0,.3)" : undefined }}>{t}</span>
       ))}
     </span>
@@ -297,7 +316,8 @@ export const WelcomeTweet: React.FC<{ width?: number }> = ({ width = 330 }) => {
   const s = useSkin();
   if (!is2012(s)) return null; // Tweetcraft hides it (tweetpad.css .welcome {display:none})
   return (
-    <div style={{ width, display: "flex", gap: 10, marginBottom: 10, padding: 10, background: "#fff", border: "1px solid #c8c8c8", borderRadius: 5, boxShadow: s.shadow }}>
+    <div style={{ width, display: "flex", gap: 10, marginBottom: isWii(s) ? 12 : 10, padding: 10, background: isWii(s) ? WII_GLASS : "#fff", border: isWii(s) ? `2px solid ${WII_BEZEL}` : "1px solid #c8c8c8",
+      borderRadius: isWii(s) ? 16 : 5, boxShadow: s.shadow }}>
       <Img src={staticFile("brand/agent-inu.jpg")} style={{ width: 48, height: 48, borderRadius: 5, boxShadow: "0 1px 2px rgba(0,0,0,.25)", objectFit: "cover", flex: "none" }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap" }}>
@@ -321,8 +341,8 @@ export const OfficialStrip: React.FC<{ width?: number }> = ({ width = 330 }) => 
   const s = useSkin();
   const craft = !is2012(s);
   return (
-    <div style={{ width, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, padding: "8px 10px", background: s.panel,
-      border: craft ? `2px solid ${s.panelLo}` : "1px solid #c8c8c8", borderRadius: s.radius, boxShadow: s.shadow }}>
+    <div style={{ width, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isWii(s) ? 12 : 10, padding: "8px 10px", background: isWii(s) ? WII_GLASS : s.panel,
+      border: craft ? `2px solid ${s.panelLo}` : isWii(s) ? `2px solid ${WII_BEZEL}` : "1px solid #c8c8c8", borderRadius: s.radius, boxShadow: s.shadow }}>
       <span style={{ font: craft ? `15px/1 ${s.mono}` : `12px/1.2 ${s.px}`, color: craft ? s.dim : "#777", textTransform: craft ? "uppercase" : undefined }}>
         Official <b style={{ color: craft ? s.gold : "#333" }}>$TP</b> contract</span>
       <span style={{ padding: "2px 6px", font: `12px/1 ${s.px}`, color: s.accent, background: craft ? "rgba(111,231,216,.08)" : "#f2f8fc", border: `1px solid ${craft ? "rgba(111,231,216,.3)" : "#cfe3f1"}`, borderRadius: 3 }}>BctF…EQDN ⧉</span>
@@ -344,10 +364,11 @@ export const Toast: React.FC<{ title: string; text: string; t: number }> = ({ ti
     );
   }
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 5, display: "flex", justifyContent: "center", gap: 6, padding: "5px 10px", background: "rgba(20,20,20,.92)",
-      boxShadow: "0 -1px 3px rgba(0,0,0,.3)", transform: `translateY(${(1 - t) * 100}%)` }}>
-      <b style={{ font: `bold 12px/1.2 ${s.px}`, color: "#fff" }}>{title}</b>
-      <span style={{ font: `12px/1.2 ${s.px}`, color: "#ddd" }}>{text}</span>
+    <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 5, display: "flex", justifyContent: "center", gap: 6, padding: "5px 10px",
+      background: isWii(s) ? "rgba(250,252,253,.97)" : "rgba(20,20,20,.92)", borderTop: isWii(s) ? `1px solid ${WII_BEZEL}` : undefined,
+      boxShadow: isWii(s) ? "0 -2px 6px rgba(40,60,75,.12)" : "0 -1px 3px rgba(0,0,0,.3)", transform: `translateY(${(1 - t) * 100}%)` }}>
+      <b style={{ font: `bold 12px/1.2 ${s.px}`, color: isWii(s) ? "#3b4146" : "#fff" }}>{title}</b>
+      <span style={{ font: `12px/1.2 ${s.px}`, color: isWii(s) ? "#59636a" : "#ddd" }}>{text}</span>
     </div>
   );
 };
