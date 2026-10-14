@@ -238,7 +238,8 @@
     </ol>
   </section>
   <p class="official">Official <b>$TP</b> contract: <code id="tp-ca">BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN</code> <button class="btn" id="copy-ca" type="button">Copy</button></p>
-  <p><a href="embed.html">Open full screen</a> · <a href="https://github.com/cloutprotocol/tweetpad">Source (MIT)</a> · <a href="https://x.com/tweetpad_io">@tweetpad_io</a></p>
+  <!-- the source link is hidden for now: <a href="https://github.com/cloutprotocol/tweetpad">Source (MIT)</a> -->
+  <p><a href="embed.html">Open full screen</a> · <a href="https://x.com/tweetpad_io">@tweetpad_io</a></p>
 </main>
 
 <script>
@@ -326,7 +327,8 @@
         el('code', { textContent: link.replace(/^https?:\/\//, '') }), ' ', btn('Copy link', link)),
       el('section', {}, el('h3', {}, el('img', { src: 'assets/menu/about.svg', alt: '' }), 'About'),
         el('p', { textContent: 'An X player card dressed as the 2012 bird app. Launch, trade and claim without leaving the post. Your wallet signs; tweetpad never holds keys.' }),
-        el('div', { className: 'links' }, el('a', { href: 'https://github.com/cloutprotocol/tweetpad', textContent: 'Source (MIT)' }),
+        // the source link is hidden for now: el('a', { href: 'https://github.com/cloutprotocol/tweetpad', textContent: 'Source (MIT)' }),
+        el('div', { className: 'links' },
           el('a', { href: 'https://x.com/tweetpad_io', textContent: '𝕏 @tweetpad_io' }), el('a', { href: 'embed.html?tab=about', textContent: 'About in the app' }))));
   }
 
