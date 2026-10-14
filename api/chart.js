@@ -1,16 +1,18 @@
 // Coin screen data in one cached call: candles + recent trades from GeckoTerminal (free; open CORS, but
 // rate-limited per IP, so going through here with a short CDN cache keeps every viewer under the limit).
-// GET /api/chart?pool=<pair address>&tf=1m|5m|15m|1h[&net=robinhood|bnb|base|ethereum]   (net: the chain of a v4 pool id)
+// GET /api/chart?pool=<pair address>&tf=1m|5m|15m|1h[&net=robinhood|bnb|base|ethereum]   (net: the chain of an EVM pool: a v4 pool id, or
+//     a v2/v3 pair's address, as any token's own page (api/t.js) charts it)
 // GET /api/chart?pool=<pair address>&spark=1   → { points }: the last day's 15-minute closes, for the token list's row charts
 // &venue=bordrless&mint=<mint>: a Bordrless coin, from Bordrless's own indexer (GeckoTerminal doesn't see its DEX); its candles
 // are 5-minute ones, so 1m shows 5m and 15m/1h are put together here
 const { cors, isPubkey, redis, DEX_SLUG, fail } = require('./_lib');
 const SPARK_TTL = 300;   // seconds a row chart is reused, from Redis, across every region and viewer
 
-/* Solana pools are base58 accounts; EVM pools are Uniswap v4 pool ids (0x + 64 hex), on the chain named by ?net= (Robinhood if absent) */
-const isV4Pool = (s) => /^0x[0-9a-fA-F]{64}$/.test(s);
+/* Solana pools are base58 accounts; EVM pools are Uniswap v4 pool ids (0x + 64 hex) or pair contracts (0x + 40 hex), on the chain
+   named by ?net= (Robinhood if absent) */
+const isEvmPool = (s) => /^0x([0-9a-fA-F]{64}|[0-9a-fA-F]{40})$/.test(s);
 const GECKO = { ...DEX_SLUG, ethereum: 'eth' };   // GeckoTerminal's ids are DexScreener's, but for Ethereum
-const baseFor = (pool, net) => 'https://api.geckoterminal.com/api/v2/networks/' + (isV4Pool(pool) ? GECKO[net] || 'robinhood' : 'solana') + '/pools/';
+const baseFor = (pool, net) => 'https://api.geckoterminal.com/api/v2/networks/' + (isEvmPool(pool) ? GECKO[net] || 'robinhood' : 'solana') + '/pools/';
 const TIMEFRAMES = { '1m': ['minute', 1], '5m': ['minute', 5], '15m': ['minute', 15], '1h': ['hour', 1] };
 
 async function gecko(path, net) {
@@ -54,13 +56,13 @@ module.exports = async (req, res) => {
   const q = req.query || {};
   const pool = String(q.pool || '');
   const tf = TIMEFRAMES[q.tf] ? q.tf : '5m';
-  const net = String(q.net || 'robinhood');   // which EVM chain a v4 pool id is on
+  const net = String(q.net || 'robinhood');   // which EVM chain an EVM pool is on
   if (q.venue === 'bordrless') {
     if (!isPubkey(String(q.mint || ''))) return fail(res, 400, 'invalid mint');
     try { return await bordrChart(String(q.mint), tf, !!q.spark, res); }
     catch (err) { res.setHeader('cache-control', 'public, s-maxage=5'); return fail(res, 502, err.message); }
   }
-  if (!isPubkey(pool) && !isV4Pool(pool)) return fail(res, 400, 'invalid pool');
+  if (!isPubkey(pool) && !isEvmPool(pool)) return fail(res, 400, 'invalid pool');
   const [period, aggregate] = TIMEFRAMES[tf];
   if (q.spark) {
     try {

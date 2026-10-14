@@ -1603,6 +1603,8 @@ const coin = { mint: null, launch: null, tf: '5m', candles: [], trades: [], ws: 
 const solUsd = (m) => (m && m.price && m.priceNative ? m.price / m.priceNative : null);
 /* a Bordrless coin has its own trading page (/b/<mint>, api/b.js), opened in this same frame like the games */
 const openBordr = (mint) => { location.href = '/b/' + mint + '?' + MODE; };
+/* ...and so does any other token on these chains (/<chain>/<address>, api/t.js) */
+const openAny = (address) => { location.href = '/t/' + address + '?' + MODE; };
 async function openCoin(mint) {
   let launch = tokens.list.find(l => l.mint === mint) || tokens.bordr.list.find(l => l.mint === mint);
   if (isBordr(launch)) return openBordr(mint);
@@ -1616,6 +1618,8 @@ async function openCoin(mint) {
     try {
       const res = await fetch('/api/launches?mint=' + mint);
       const out = await res.json();
+      /* not launched here: any token has its own page on its chain (/t/<address> finds the chain; api/t.js) */
+      if (res.status === 404) return openAny(mint);
       if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
       coin.launch = launch = out.launch;
     } catch (err) { coin.error = errText(err); return renderCoin(); }
@@ -3148,6 +3152,13 @@ for (const tab of document.querySelectorAll('.subnav [role="tab"]')) tab.addEven
 const toggleDebug = () => selectTab($('debug').hidden ? debugTab : mainView);
 for (const tab of document.querySelectorAll('.views [role="tab"]')) tab.addEventListener('click', () => selectTab(tab.dataset.view));
 $('tokens-refresh').addEventListener('click', () => (tokens.chain === 'bordrless' ? loadBordrList() : loadTokens()));
+/* any token by its address: a coin launched here opens here; any other opens its own page on the chain it trades on (/t/<address>) */
+$('any-token').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const ca = $('any-ca').value.trim();
+  if (!isEvm(ca) && !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(ca)) { setVerdict('bad', 'Not a contract address', 'Paste a Solana mint or a 0x… token address'); return; }
+  openCoin(ca);
+});
 $('coin-back').addEventListener('click', () => selectTab('tokens'));
 for (const b of document.querySelectorAll('.tf [data-tf]')) b.addEventListener('click', () => { coin.tf = b.dataset.tf; loadChart(); });
 for (const b of document.querySelectorAll('.sort [data-sort]')) b.addEventListener('click', () => { tokens.sort = b.dataset.sort; renderTokens(); });

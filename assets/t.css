@@ -1,0 +1,102 @@
+/* any token's own page (/<chain>/<address>), on top of feature.css, in the app's 2012 skin: the token with its chain's badge, its
+   chart, the buy and sell box, its market, what can be checked about it, its last trades and the share row. */
+.up { color: var(--ok); }
+.dn { color: var(--bad); }
+.dim { color: var(--dim); }
+.bad { color: var(--bad); }
+.linkish { padding: 0; color: var(--dim); font: 11px/1 var(--ui); background: none; border: 0; box-shadow: none; text-shadow: none; text-decoration: underline; }
+.linkish:hover { color: var(--text); background: none; }
+
+/* a chain's mark and colours, as the app badges a coin (tweetpad.css .chain-badge) */
+.t-mark { display: inline-block; width: 12px; height: 12px; flex: none; background: currentColor; -webkit-mask: center / contain no-repeat; mask: center / contain no-repeat; }
+.t-mark.sol { background: url(solana.svg) center / contain no-repeat; -webkit-mask: none; mask: none; }
+.t-mark.rh { -webkit-mask-image: url(robinhood.png); mask-image: url(robinhood.png); }
+.t-mark.bnb { -webkit-mask-image: url(bnb.svg); mask-image: url(bnb.svg); }
+.t-mark.base { -webkit-mask-image: url(base.svg); mask-image: url(base.svg); }
+.t-mark.eth { -webkit-mask-image: url(ethereum.svg); mask-image: url(ethereum.svg); }
+.t-net, .t-badge { color: #fff; background: #627eea; }
+:is(.t-net, .t-badge).sol { background: #000; }
+:is(.t-net, .t-badge).rh { color: #000; background: #ccff00; }
+:is(.t-net, .t-badge).bnb { background: #f0b90b; }
+:is(.t-net, .t-badge).base { background: #0000ff; }
+.t-net { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px 2px 5px; font: bold 10px/1.2 var(--ui); letter-spacing: .02em; text-shadow: none;
+  border-radius: 9px; box-shadow: 0 1px 1px rgba(0, 0, 0, .2); }
+.t-net .t-mark { width: 10px; height: 10px; }
+.t-net.base .t-mark { width: 8px; height: 8px; }
+.head .title .t-net { padding: 3px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255, 255, 255, .6); }
+.head .title .t-net .t-mark { width: 9px; height: 9px; }
+
+/* the token: its picture with the chain's badge, its name and address, and its market cap */
+.t-coin { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card); border: 1px solid var(--edge); border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.t-pic-wrap { position: relative; flex: none; }
+.t-pic { display: block; width: 46px; height: 46px; object-fit: cover; border-radius: 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); background: #e9eef2; }
+.t-pic.ph { display: grid; place-items: center; color: #fff; font: bold 22px/1 var(--ui); background: linear-gradient(#63b8ee, #2b86cc); }
+.t-badge { position: absolute; right: -4px; bottom: -4px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 1px 2px rgba(0, 0, 0, .3); }
+.t-badge .t-mark { width: 11px; height: 11px; }
+.t-badge.base .t-mark { width: 8px; height: 8px; }
+.t-name { min-width: 0; flex: 1; }
+.t-name b { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: bold 17px/1.15 var(--ui); color: #333; }
+.t-name small { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.t-ca { padding: 2px 5px; color: var(--dim); font: 11px/1 Menlo, Monaco, monospace; background: transparent; border: 0; box-shadow: none; text-shadow: none; }
+.t-ca:hover { color: var(--text); background: #eef3f6; }
+.t-cap { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
+.t-cap b { font: bold 18px/1.1 var(--ui); color: #333; }
+.t-cap span { font: bold 11px/1.4 var(--ui); color: var(--dim); }
+.t-cap span.up { color: var(--ok); }
+.t-cap span.dn { color: var(--bad); }
+
+/* the chart */
+.t-chart { padding: 6px 8px 8px; background: var(--card); border: 1px solid var(--edge); border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.t-tf { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.t-tf-label { color: var(--dim); font: bold 10px/1 var(--ui); letter-spacing: .03em; text-transform: uppercase; }
+.t-tf .chips button { padding: 3px 8px; font-size: 10px; }
+#t-chart { display: block; width: 100%; height: 104px; background-image: linear-gradient(#f1f3f5 1px, transparent 1px); background-size: 100% 25%; }
+
+/* the buy and sell box */
+.t-trade { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--card); border: 1px solid var(--edge); border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.t-top { display: flex; align-items: center; justify-content: space-between; }
+.t-side button { padding: 7px 18px; }
+.t-side .buy[aria-pressed="true"] { background: linear-gradient(#45b864, #2e9e4f); border-color: #237a3c; }
+.t-side .sell[aria-pressed="true"] { background: linear-gradient(#e2555a, #d0343a); border-color: #a3262b; }
+.t-slip { padding: 5px 8px; font-size: 11px; }
+.t-row { display: flex; gap: 6px; align-items: stretch; }
+.t-amt { position: relative; flex: 1; min-width: 0; display: flex; }
+.t-amt input.text { padding: 8px 56px 8px 9px; font: bold 15px/1.2 var(--ui); }
+.t-amt span { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); color: var(--dim); font: bold 11px/1 var(--ui); pointer-events: none;
+  max-width: 48px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-chips { flex-wrap: nowrap; }
+.t-chips button { padding: 6px 7px; font-size: 11px; }
+.t-est { min-height: 16px; font-size: 12px; }
+.t-go { width: 100%; padding: 10px 12px; font-size: 14px; }
+.t-go.sell { background: linear-gradient(#e2555a, #d0343a); border-color: #a3262b; }
+.t-wallets { display: flex; flex-wrap: wrap; gap: 8px; }
+.t-wallets img { width: 16px; height: 16px; }
+.t-bal { display: flex; align-items: center; justify-content: space-between; color: var(--dim); font-size: 11px; }
+.t-bal b { color: var(--text); }
+.t-status { padding: 7px 8px; font-size: 12px; background: #fafafa; border: 1px solid currentColor; border-radius: 4px; }
+.t-status.ok { color: var(--ok); }
+.t-status.warn { color: var(--warn); }
+.t-status.bad { color: var(--bad); }
+.t-status a { font-weight: bold; }
+
+/* the market, the checks, the last trades */
+#t-parts { display: flex; flex-direction: column; gap: 8px; }
+.t-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: var(--card); border: 1px solid var(--edge); border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.t-card-head { color: #555; font: bold 12px/1.2 var(--ui); }
+.t-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-top: 5px; border-top: 1px solid #f0f0f0; font-size: 12px; }
+.t-kv > span { flex: none; color: var(--dim); }
+.t-kv > b { min-width: 0; text-align: right; color: var(--text); }
+.t-kv.gone > b { color: var(--ok); }
+.t-kv.held > b { color: var(--warn); }
+.t-scan { align-self: flex-start; margin-top: 2px; }
+.t-trades { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; }
+.t-trades li { display: grid; grid-template-columns: 34px 1fr auto 34px; align-items: baseline; gap: 8px; padding: 5px 0; border-top: 1px solid #f0f0f0; font-size: 12px; }
+.t-trades .t-addr { color: var(--dim); font: 11px/1 Menlo, Monaco, monospace; }
+.t-ago { color: var(--dim); text-align: right; }
+
+/* sharing */
+.t-share { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--card); border: 1px solid var(--edge); border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.t-link { display: flex; align-items: center; gap: 6px; }
+.t-link code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 7px 8px; color: var(--text); font: 12px/1 Menlo, Monaco, monospace;
+  background: #f5f8fa; border: 1px solid var(--line); border-radius: 4px; }
+.t-out { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; font-weight: bold; }

@@ -53,7 +53,7 @@ const FACTORY_ABI = parseAbi([
   'function paymentAssets(address) view returns ((bool enabled, uint8 decimals, uint256 minimumRaise, uint256 soloOpeningFdv))',
   'event SoloLaunched(address indexed coin, address indexed creator, address escrow, uint256 raised)',
 ]);
-const ERC20_ABI = parseAbi(['function name() view returns (string)', 'function symbol() view returns (string)']);
+const ERC20_ABI = parseAbi(['function name() view returns (string)', 'function symbol() view returns (string)', 'function decimals() view returns (uint8)']);
 const HOOK_ABI = parseAbi([
   'function feesOwed(bytes32) view returns (uint256)',
   'function owed(address, address) view returns (uint256)',
@@ -182,6 +182,13 @@ async function holderRewards(chain, coin, wallet) {
 
 const isEvmAddress = (s) => typeof s === 'string' && isAddress(s, { strict: false });
 
+/* any ERC-20's name, ticker and decimals, read from the chain (a token's own page, api/token.js); null when it isn't one */
+async function readToken(chain, address) {
+  const read = (functionName) => rpc(chain).readContract({ address, abi: ERC20_ABI, functionName });
+  const [decimals, name, symbol] = await Promise.all([read('decimals'), read('name').catch(() => ''), read('symbol').catch(() => '')]).catch(() => [null]);
+  return decimals == null ? null : { decimals: Number(decimals), name, symbol };
+}
+
 /* ---------- trading: buy and sell a launched coin in its Uniswap v4 pool, through Uniswap's own Universal Router ----------
    Every tweetpad coin trades against native ETH, so the pool key is (ETH, coin, fee 0, spacing 60, the hook): the zero address
    sorts first, ETH is currency0 and a buy is zeroForOne. The 1% fee is the hook's, taken inside the swap; there is no other.
@@ -297,4 +304,4 @@ async function buildTrade({ chain, wallet, coin, side, amountIn, slippageBps }) 
 }
 
 module.exports = { NETS, isNet, FEE_BPS, PLATFORM_BPS, launchContext, buildLaunch, verifyLaunch, creatorFees, claimCalls, holderRewards,
-  quoteTrade, buildTrade, isEvmAddress, getAddress };
+  quoteTrade, buildTrade, readToken, rpc, isEvmAddress, getAddress };

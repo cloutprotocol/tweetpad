@@ -14,6 +14,18 @@
       "destination": "/api/b?mint=:mint"
     },
     {
+      "source": "/:chain(sol|solana|rh|robinhood|bnb|bsc|base|eth|ethereum)/:address/card.png",
+      "destination": "/api/t?chain=:chain&address=:address&img=1"
+    },
+    {
+      "source": "/:chain(sol|solana|rh|robinhood|bnb|bsc|base|eth|ethereum)/:address",
+      "destination": "/api/t?chain=:chain&address=:address"
+    },
+    {
+      "source": "/t/:address",
+      "destination": "/api/t?find=:address"
+    },
+    {
       "source": "/preview",
       "destination": "/preview.html"
     },

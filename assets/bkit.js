@@ -1,6 +1,6 @@
-/* What tweetpad's Bordrless pages share (/b/<mint>: assets/b.js; /bordrless: assets/bhub.js): the element builder, the number
-   helpers, the RPC and api/bordrless.js calls, and the wallet through the Wallet Standard (Phantom, Solflare, Backpack…), the
-   way the games connect one. A page loads this first and reads window.bkit. */
+/* What tweetpad's Bordrless pages share (/b/<mint>: assets/b.js; /bordrless: assets/bhub.js), and any token's page (/<chain>/<address>:
+   assets/t.js): the element builder, the number helpers, the RPC and api/bordrless.js calls, and the wallet through the Wallet Standard
+   (Phantom, Solflare, Backpack…), the way the games connect one. A page loads this first and reads window.bkit. */
 (() => {
 'use strict';
 const $ = (id) => document.getElementById(id);
@@ -27,7 +27,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const short = (a) => a.slice(0, 4) + '…' + a.slice(-4);
 const b64enc = (bytes) => { let s = ''; for (const b of bytes) s += String.fromCharCode(b); return btoa(s); };
 const b64dec = (str) => Uint8Array.from(atob(str), c => c.charCodeAt(0));
-const usd = (n) => (n == null ? '—' : n >= 1e6 ? '$' + (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? '$' + (n / 1e3).toFixed(1) + 'K' : n >= 1 ? '$' + n.toFixed(0) : '$' + n.toPrecision(2));
+const usd = (n) => (n == null ? '—' : n >= 1e9 ? '$' + (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? '$' + (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? '$' + (n / 1e3).toFixed(1) + 'K' : n >= 1 ? '$' + n.toFixed(0) : '$' + n.toPrecision(2));
 const qty = (n) => (n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n >= 1 ? n.toFixed(2).replace(/\.?0+$/, '') : n.toPrecision(3));
 const pct = (bps) => bps / 100 + '%';
 const ago = (t) => { const s = Math.max(1, Math.round((Date.now() - t) / 1000)); return s < 60 ? s + 's' : s < 3600 ? Math.round(s / 60) + 'm' : s < 86400 ? Math.round(s / 3600) + 'h' : Math.round(s / 86400) + 'd'; };

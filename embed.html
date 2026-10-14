@@ -177,6 +177,11 @@
           <!-- not a narrowing of the list: every Bordrless token, launched here or not, from Bordrless's own list -->
           <button type="button" role="radio" data-chain="bordrless" aria-checked="false" class="cf-bordr" title="Every Bordrless token, highest market cap first">Bordrless <span class="n" id="cf-bordrless"></span></button>
         </div>
+        <!-- any other token on these chains, launched here or not: its own trading page (/<chain>/<address>, api/t.js) -->
+        <form class="any-token" id="any-token" autocomplete="off">
+          <input id="any-ca" class="pairs-search" placeholder="Trade any token: paste its address" spellcheck="false" aria-label="Any token's contract address">
+          <button type="submit" class="btn sm">Open</button>
+        </form>
         <ul class="token-list" id="token-list"></ul>
       </div>
     </section>

@@ -1,5 +1,6 @@
 // Share card for one coin: /c/<mint> (rewritten here by vercel.json). X reads these tags to build a player card
-// with the coin's own name and image; the player opens the card straight to that coin's chart.
+// with the coin's own name and image; the player opens the card straight to that coin's chart. A token not launched here goes to its
+// own page (/t/<address>, api/t.js).
 const { isCoinId, isPubkey, redis } = require('./_lib');
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -12,6 +13,8 @@ module.exports = async (req, res) => {
     try { const [row] = await redis(['GET', 'launch:' + mint]); launch = row ? JSON.parse(row) : null; } catch { /* plain card */ }
     /* a Bordrless token, launched here or not, plays its own trading page (/b/<mint>, api/b.js) and its own card image */
     if (!launch && isPubkey(mint)) launch = await require('./bordrless').launchRecord(mint).catch(() => null);
+    /* any other token plays its own page on the chain it trades on (/t/<address> finds it; api/t.js) */
+    if (!launch) { res.setHeader('cache-control', 'public, s-maxage=300'); return res.redirect(302, origin + '/t/' + mint); }
   }
   const bordr = !!(launch && launch.venue === 'bordrless');
   const title = launch ? '$' + launch.symbol + ' · ' + launch.name + ' on tweetpad' : 'tweetpad';

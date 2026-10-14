@@ -5,7 +5,7 @@ const { execFileSync } = require('node:child_process');
 const { join } = require('node:path');
 
 const root = join(__dirname, '..');
-const files = [...readdirSync(join(root, 'api')).filter(f => f.endsWith('.js')).map(f => join('api', f)), 'assets/tweetpad.js', 'assets/gamba-kit.js', 'assets/pumpordump.js', 'assets/mines.js', 'assets/scan.js', 'assets/bkit.js', 'assets/b.js', 'assets/bhub.js', 'scripts/check.js'];
+const files = [...readdirSync(join(root, 'api')).filter(f => f.endsWith('.js')).map(f => join('api', f)), 'assets/tweetpad.js', 'assets/gamba-kit.js', 'assets/pumpordump.js', 'assets/mines.js', 'assets/scan.js', 'assets/bkit.js', 'assets/b.js', 'assets/bhub.js', 'assets/t.js', 'scripts/check.js'];
 let failed = 0;
 for (const f of files) {
   try { execFileSync(process.execPath, ['--check', join(root, f)], { stdio: 'pipe' }); console.log('ok   ' + f); }

@@ -2,7 +2,7 @@
 // over the middle, so the coin sits above the middle and the numbers card below it; where there's no play button
 // (other sites, chats) the two read as one balanced poster. Rendered with @vercel/og (satori + resvg, its own font handling, so no system fonts are needed) and held
 // at the CDN for 5 minutes, so the market cap is fresh when a post is first shared without rendering per view.
-const { isCoinId, redis, marketData, rateLimit } = require('./_lib');
+const { isCoinId, isEvmAddress, EVM_CHAINS, redis, marketData, rateLimit } = require('./_lib');
 
 const SIZE = 1080;
 /* the app icon from the hash kit, fetched from our own assets once per instance and inlined */
@@ -65,12 +65,16 @@ module.exports = async (req, res) => {
   }
   if (!launch) { res.setHeader('cache-control', 'public, s-maxage=60'); return res.redirect(302, origin + '/preview.png'); }
 
-  const [market, profileRaw, picture, fontList, icon] = await Promise.all([
+  /* the chain it trades on, badged on its picture and named under it (api/t.js draws each chain's mark in its colours) */
+  const chain = EVM_CHAINS.includes(launch.chain) ? launch.chain : isEvmAddress(mint) ? 'robinhood' : 'solana';
+  const { LOOK, chainMark } = require('./t'), look = LOOK[chain];
+  const [market, profileRaw, picture, fontList, icon, mark] = await Promise.all([
     marketData([mint]).then(m => m[mint] || {}).catch(() => ({})),
     redis(['GET', 'profile:' + launch.creator]).then(([p]) => p).catch(() => null),
     imageUri(origin, launch.image),
     loadFonts(),
     appIconUri(origin),
+    chainMark(origin, chain),
   ]);
   const profile = profileRaw ? JSON.parse(profileRaw) : null;
   const change = market.change1h != null ? market.change1h : market.change24h;
@@ -83,12 +87,17 @@ module.exports = async (req, res) => {
     /* top: the coin */
     el('div', { position: 'absolute', top: 130, left: 0, right: 0, flexDirection: 'column', alignItems: 'center' },
       el('div', { alignItems: 'center' },
-        picture ? img(picture, { width: 168, height: 168, borderRadius: 30, objectFit: 'cover', boxShadow: '0 6px 16px rgba(0,0,0,.25)' })
-          : el('div', { width: 168, height: 168, borderRadius: 30, backgroundColor: '#2b86cc', color: '#fff', fontSize: 90, fontWeight: 700,
-              alignItems: 'center', justifyContent: 'center' }, launch.symbol.slice(0, 1)),
-        el('div', { flexDirection: 'column', marginLeft: 36, maxWidth: 640 },
+        el('div', { position: 'relative', width: 168, height: 168 },
+          picture ? img(picture, { width: 168, height: 168, borderRadius: 30, objectFit: 'cover', boxShadow: '0 6px 16px rgba(0,0,0,.25)' })
+            : el('div', { width: 168, height: 168, borderRadius: 30, backgroundColor: '#2b86cc', color: '#fff', fontSize: 90, fontWeight: 700,
+                alignItems: 'center', justifyContent: 'center' }, launch.symbol.slice(0, 1)),
+          el('div', { position: 'absolute', right: -14, bottom: -14, width: 64, height: 64, borderRadius: 32, backgroundColor: look.bg, alignItems: 'center', justifyContent: 'center',
+              border: '5px solid #fff', boxShadow: '0 2px 6px rgba(0,0,0,.3)' }, mark ? img(mark, { width: chain === 'base' ? 28 : 36, height: chain === 'base' ? 28 : 36 }) : null)),
+        el('div', { flexDirection: 'column', marginLeft: 40, maxWidth: 640 },
           el('div', { fontSize: 104, fontWeight: 700, color: '#2f2f2f', letterSpacing: -2, lineHeight: 1 }, '$' + launch.symbol),
-          el('div', { fontSize: 44, color: '#777', marginTop: 10, lineHeight: 1.1 }, launch.name.length > 24 ? launch.name.slice(0, 23) + '…' : launch.name)))),
+          el('div', { fontSize: 44, color: '#777', marginTop: 10, lineHeight: 1.1 }, launch.name.length > 24 ? launch.name.slice(0, 23) + '…' : launch.name),
+          el('div', { marginTop: 14 }, el('div', { alignItems: 'center', backgroundColor: look.bg, color: look.fg, borderRadius: 24, padding: '6px 16px 6px 10px', fontSize: 26, fontWeight: 700 },
+            mark ? img(mark, { width: 28, height: 28, marginRight: 8 }) : null, { solana: 'Solana', robinhood: 'Robinhood Chain', bnb: 'BNB Chain', base: 'Base', ethereum: 'Ethereum' }[chain]))))),
     /* bottom: the numbers, as a 2012 tweet card */
     el('div', { position: 'absolute', left: 120, right: 120, top: 760, alignItems: 'center', padding: '26px 34px', backgroundColor: '#fff',
         border: '2px solid #c8c8c8', borderRadius: 14, boxShadow: '0 4px 10px rgba(0,0,0,.12)' },
