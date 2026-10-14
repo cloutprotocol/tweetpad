@@ -119,7 +119,7 @@ export function createStage(canvas, { layout = 'page', still = matchMedia('(pref
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 }));
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = -1.55; shadow.scale.set(0.9, 0.9, 1); scene.add(shadow);
 
-  let agent = null, size = 1;
+  let agent = null, size = 1, running = true;
   function setLook(look) {
     if (agent) { holder.remove(agent.group); agent.group.traverse(o => { o.geometry?.dispose(); }); }
     agent = buildCharacter(look); holder.add(agent.group);
@@ -141,6 +141,7 @@ export function createStage(canvas, { layout = 'page', still = matchMedia('(pref
   const mood = { bounce: 0, squint: 0, blinkAt: 1.5, blink: 0, lid: 1, asleep: false, doze: 0 };
   const clock = new THREE.Clock();
   function frame() {
+    if (!running) return;
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
     if (card) { gaze.tx = 0.35; gaze.ty = 0.25; }
     else if (mood.asleep) { gaze.tx = 0; gaze.ty = -0.35; }
@@ -176,5 +177,7 @@ export function createStage(canvas, { layout = 'page', still = matchMedia('(pref
     sleep(on) { mood.asleep = !!on; },
     /* smaller or larger on the stage, standing on the same shadow (1 is Dot's size) */
     setSize(k) { size = k; },
+    /* stops drawing for good (the page shows the agent's own code instead) */
+    stop() { running = false; renderer.setAnimationLoop(null); renderer.dispose(); },
   };
 }

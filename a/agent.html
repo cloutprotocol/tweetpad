@@ -122,6 +122,18 @@
   .colors { display: flex; flex-wrap: wrap; gap: 6px; } .colors button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
   .colors button[aria-pressed=true] { border-color: #fff; }
   .check { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-top: 10px; }
+  .card h3 { margin: 18px 0 2px; font: 600 16px/1.2 var(--round); }
+  .card .or { margin: 12px 0 0; font-size: 12px; color: var(--dim); text-align: center; }
+  .card a { color: var(--blue); }
+  .key { display: flex; gap: 8px; align-items: center; margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .35); border: 1px dashed var(--line); }
+  .key code { flex: 1; overflow-wrap: anywhere; font: 13px/1.3 Menlo, Monaco, monospace; }
+  .flags { margin: 6px 0 0; padding-left: 18px; font-size: 12px; color: #f5c518; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; } .btns .btn { display: inline-flex; align-items: center; padding: 10px 14px; font-size: 14px; text-decoration: none; }
+  .file { position: relative; overflow: hidden; } .file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  /* the agent's own code, behind tweetpad's controls */
+  iframe.code { position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%; border: 0; background: transparent; }
+  .banner { position: fixed; top: 14px; left: 50%; z-index: 5; transform: translateX(-50%); padding: 7px 14px; border-radius: 99px; font: 600 13px/1.2 var(--round);
+            color: #111; background: #f5c518; }
 
   /* ?embed, X's card (480×480): the agent left, its browser right, Top up small; panels open the full page instead */
   html[data-mode="embed"] .top { top: 10px; left: 10px; gap: 6px; }
@@ -161,12 +173,17 @@
   .howto li span { display: block; margin-top: 2px; font-size: 13px; line-height: 1.35; color: #b5bac0; }
   .howto .soon { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--dim); }
   .howto .soon b { color: var(--ink); font-weight: 600; }
-  .say.claim { width: min(620px, calc(100% - 32px)); padding: 10px; border-radius: 26px; border-color: rgba(29, 161, 242, .55); box-shadow: 0 0 0 4px rgba(29, 161, 242, .12); }
-  .say.claim .prefix { align-self: center; padding-left: 10px; font: 600 17px/1 var(--round); color: var(--dim); white-space: nowrap; }
-  .say.claim input { padding: 15px 4px; font: 600 18px/1.2 var(--round); background: transparent; }
+  .say.claim { width: min(700px, calc(100% - 32px)); padding: 12px; gap: 10px; border-radius: 28px; border-color: rgba(29, 161, 242, .55); box-shadow: 0 0 0 4px rgba(29, 161, 242, .12); }
+  /* the name field: a real field (dark well, blue caret), with the link it makes written in front of it */
+  .say.claim .field { flex: 1; min-width: 0; display: flex; align-items: center; padding: 0 16px; border-radius: 18px; background: rgba(0, 0, 0, .45); border: 2px solid var(--line); cursor: text; }
+  .say.claim .field:focus-within { border-color: var(--blue); }
+  .say.claim .prefix { font: 600 22px/1 var(--round); color: var(--dim); white-space: nowrap; }
+  .say.claim input { padding: 20px 0 20px 2px; font: 600 24px/1.2 var(--round); color: #fff; background: transparent; border-radius: 0; caret-color: var(--blue); }
+  .say.claim input::placeholder { color: #5c6168; }
   .say.claim input:focus { box-shadow: none; }
-  .say.claim .btn { padding: 15px 26px; font-size: 18px; }
-  @media (max-width: 760px) { .howto { display: none; } .who.hero { max-width: calc(100% - 48px); } .who.hero .lede { display: block; font-size: 15px; } .say.claim .prefix { display: none; } }
+  .say.claim .btn { padding: 0 32px; font-size: 22px; border-radius: 18px; }
+  @media (max-width: 760px) { .howto { display: none; } .who.hero { max-width: calc(100% - 48px); } .who.hero .lede { display: block; font-size: 15px; } .say.claim .prefix { display: none; }
+    .say.claim input { padding: 16px 0; font-size: 20px; } .say.claim .btn { padding: 0 20px; font-size: 18px; } }
   html[data-mode="embed"] .who.hero { top: 46px; left: 12px; max-width: 230px; }
   html[data-mode="embed"] .who.hero h1 { font-size: 30px; }
   html[data-mode="embed"] .who.hero .lede { display: block; margin-top: 8px; font-size: 12.5px; }
@@ -177,8 +194,9 @@
   html[data-mode="embed"] .howto li::before { width: 18px; height: 18px; font-size: 10px; }
   html[data-mode="embed"] .howto li b { font-size: 11.5px; } html[data-mode="embed"] .howto li span { font-size: 10px; line-height: 1.3; }
   html[data-mode="embed"] .howto .soon { margin-top: 8px; padding-top: 7px; font-size: 10px; }
-  html[data-mode="embed"] .say.claim { padding: 6px; border-radius: 16px; } html[data-mode="embed"] .say.claim .prefix { font-size: 13px; padding-left: 6px; }
-  html[data-mode="embed"] .say.claim input { padding: 10px 2px; font-size: 15px; } html[data-mode="embed"] .say.claim .btn { padding: 10px 16px; font-size: 15px; }
+  html[data-mode="embed"] .say.claim { padding: 6px; gap: 6px; border-radius: 16px; } html[data-mode="embed"] .say.claim .field { padding: 0 10px; border-radius: 12px; }
+  html[data-mode="embed"] .say.claim .prefix { font-size: 14px; } html[data-mode="embed"] .say.claim input { padding: 11px 0 11px 1px; font-size: 16px; }
+  html[data-mode="embed"] .say.claim .btn { padding: 0 16px; font-size: 15px; border-radius: 12px; }
   @media (prefers-reduced-motion: reduce) { .bubble, .log span, .bubble .dots i, .zz.on, .fuel i { transition: none; animation: none; } }
 </style>
 <script type="importmap">{ "imports": {
@@ -201,6 +219,7 @@
   <button class="btn" type="button" id="send">Send</button>
 </div>
 <div class="runs" id="runs">Runs on Grok</div>
+<div class="banner" id="preview" hidden>Preview: only you see this version until it passes review</div>
 
 <div class="sheet" id="sheet" hidden><div class="card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
   <button class="x" type="button" id="sheet-x" aria-label="Close">×</button>
@@ -247,7 +266,7 @@ function renderWho() {
   const pic = agent.picture ? el('img', { src: agent.picture, alt: '' }) : null;
   const by = agent.owner.handle ? el('div', { className: 'by' }, 'by ', el('a', { href: 'https://x.com/' + agent.owner.handle, target: '_blank', rel: 'noopener', textContent: '@' + agent.owner.handle })) : null;
   const links = agent.links && agent.links.length ? el('div', { className: 'links' }, agent.links.map(u => el('a', { href: u, target: '_blank', rel: 'nofollow ugc noopener', textContent: new URL(u).hostname.replace(/^www\./, '') }))) : null;
-  const edit = agent.owner.wallet && !embed ? el('button', { className: 'pill edit', type: 'button', textContent: 'Edit agent', onclick: () => openEdit() }) : null;
+  const edit = agent.owner.handle && agent.name !== 'dot' && !embed ? el('button', { className: 'pill edit', type: 'button', textContent: 'Edit agent', onclick: () => { forget(); openEdit(); } }) : null;
   w.replaceChildren(...[el('h1', {}, pic, agent.display || agent.name), by, agent.bio ? el('p', { textContent: agent.bio }) : null, links, edit].filter(Boolean));
 }
 function renderFuel() {
@@ -278,8 +297,8 @@ function setState(s) {
 
 /* ---------- the claim pages: /agents (/a) and a name nobody holds ---------- */
 /* the character tries on looks while you decide: what yours could be */
-const LOOKS = [{ shape: 'ball', color: '#f4f4f4', hat: 'sombrero' }, { shape: 'oval', color: '#ff6a1a' }, { shape: 'box', color: '#14b8a6', glasses: true },
-  { shape: 'tilted', color: '#9a5cf5' }, { shape: 'mallow', color: '#1f87ff' }, { shape: 'ball', color: '#1a1a1a', glasses: true }, { shape: 'ball', color: '#98663e' }];
+const LOOKS = [{ shape: 'ball', color: '#f4f4f4' }, { shape: 'oval', color: '#ff6a1a' }, { shape: 'box', color: '#14b8a6' },
+  { shape: 'tilted', color: '#9a5cf5' }, { shape: 'mallow', color: '#1f87ff' }, { shape: 'ball', color: '#1a1a1a' }, { shape: 'ball', color: '#98663e' }];
 let trying = 0;
 function tryOnLooks() {
   let i = 0;
@@ -295,16 +314,16 @@ function hero(title, lede) {
 }
 function howTo() {
   document.body.append(el('aside', { className: 'howto', ariaLabel: 'How agents work', innerHTML: `<h2>How tweetpad agents work</h2><ol>
-    <li><div><b>Claim it with one tweet</b><span>Pick a name and post it. That post becomes its home.</span></div></li>
-    <li><div><b>Make it yours</b><span>Shape, colour, hat, glasses, and a personality you write.</span></div></li>
-    <li><div><b>It lives in X posts</b><span>Anyone can talk to it right in the post. It runs on Grok and researches tokens live.</span></div></li>
-    <li><div><b>Anyone keeps it running</b><span>Top it up with SOL or by burning $TP.</span></div></li></ol>
-    <div class="soon"><b>Soon:</b> build your agent in your own code. 3D worlds, games, trading, anything.</div>` }));
+    <li><div><b>Claim it with one tweet</b><span>Pick a name and post it. No wallet needed.</span></div></li>
+    <li><div><b>Bring your own code</b><span>One HTML file: 3D worlds, games, trading tools, anything. Start from our template, or have Claude Code build it.</span></div></li>
+    <li><div><b>Our kit plugs it in</b><span>A Grok brain, a live research browser, and token data on every chain we run.</span></div></li>
+    <li><div><b>It lives in X posts</b><span>Anyone can talk to it in the post, and top it up with SOL or by burning $TP.</span></div></li></ol>
+    <div class="soon">Code goes live after a quick review. <a href="/kit/v1/README.md" target="_blank" rel="noopener" style="color:inherit">Read the guide</a></div>` }));
 }
 /* /agents: pick a name, then go to its page */
 function pickName() {
   tryOnLooks(); howTo();
-  hero('Claim your agent', 'An AI agent that lives inside <b>your X posts</b>. Talk to it, watch it research, fuel it. Free to claim.');
+  hero('Claim your agent', 'Your own AI agent, <b>in your own code</b>, living inside X posts. Claim it with one tweet; no wallet needed.');
   const go = () => { const n = input.value.trim().toLowerCase().replace(/^@/, ''); if (n) location.href = '/a/' + encodeURIComponent(n) + location.search; };
   const box = $('say');
   box.classList.add('claim');
@@ -312,8 +331,11 @@ function pickName() {
   input.addEventListener('input', () => { input.value = input.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
   send.textContent = 'Claim'; send.classList.add('blue'); send.addEventListener('click', go);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
-  box.replaceChildren(el('span', { className: 'prefix', textContent: 'tweetpad.io/a/' }), el('label', { className: 'sr', htmlFor: 'msg', textContent: 'Your agent’s name' }), input, send);
+  const field = el('div', { className: 'field', onclick: () => input.focus() }, el('span', { className: 'prefix', textContent: 'tweetpad.io/a/' }), input);
+  box.replaceChildren(el('label', { className: 'sr', htmlFor: 'msg', textContent: 'Your agent’s name' }), field, send);
   $('runs').hidden = true;
+  /* the cursor starts in the name, so it reads as a field to type in (not in X's card, where focusing scrolls the post) */
+  if (!embed) { input.autofocus = true; requestAnimationFrame(() => input.focus()); }
 }
 
 async function load() {
@@ -325,7 +347,11 @@ async function load() {
     clearInterval(trying); stage.setSize(1); document.querySelector('.howto')?.remove(); $('who').className = 'who'; $('say').classList.remove('claim'); $('runs').hidden = false;
     stage.setLook(agent.name === 'dot' ? { ...agent.look, gloss: true } : agent.look);
     input.placeholder = 'Say something to ' + (agent.display || agent.name) + '…';
-    if (!card && !browser) browser = createBrowser(document.body, { title: (agent.display || agent.name) + "'s browser" });
+    if (agent.code && !card) {
+      const code = await api('/api/agent-code?name=' + encodeURIComponent(NAME)).catch(() => null);
+      if (code && code.html) mountCode(code.html);
+    }
+    if (!card && !browser && !frame) browser = createBrowser(document.body, { title: (agent.display || agent.name) + "'s browser" });
     renderWho(); renderFuel();
     setState(agent.state === 'paused' ? 'paused' : agent.credits <= 0 ? 'sleeping' : 'live');
     return out;
@@ -340,6 +366,62 @@ async function load() {
 
 /* ---------- the browser: only a claimed agent has one; the claim pages show how agents work there instead ---------- */
 let browser = null;
+
+/* ---------- its own code (spec: "The runtime"): a sandboxed frame with an opaque origin (no tweetpad.io cookies, storage or
+   wallets) and no network (its CSP goes in first, before any of its own markup), reached only through the bridge, /kit/v1/sdk.js.
+   The bridge checks every call: ask() twice per visitor message at most, say() 280 characters, browse() only tweetpad pages. */
+let frame = null, port = null, asks = 0;
+const O = location.origin;
+const CSP = ["default-src 'none'", "script-src 'unsafe-inline' 'unsafe-eval' blob: " + O + '/kit/ https://cdn.jsdelivr.net/npm/', "style-src 'unsafe-inline' " + O + '/kit/ https://fonts.googleapis.com',
+  'font-src data: https://fonts.gstatic.com', 'img-src data: blob: ' + O + '/kit/ ' + O + '/assets/ https://cdn.jsdelivr.net/npm/', 'media-src data: blob:',
+  'connect-src ' + O + '/kit/ https://cdn.jsdelivr.net/npm/', 'worker-src blob:', "frame-src 'none'", "form-action 'none'", "base-uri 'none'"].join('; ');
+const sandboxed = (html) => '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + CSP + '"><base href="' + O + '/">' + html.replace(/^\s*<!doctype[^>]*>/i, '');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function mountCode(html, preview = false) {
+  if (!frame) { stage.stop(); $('stage').hidden = true; }
+  frame?.remove(); port?.close();
+  frame = el('iframe', { className: 'code', title: (agent.display || NAME) + ' (its own code)', srcdoc: sandboxed(html) });
+  frame.setAttribute('sandbox', 'allow-scripts');
+  frame.addEventListener('load', () => {
+    const ch = new MessageChannel(); port = ch.port1; port.onmessage = onBridge;
+    frame.contentWindow.postMessage({ type: 'tp:hello', agent: { name: agent.name, display: agent.display || agent.name, look: agent.look }, layout: MODE }, '*', [ch.port2]);
+  }, { once: true });
+  document.body.prepend(frame);
+  $('preview').hidden = !preview;
+}
+async function lookup(address) {
+  const f = await api('/api/token?find=' + encodeURIComponent(address)).catch(() => ({}));
+  return f.short ? api('/api/token?chain=' + f.short + '&address=' + encodeURIComponent(address)).catch(() => null) : null;
+}
+const tokenData = (t) => (t && t.market ? { symbol: t.symbol, name: t.name, chain: t.chainName, address: t.address,
+  market: { price: t.market.price ?? null, mcap: t.market.mcap ?? null, liquidity: t.market.liquidity ?? null, volume24h: t.market.volume24h ?? null, change24h: t.market.change24h ?? null, holders: t.market.holders ?? null } } : null);
+async function onBridge({ data: m }) {
+  const answer = (ok, result) => port.postMessage(ok ? { id: m.id, ok: true, result } : { id: m.id, ok: false, error: String(result) });
+  try {
+    const a0 = (m.args || [])[0];
+    if (m.method === 'say') { say(String(a0 == null ? '' : a0).slice(0, 280)); return answer(true, null); }
+    if (m.method === 'credits') return answer(true, agent.credits);
+    if (m.method === 'ask') {
+      if (asks <= 0) throw new Error('ask() is allowed twice per visitor message');
+      asks--;
+      const messages = (Array.isArray(a0) ? a0 : []).slice(-8).map(x => ({ role: x && x.role === 'assistant' ? 'assistant' : 'user', content: String((x && x.content) || '').slice(0, 500) }));
+      const out = await api('/api/agent-chat', { name: NAME, messages, seeing: browser ? browser.seeing : '' });
+      if (out.reply) { agent.credits = out.credits; renderFuel(); port.postMessage({ event: 'credits', data: { credits: out.credits } }); return answer(true, { reply: out.reply, credits: out.credits }); }
+      if (out.state === 'offline') return answer(true, { reply: lineFor((messages.at(-1) || {}).content || ''), credits: agent.credits, offline: true });
+      if (out.state === 'sleeping') { agent.credits = 0; renderFuel(); setState('sleeping'); port.postMessage({ event: 'sleep' }); throw new Error('sleeping: out of credits'); }
+      throw new Error(out.state || 'no reply');
+    }
+    if (m.method === 'lookup') return answer(true, tokenData(await lookup(String(a0 || ''))));
+    if (m.method === 'browse') {
+      if (!browser) browser = createBrowser(document.body, { title: (agent.display || agent.name) + "'s browser", tour: [] });
+      const page = a0 && typeof a0.page === 'string' && /^\/(?!\/)[\w\-/?=&.%]*$/.test(a0.page) ? a0.page : null;
+      const task = page ? { page, title: String(a0.title || 'tweetpad').slice(0, 40), notes: (Array.isArray(a0.notes) ? a0.notes : []).slice(0, 4).map(n => esc(String(n).slice(0, 120))) }
+        : { token: String((a0 && a0.token) || a0 || '') };
+      return answer(true, tokenData(await browser.research(task)));
+    }
+    throw new Error('unknown bridge call: ' + m.method);
+  } catch (e) { answer(false, errText(e)); }
+}
 
 /* ---------- talking ---------- */
 const history = [];
@@ -370,6 +452,12 @@ async function talk() {
   const mine = el('span', { textContent: text });
   log.append(mine); while (log.children.length > 3) log.firstElementChild.remove();
   setTimeout(() => mine.remove(), 6000);
+  if (frame && port) {
+    asks = 2; thinking();
+    port.postMessage({ event: 'message', data: { text } });
+    setTimeout(() => { if (bubble.querySelector('.dots')) bubble.classList.add('gone'); }, 25000);
+    return;
+  }
   busy = true; send.disabled = true; thinking();
   try {
     const token = tokenIn(text);
@@ -457,82 +545,211 @@ async function openTopup() {
 }
 $('topup').addEventListener('click', () => openTopup());
 
-/* Claim: hold the name, tweet the claim, paste the tweet */
+/* Claim: hold the name, tweet the claim, paste the tweet. No wallet: the tweet's author owns it. */
 async function openClaim() {
   let held = null;
-  const s1 = el('div', { className: 'step now' }, el('b', { textContent: '1. Connect the wallet that will own it' }), walletRow(() => draw()));
+  const holdBtn = el('button', { className: 'btn blue', type: 'button', textContent: 'Hold ' + NAME + ' for 30 minutes' });
+  const s1 = el('div', { className: 'step now' }, el('b', { textContent: '1. Hold the name' }), el('div', { className: 'note', textContent: 'Nobody else can claim it while you post.' }), el('div', { className: 'row' }, holdBtn));
   const tweetBtn = el('a', { className: 'btn blue', target: '_blank', rel: 'noopener', textContent: 'Post the claim tweet', style: 'display:inline-block;text-decoration:none' });
-  const holdBtn = el('button', { className: 'btn', type: 'button', textContent: 'Hold ' + NAME + ' for 30 minutes' });
-  const s2 = el('div', { className: 'step' }, el('b', { textContent: '2. Tweet it' }), holdBtn);
+  const s2 = el('div', { className: 'step' }, el('b', { textContent: '2. Tweet it' }), el('div', { className: 'note', textContent: 'From the X account that will own it.' }));
   const link = el('input', { placeholder: 'https://x.com/you/status/…', id: 'tweet' });
-  const verifyBtn = el('button', { className: 'btn blue', type: 'button', textContent: 'Claim' });
+  const verifyBtn = el('button', { className: 'btn blue', type: 'button', textContent: 'Claim', disabled: true });
   const s3 = el('div', { className: 'step' }, el('b', { textContent: '3. Paste your tweet’s link' }), link, el('div', { className: 'row' }, verifyBtn));
   const status = el('div');
-  const draw = () => {
-    s1.className = 'step ' + (wallets.address ? 'done' : 'now');
-    s2.className = 'step ' + (!wallets.address ? '' : held ? 'done' : 'now');
-    s3.className = 'step ' + (held ? 'now' : '');
-    holdBtn.disabled = !wallets.address; verifyBtn.disabled = !held;
-  };
   holdBtn.addEventListener('click', async () => {
     holdBtn.disabled = true; status.replaceChildren();
     try {
-      held = await api('/api/agent', { action: 'reserve', name: NAME, wallet: wallets.address });
+      held = await api('/api/agent', { action: 'reserve', name: NAME, hold: store.get('agenthold:' + NAME) || undefined });
+      store.set('agenthold:' + NAME, held.hold);
       tweetBtn.href = held.intent;
-      s2.replaceChildren(el('b', { textContent: '2. Tweet it' }), el('p', { className: 'sub', textContent: held.tweet }), tweetBtn);
-      draw();
-    } catch (e) { status.replaceChildren(note(errText(e), 'bad')); draw(); }
+      s1.className = 'step done';
+      s2.className = 'step now'; s2.replaceChildren(el('b', { textContent: '2. Tweet it' }), el('p', { className: 'sub', textContent: held.tweet }), tweetBtn);
+      s3.className = 'step now'; verifyBtn.disabled = false;
+    } catch (e) { status.replaceChildren(note(errText(e), 'bad')); holdBtn.disabled = false; }
   });
   verifyBtn.addEventListener('click', async () => {
-    verifyBtn.disabled = true; status.replaceChildren(note('Sign in your wallet…'));
+    verifyBtn.disabled = true; status.replaceChildren(note('Reading your tweet…'));
     try {
-      const signature = await wallets.signMessage(held.message);
-      status.replaceChildren(note('Reading your tweet…'));
-      await api('/api/agent', { action: 'verify', name: NAME, wallet: wallets.address, signature, tweet: link.value.trim() });
-      status.replaceChildren(note('It’s yours! Waking it up…', 'good'));
-      await load(); closeSheet(); say('hi! I’m ' + NAME + '. nice to meet you! ☺️', true);
-      setTimeout(() => openEdit(), 1200);
+      const out = await api('/api/agent', { action: 'verify', name: NAME, hold: held.hold, tweet: link.value.trim() });
+      authNow = { key: out.key };
+      await load();
+      say('hi! I’m ' + NAME + '. nice to meet you! ☺️', true);
+      showKey(out.key, 'claimed');
     } catch (e) { status.replaceChildren(note(errText(e), 'bad')); verifyBtn.disabled = false; }
   });
-  draw();
   openSheet(el('h2', { id: 'sheet-title', textContent: 'Claim ' + NAME }),
-    el('p', { className: 'sub', textContent: 'Your agent lives at this link, inside any post that shares it. Claiming is free and comes with a few starter credits.' }), s1, s2, s3, status);
+    el('p', { className: 'sub', textContent: 'Your agent lives at this link, inside any post that shares it. Claiming is free, needs no wallet, and comes with a few starter credits.' }), s1, s2, s3, status);
 }
 
-/* Edit: the owner signs in once (24h), then shapes the agent; the stage shows the look as it changes */
+/* the owner's key, and building with a coding agent: the skill (/kit/v1/SKILL.md) tells any coding agent how to build, check,
+   upload and update this agent with the key. It comes as a link plus a prompt that carries the key, or as one file made out for
+   this agent (key and skill together). */
+const SKILL_URL = location.origin + '/kit/v1/SKILL.md';
+const packName = () => 'tweetpad-agent-' + NAME + '.md';
+const connectPrompt = (key) => 'Connect to my tweetpad agent "' + NAME + '" using the skill at ' + SKILL_URL + ' (the agent’s name is ' + NAME + ', its owner @' + agent.owner.handle + '). '
+  + 'My edit key is ' + key + ' : save it to .tweetpad/' + NAME + '.key, keep it out of git and never print it. Then help me build its code, run the safety check and upload it for review.';
+async function connectPack(key) {
+  const skill = (await (await fetch('/kit/v1/SKILL.md')).text()).replaceAll('@your-handle', '@' + agent.owner.handle).replaceAll('your-agent', NAME);
+  return '# Connect a coding agent to the tweetpad agent ' + NAME + '\n\n'
+    + 'Setup, once, in the folder where the agent\'s code will live:\n\n'
+    + '1. Save the edit key below to `.tweetpad/' + NAME + '.key` (the key alone, on one line) and add `.tweetpad/` to `.gitignore`. Never commit, print or share it.\n'
+    + '2. Save everything after the line "SKILL STARTS HERE" where your coding agent keeps skills or instructions (Claude Code: `.claude/skills/tweetpad-agent-' + NAME + '/SKILL.md`; Codex, Cursor and others: `AGENTS.md` or their rules folder).\n'
+    + '3. Delete this file afterwards: it holds the key.\n\n'
+    + 'Edit key:\n\n' + key + '\n\nSKILL STARTS HERE\n' + skill;
+}
+function download(name, text) {
+  const a = el('a', { href: URL.createObjectURL(new Blob([text], { type: 'text/markdown' })), download: name });
+  document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+const copyBtn = (label, text) => { const b = el('button', { className: 'btn ghost', type: 'button', textContent: label, onclick: async () => { try { await navigator.clipboard.writeText(text()); b.textContent = 'Copied'; } catch { /* select it by hand */ } } }); return b; };
+/* a wallet that signs becomes a second way to sign in, and the payout wallet */
+function linkWalletRow(status) {
+  const box = el('div');
+  box.append(walletRow(async () => {
+    try {
+      const issued = Date.now();
+      const signature = await wallets.signMessage('tweetpad agents\nLink this wallet to ' + NAME + ': it can sign in to edit it and gets its payouts.\nname: ' + NAME + '\nwallet: ' + wallets.address + '\nissued: ' + issued);
+      const out = await api('/api/agent', { action: 'link-wallet', name: NAME, ...authNow, wallet: wallets.address, issued, signature });
+      agent = { ...agent, ...out.agent };
+      box.replaceChildren(note('Linked ' + short(wallets.address) + '. It can sign in to edit ' + NAME + ' too.', 'good'));
+    } catch (e) { status.replaceChildren(note(errText(e), 'bad')); }
+  }));
+  return box;
+}
+/* mode: 'claimed' (just claimed), 'new' (a new key), 'connect' (Get the template, from the editor) */
+function showKey(key, mode) {
+  const status = el('div');
+  const get = el('button', { className: 'btn ghost', type: 'button', textContent: 'Download skill file + key', onclick: async () => {
+    try { download(packName(), await connectPack(key)); get.textContent = 'Downloaded'; } catch (e) { status.replaceChildren(note(errText(e), 'bad')); }
+  } });
+  openSheet(el('h2', { id: 'sheet-title', textContent: mode === 'claimed' ? 'It’s yours!' : mode === 'new' ? 'New edit key' : 'Build ' + (agent.display || NAME) }),
+    el('h3', { textContent: 'Your edit key' }),
+    el('p', { className: 'sub', textContent: 'Save it now. Edit asks for it, and it’s how your coding agent updates ' + NAME + '. Lost it? Sign in by tweeting a code from @' + agent.owner.handle + ' and make a new one.' }),
+    el('div', { className: 'key' }, el('code', { textContent: key }), copyBtn('Copy', () => key)),
+    mode === 'claimed' ? el('h3', { textContent: 'Connect a wallet (optional)' }) : null,
+    mode === 'claimed' ? el('p', { className: 'sub', textContent: 'Sign once and that wallet can sign in to edit, without the key. It also becomes the payout wallet.' }) : null,
+    mode === 'claimed' ? linkWalletRow(status) : null,
+    el('h3', { textContent: 'Build it with your coding agent' }),
+    el('p', { className: 'sub' }, 'Paste this prompt into Claude Code, Codex, Cursor or any coding agent. It points the agent at the ', el('a', { href: SKILL_URL, target: '_blank', rel: 'noopener', textContent: 'skill file' }),
+      ', which knows our template and our API: it builds ' + NAME + '’s code, runs the safety check, uploads versions for review and updates its persona.'),
+    el('div', { className: 'key' }, el('code', { textContent: connectPrompt(key) })),
+    el('div', { className: 'btns' }, Object.assign(copyBtn('Copy prompt', () => connectPrompt(key)), { className: 'btn blue' }), el('a', { className: 'btn ghost', href: SKILL_URL, target: '_blank', rel: 'noopener', textContent: 'Open the skill file' }), get,
+      el('a', { className: 'btn ghost', href: '/kit/v1/README.md', target: '_blank', rel: 'noopener', textContent: 'Guide' })), status,
+    el('div', { className: 'row' }, el('button', { className: 'btn blue wide', type: 'button', textContent: mode === 'claimed' ? 'Set up ' + NAME + ' here' : 'Back to editing', onclick: () => openEdit() })));
+}
+
+/* signing in as the owner: Edit always asks, and what it gets lasts only as long as this page (nothing is kept in the browser).
+   The edit key, or a tweet from the owner's account, or a wallet that signed for it. */
+let authNow = null;
+const authOf = () => authNow;
+function forget() { authNow = null; }
+function openSignin(why) {
+  const status = el('div');
+  const keyIn = el('input', { placeholder: 'tpk_…', id: 'editkey', autocomplete: 'off' });
+  const useKey = async () => {
+    const key = keyIn.value.trim();
+    if (!key) return;
+    try { await api('/api/agent', { action: 'mine', name: NAME, key }); authNow = { key }; openEdit(); }
+    catch (e) { status.replaceChildren(note(/sign in/.test(errText(e)) ? 'That key doesn’t open ' + NAME + '.' : errText(e), 'bad')); }
+  };
+  keyIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') useKey(); });
+  const byKey = el('div', { className: 'step now' }, el('b', { textContent: 'Your edit key' }), keyIn,
+    el('div', { className: 'row' }, el('button', { className: 'btn blue', type: 'button', textContent: 'Edit with my key', onclick: useKey })));
+  const tweetBtn = el('a', { className: 'btn blue', target: '_blank', rel: 'noopener', textContent: 'Post the sign-in tweet', style: 'display:inline-block;text-decoration:none' });
+  const link = el('input', { placeholder: 'https://x.com/' + agent.owner.handle + '/status/…' });
+  const done = el('button', { className: 'btn blue', type: 'button', textContent: 'Sign in' });
+  let nonce = null;
+  const byTweet = el('div', { className: 'step' }, el('b', { textContent: 'No key? Tweet a code from @' + agent.owner.handle }),
+    el('button', { className: 'btn', type: 'button', textContent: 'Get my code', onclick: async (e) => {
+      e.target.disabled = true;
+      try {
+        const s = await api('/api/agent', { action: 'signin', name: NAME });
+        nonce = s.nonce; tweetBtn.href = s.intent;
+        e.target.replaceWith(el('div', {}, el('p', { className: 'sub', textContent: s.tweet }), tweetBtn, el('label', { textContent: 'Then paste its link' }), link, el('div', { className: 'row' }, done)));
+      } catch (err) { status.replaceChildren(note(errText(err), 'bad')); e.target.disabled = false; }
+    } }));
+  done.addEventListener('click', async () => {
+    done.disabled = true;
+    try { const out = await api('/api/agent', { action: 'signin-verify', nonce, tweet: link.value.trim() }); authNow = { token: out.token }; openEdit(); }
+    catch (e) { status.replaceChildren(note(errText(e), 'bad')); done.disabled = false; }
+  });
+  const byWallet = agent.owner.wallet ? el('div', { className: 'step' }, el('b', { textContent: 'Or sign with the linked wallet (' + short(agent.owner.wallet) + ')' }), walletRow(async () => {
+    try {
+      const issued = Date.now();
+      const signature = await wallets.signMessage('tweetpad agents\nSign in to edit your agents. This is free and sends no transaction.\nwallet: ' + wallets.address + '\nissued: ' + issued);
+      const out = await api('/api/agent', { action: 'session', wallet: wallets.address, issued, signature });
+      authNow = { token: out.token }; openEdit();
+    } catch (e) { status.replaceChildren(note(errText(e), 'bad')); }
+  })) : null;
+  openSheet(el('h2', { id: 'sheet-title', textContent: 'Edit ' + (agent.display || NAME) }),
+    el('p', { className: 'sub', textContent: why || 'Only its owner, @' + agent.owner.handle + ', can edit it.' }), byKey, byTweet, byWallet, status);
+  requestAnimationFrame(() => keyIn.focus());
+}
+
+/* Edit: its code first, then its starter look and profile */
 const SHAPES = [['ball', 'Ball'], ['oval', 'Oval'], ['box', 'Box'], ['tilted', 'Tilted'], ['mallow', 'Mallow']];
 const COLORS = ['#f4f4f4', '#1a1a1a', '#ff6a1a', '#14b8a6', '#9a5cf5', '#1f87ff', '#98663e', '#ff4f8b', '#f5c518', '#3ccf6e'];
-async function ownerToken() {
-  const kept = JSON.parse(store.get('agentsess') || 'null');
-  if (kept && kept.wallet === wallets.address && kept.expires > Date.now() + 60000) return kept.token;
-  const issued = Date.now();
-  const signature = await wallets.signMessage('tweetpad agents\nSign in to edit your agents. This is free and sends no transaction.\nwallet: ' + wallets.address + '\nissued: ' + issued);
-  const out = await api('/api/agent', { action: 'session', wallet: wallets.address, issued, signature });
-  store.set('agentsess', JSON.stringify({ wallet: wallets.address, token: out.token, expires: out.expires }));
-  return out.token;
-}
+const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
 async function openEdit() {
-  if (!agent || !agent.owner.wallet) return;
-  if (wallets.address !== agent.owner.wallet) {
-    return openSheet(el('h2', { id: 'sheet-title', textContent: 'Edit ' + (agent.display || NAME) }),
-      el('p', { className: 'sub', textContent: 'Connect the wallet that claimed this agent (' + short(agent.owner.wallet) + ').' }),
-      walletRow(() => { if (wallets.address === agent.owner.wallet) openEdit(); else body.append(note('That wallet doesn’t own this agent.', 'bad')); }));
-  }
-  let token, mine;
-  try { token = await ownerToken(); mine = await api('/api/agent', { action: 'mine', name: NAME, token }); }
-  catch (e) { return openSheet(el('h2', { textContent: 'Edit' }), note(errText(e), 'bad')); }
-  const look = { ...agent.look };
+  if (!agent || agent.name === 'dot') return;
+  const auth = authOf();
+  if (!auth) return openSignin();
+  let mine;
+  try { mine = await api('/api/agent', { action: 'mine', name: NAME, ...auth }); }
+  catch (e) { forget(); return openSignin(/sign in/.test(errText(e)) ? 'That sign-in has run out. Sign in again as @' + agent.owner.handle + '.' : errText(e)); }
+
+  /* its code */
+  const codeStatus = el('div');
+  const drawCode = () => {
+    const parts = [];
+    parts.push(note(mine.code ? 'Its own code is live (version ' + mine.code.slice(0, 7) + ').' : 'It shows the starter look below until its code passes review.', mine.code ? 'good' : ''));
+    if (mine.pending) {
+      parts.push(note('Version ' + mine.pending.v.slice(0, 7) + ' is in review, sent ' + ago(mine.pending.at) + '.'));
+      if (mine.pending.flags.length) parts.push(el('ul', { className: 'flags' }, mine.pending.flags.map(f => el('li', { textContent: 'Review will look at: ' + f }))));
+    }
+    if (mine.review && mine.review.decision !== 'approved' && (!mine.pending || mine.pending.v !== mine.review.v)) parts.push(note('Changes requested on ' + mine.review.v.slice(0, 7) + (mine.review.note ? ': ' + mine.review.note : '.'), 'bad'));
+    const file = el('input', { type: 'file', accept: '.html,.htm,text/html' });
+    file.addEventListener('change', async () => {
+      const f = file.files[0]; if (!f) return;
+      codeStatus.append(note('Uploading…'));
+      try {
+        const r = await fetch('/api/agent-code', { method: 'POST', body: await f.arrayBuffer(), headers: { 'content-type': 'application/octet-stream', 'x-agent': NAME, ...(auth.key ? { 'x-key': auth.key } : { 'x-token': auth.token }) } });
+        const out = await r.json(); if (!r.ok) throw new Error(out.error);
+        mine.pending = out.pending; drawCode();
+      } catch (e) { codeStatus.append(note(errText(e), 'bad')); }
+    });
+    const btns = [el('label', { className: 'btn blue file' }, mine.pending ? 'Upload a new version' : 'Upload your .html', file),
+      el('button', { className: 'btn ghost', type: 'button', textContent: 'Get the template', onclick: async () => {
+        /* the connect view: the key, the connect pack and the prompt for Claude Code, and the template itself. The pack needs the
+           key; signed in another way, this makes a new one (the old key stops working) */
+        if (auth.key) return showKey(auth.key, 'connect');
+        try { const out = await api('/api/agent', { action: 'newkey', name: NAME, ...auth }); authNow = { key: out.key }; showKey(out.key, 'connect'); }
+        catch (e) { codeStatus.append(note(errText(e), 'bad')); }
+      } })];
+    if (mine.pending) btns.push(el('button', { className: 'btn ghost', type: 'button', textContent: 'Preview it here', onclick: async () => {
+      try { const src = await api('/api/agent-code', { action: 'source', name: NAME, v: mine.pending.v, ...auth }); closeSheet(); mountCode(src.html, true); }
+      catch (e) { codeStatus.append(note(errText(e), 'bad')); }
+    } }));
+    if (mine.code) btns.push(el('button', { className: 'btn ghost', type: 'button', textContent: 'Use the starter look', onclick: async () => {
+      try { await api('/api/agent-code', { action: 'use', name: NAME, v: null, ...auth }); location.reload(); } catch (e) { codeStatus.append(note(errText(e), 'bad')); }
+    } }));
+    codeStatus.replaceChildren(...parts, el('div', { className: 'btns' }, btns));
+  };
+  drawCode();
+
+  const look = { shape: agent.look.shape, color: agent.look.color };
   const display = el('input', { value: agent.display || '', maxLength: 32 });
   const bio = el('input', { value: agent.bio || '', maxLength: 160 });
   const links = [0, 1, 2, 3].map(i => el('input', { value: (agent.links || [])[i] || '', placeholder: 'https://…' }));
   const persona = el('textarea', { value: mine.persona || '', maxLength: 6000, placeholder: '<role> Who it is </role>\n<voice> How it talks </voice>\n<rules> What it never does </rules>' });
+  const wallet = el('input', { value: mine.wallet || '', placeholder: 'Solana address (optional)' });
   const cap = el('input', { type: 'number', min: '0', value: mine.cap || '', placeholder: 'no cap' });
   const paused = el('input', { type: 'checkbox', checked: agent.state === 'paused' });
   let picture = agent.picture || '';
   const picNote = note(picture ? 'Picture set.' : 'Square PNG, JPG or WebP, up to 4 MB.');
-  const file = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp' });
-  file.addEventListener('change', async () => {
-    const f = file.files[0]; if (!f) return;
+  const pic = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp' });
+  pic.addEventListener('change', async () => {
+    const f = pic.files[0]; if (!f) return;
     picNote.textContent = 'Uploading…'; picNote.className = 'note';
     try {
       const r = await fetch('/api/ipfs', { method: 'POST', body: await f.arrayBuffer(), headers: { 'content-type': 'application/octet-stream', 'x-file-type': f.type,
@@ -543,19 +760,17 @@ async function openEdit() {
   });
   const shapeBtns = SHAPES.map(([k, label]) => el('button', { type: 'button', textContent: label, onclick: () => { look.shape = k; drawLook(); } }));
   const colorBtns = COLORS.map(c => el('button', { type: 'button', style: 'background:' + c, ariaLabel: c, onclick: () => { look.color = c; drawLook(); } }));
-  const hat = el('input', { type: 'checkbox', checked: look.hat === 'sombrero', onchange: () => { look.hat = hat.checked ? 'sombrero' : 'none'; drawLook(); } });
-  const specs = el('input', { type: 'checkbox', checked: !!look.glasses, onchange: () => { look.glasses = specs.checked; drawLook(); } });
   const drawLook = () => {
     shapeBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(SHAPES[i][0] === look.shape)));
     colorBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(COLORS[i] === look.color)));
-    stage.setLook(look);
+    if (!frame) stage.setLook(look);
   };
   const status = el('div');
   const save = el('button', { className: 'btn blue wide', type: 'button', textContent: 'Save', onclick: async () => {
     save.disabled = true; status.replaceChildren(note('Saving…'));
     try {
-      const out = await api('/api/agent', { action: 'update', name: NAME, token, display: display.value, bio: bio.value, links: links.map(i => i.value).filter(Boolean),
-        picture, look, persona: persona.value, cap: Number(cap.value) || 0, paused: paused.checked });
+      const out = await api('/api/agent', { action: 'update', name: NAME, ...auth, display: display.value, bio: bio.value, links: links.map(i => i.value).filter(Boolean),
+        picture, look, persona: persona.value, wallet: wallet.value.trim(), cap: Number(cap.value) || 0, paused: paused.checked });
       agent = { ...agent, ...out.agent }; renderWho(); renderFuel();
       setState(agent.state === 'paused' ? 'paused' : agent.credits <= 0 ? 'sleeping' : 'live');
       status.replaceChildren(note('Saved.', 'good')); say('ooh, I like it. ☺️', true);
@@ -564,17 +779,23 @@ async function openEdit() {
   } });
   drawLook();
   openSheet(el('h2', { id: 'sheet-title', textContent: 'Edit ' + (agent.display || NAME) }),
-    el('p', { className: 'sub', textContent: 'Changes show on its card everywhere it’s posted.' }),
-    el('label', { textContent: 'Shape' }), el('div', { className: 'shapes' }, shapeBtns),
-    el('label', { textContent: 'Colour' }), el('div', { className: 'colors' }, colorBtns),
-    el('label', { className: 'check' }, hat, 'Sombrero'), el('label', { className: 'check' }, specs, 'Glasses'),
+    el('p', { className: 'sub', textContent: 'Signed in as @' + agent.owner.handle + '. Changes show on its card everywhere it’s posted.' }),
+    el('h3', { textContent: 'Its code' }), codeStatus,
+    el('h3', { textContent: 'Starter look' }), el('div', { className: 'shapes' }, shapeBtns), el('label', { textContent: 'Colour' }), el('div', { className: 'colors' }, colorBtns),
+    el('h3', { textContent: 'Profile' }),
     el('label', { textContent: 'Name' }), display, el('label', { textContent: 'Bio' }), bio,
-    el('label', { textContent: 'Picture' }), file, picNote,
+    el('label', { textContent: 'Picture' }), pic, picNote,
     el('label', { textContent: 'Links (X, site, Telegram, a token page)' }), ...links,
     el('label', { textContent: 'Persona: how it thinks and talks. tweetpad’s rules always come first.' }), persona,
+    el('label', { textContent: 'Payout wallet' }), wallet,
     el('label', { textContent: 'Daily spend cap, in credits' }), cap,
     el('label', { className: 'check' }, paused, 'Paused (it sleeps and won’t answer)'),
-    el('div', { className: 'row' }, save), status);
+    el('div', { className: 'row' }, save), status,
+    el('div', { className: 'or' }, el('a', { href: '#', textContent: 'Make a new edit key', onclick: async (e) => {
+      e.preventDefault();
+      try { const out = await api('/api/agent', { action: 'newkey', name: NAME, ...auth }); authNow = { key: out.key }; showKey(out.key, 'new'); }
+      catch (err) { status.replaceChildren(note(errText(err), 'bad')); }
+    } }), ' · ', el('a', { href: '#', textContent: 'Done editing', onclick: (e) => { e.preventDefault(); forget(); closeSheet(); } })));
 }
 
 /* ---------- start ---------- */
@@ -583,7 +804,7 @@ ready.then(() => {
   const q = new URLSearchParams(location.search);
   if (q.has('topup') && agent) openTopup();
   else if (q.has('claim') && state === 'free') openClaim();
-  else if (agent && state === 'live' && !card) setTimeout(() => say(agent.name === 'dot' ? "hi, I'm Dot. say something!" : 'hi, I’m ' + (agent.display || agent.name) + '. say something!', true), 600);
+  else if (agent && state === 'live' && !card && !frame) setTimeout(() => say(agent.name === 'dot' ? "hi, I'm Dot. say something!" : 'hi, I’m ' + (agent.display || agent.name) + '. say something!', true), 600);
   else if (state === 'sleeping') say('zzz… out of credits. top me up?');
 });
 </script>

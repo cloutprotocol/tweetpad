@@ -2,7 +2,7 @@
 // Credits are counted in micro-dollars (µ$, integers) so nothing rounds: 1 credit = $0.001 = 1,000 µ$, at our price (model cost ×
 // MARKUP). They belong to the agent: anyone can add them, nobody can move or withdraw them.
 // Redis keys:
-//   agent:<name>         the record, JSON (owner wallet and @handle, profile, look, persona, state)
+//   agent:<name>         the record, JSON (@handle, payout wallet, edit key hash, profile, look, persona, code, state)
 //   credits:<name>       its balance in µ$
 //   spent:<name>:<day>   what it spent today, for the owner's daily cap
 //   fans:<name>          sorted set: wallet → µ$ it added (SOL and burns), for the supporters list
@@ -10,7 +10,7 @@
 //   ledger:<name>        stream of every charge and top-up
 //   xagents:<xId>        set of the names an X account holds
 //   claim:<name>         a reservation while its claim tweet is posted (30 min)
-const { redis } = require('./_lib');
+const { redis, sha256 } = require('./_lib');
 
 const MARKUP = Number(process.env.AGENT_MARKUP) || 1.6;
 const CREDIT = 1000;                                                      // µ$ in a credit
@@ -61,7 +61,7 @@ const saveAgent = (a) => { const { balance, ...rest } = a; return ['SET', 'agent
 function publicAgent(a) {
   return {
     name: a.name, url: agentUrl(a.name), display: a.display, bio: a.bio, links: a.links, picture: a.picture, look: a.look,
-    owner: { wallet: a.owner, handle: a.handle }, state: a.state, credits: Math.floor(a.balance / CREDIT), token: a.token || null,
+    owner: { wallet: a.owner, handle: a.handle }, code: a.code || null, state: a.state, credits: Math.floor(a.balance / CREDIT), token: a.token || null,
     claimTweet: a.tweet, createdAt: a.createdAt,
   };
 }
@@ -94,4 +94,17 @@ async function credit(name, signature, wallet, micro, entry) {
   return true;
 }
 
-module.exports = { MARKUP, CREDIT, STARTER, PER_HANDLE, SITE, agentUrl, DEFAULT_LOOK, cleanLook, loadAgent, saveAgent, publicAgent, reserve, settle, credit };
+/* is this request from the agent's owner? Any one of: its edit key (given once at the claim, kept on that device), a session from a
+   tweet sign-in by its @handle, or a session from the wallet it claimed with when that wallet signed (proof 'signed') */
+async function isOwner(a, b) {
+  if (!a || !a.xId) return false;
+  if (b.key && a.keyHash && sha256(String(b.key)) === a.keyHash) return true;
+  if (!b.token) return false;
+  const [raw] = await redis(['GET', 'agentsess:' + String(b.token)]);
+  if (!raw) return false;
+  let s; try { s = JSON.parse(raw); } catch { s = { wallet: raw }; }   // early sessions held just the wallet
+  if (s.xId) return s.xId === a.xId;
+  return !!s.wallet && s.wallet === a.owner && (a.walletProof || 'signed') === 'signed';
+}
+
+module.exports = { isOwner, MARKUP, CREDIT, STARTER, PER_HANDLE, SITE, agentUrl, DEFAULT_LOOK, cleanLook, loadAgent, saveAgent, publicAgent, reserve, settle, credit };

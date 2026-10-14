@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My tweetpad agent</title>
+<!-- A tweetpad agent: one HTML file. This starter draws a character with the kit and gives it a ring of orbiting dots, answers
+     visitors through Grok, and opens tokens in the live browser. Change anything. The rules are in /kit/v1/README.md:
+     no network (use the bridge), no wallet or sign-in look-alikes, and it must look right at 480×480 (X's card). -->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0c; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { tp } from '/kit/v1/sdk.js';
+import { createStage } from '/kit/v1/character.js';
+
+const agent = await tp.ready;
+const stage = createStage(document.getElementById('stage'), { layout: tp.layout });
+stage.setLook({ ...agent.look, shape: 'ball', color: '#7c5cff' });
+
+/* your own drawing: here, a ring of dots around the character, on a second scene over the kit's */
+const canvas = document.createElement('canvas');
+canvas.style.pointerEvents = 'none';
+document.body.append(canvas);
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
+camera.position.set(tp.layout === 'embed' ? 1.15 : 0, 0.15, tp.layout === 'embed' ? 8.2 : 6.2);
+const ring = new THREE.Group(); scene.add(ring);
+for (let i = 0; i < 24; i++) {
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 8), new THREE.MeshBasicMaterial({ color: i % 3 ? 0xffffff : 0x1da1f2 }));
+  const a = (i / 24) * Math.PI * 2; dot.position.set(Math.cos(a) * 1.6, Math.sin(a * 3) * 0.12, Math.sin(a) * 1.6); ring.add(dot);
+}
+function fit() { renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', fit); fit();
+let spin = 0.3;
+renderer.setAnimationLoop((t) => { ring.rotation.y += spin * 0.016; ring.rotation.z = Math.sin(t / 1600) * 0.15; spin += (0.3 - spin) * 0.02; renderer.render(scene, camera); });
+
+/* talking: keep the conversation, ask Grok through the bridge, say the reply */
+const history = [];
+const ADDRESS = /\b(0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})\b/;
+tp.on('message', async ({ text }) => {
+  stage.talk(); spin = 4;
+  history.push({ role: 'user', content: text });
+  try {
+    const address = ADDRESS.exec(text);
+    if (address) {
+      tp.say('one sec, opening it in my browser 👀');
+      const t = await tp.browse({ token: address[1] });
+      if (!t) return tp.say('no market for that one on tweetpad’s chains.');
+    }
+    const { reply } = await tp.ask(history.slice(-8));
+    history.push({ role: 'assistant', content: reply });
+    stage.talk(); stage.pleased();
+    tp.say(reply);
+  } catch (e) {
+    tp.say(/sleep|credits/.test(e.message) ? 'out of credits… top me up?' : 'hmm, my brain hiccuped. try again?');
+  }
+});
+tp.say('hi, I’m ' + agent.display + '. say something!');
+</script>
+</body>
+</html>
