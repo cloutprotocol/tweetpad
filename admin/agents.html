@@ -80,7 +80,7 @@
 <main>
   <section class="gate" id="gate">
     <h2>Admin key</h2>
-    <p>The AGENT_ADMIN_KEY set in Vercel. It stays in this tab only.</p>
+    <p>It stays in this tab only.</p>
     <input id="key" type="password" autocomplete="off" placeholder="admin key">
     <div class="row"><button class="btn blue" type="button" id="open">Open the queue</button></div>
     <div id="gate-note"></div>
@@ -221,7 +221,7 @@ async function start() {
   } catch (e) {
     KEY = null;
     $('gate').hidden = false;
-    $('gate-note').replaceChildren(el('div', { className: 'note bad', textContent: /not allowed/.test(e.message) ? 'That isn’t the admin key (or AGENT_ADMIN_KEY isn’t set in Vercel yet).' : e.message }));
+    $('gate-note').replaceChildren(el('div', { className: 'note bad', textContent: /not allowed/.test(e.message) ? 'That isn’t the admin key.' : e.message }));
   }
 }
 $('open').addEventListener('click', () => { KEY = $('key').value.trim(); start(); });

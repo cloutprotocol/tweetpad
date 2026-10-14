@@ -24,6 +24,10 @@
       "destination": "/admin/agents.html"
     },
     {
+      "source": "/a/:name/card.png",
+      "destination": "/api/a?name=:name&img=1"
+    },
+    {
       "source": "/a/:name",
       "destination": "/api/a?name=:name"
     },
