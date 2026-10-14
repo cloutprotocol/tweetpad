@@ -1,5 +1,5 @@
 // Shared helpers for the API functions. Files starting with "_" are not deployed as routes.
-const { createHash } = require('node:crypto');
+const { createHash, createPublicKey, verify: edVerify } = require('node:crypto');
 
 const PUMP_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
 const RPC_URL = process.env.RPC_URL || 'https://solana-rpc.publicnode.com';
@@ -303,11 +303,33 @@ async function rateLimit(req, res, bucket, limit, windowSec) {
   return false;
 }
 
+/* a Solana wallet's signature (base58) of a text message */
+const ED25519_SPKI = Buffer.from('302a300506032b6570032100', 'hex');
+function signatureValid(wallet, message, signatureB58) {
+  const sig = b58decode(String(signatureB58 || ''));
+  if (!sig || sig.length !== 64) return false;
+  try {
+    const key = createPublicKey({ key: Buffer.concat([ED25519_SPKI, Buffer.from(b58decode(wallet))]), format: 'der', type: 'spki' });
+    return edVerify(null, Buffer.from(message, 'utf8'), key, Buffer.from(sig));
+  } catch { return false; }
+}
+
+/* X's embed endpoint; the token is the one its widget derives from the id */
+async function readTweet(id) {
+  const token = ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, '');
+  const r = await fetch('https://cdn.syndication.twimg.com/tweet-result?id=' + id + '&token=' + token, { signal: AbortSignal.timeout(8000) });
+  if (r.status === 404) throw Object.assign(new Error('tweet not found (is it public, and not deleted?)'), { status: 404 });
+  if (!r.ok) throw new Error('could not read the tweet (' + r.status + ')');
+  const t = await r.json();
+  if (!t || !t.user || !t.text) throw Object.assign(new Error('tweet not found (is it public?)'), { status: 404 });
+  return t;
+}
+
 function fail(res, status, error) {
   return res.status(status).json({ error });
 }
 
 module.exports = {
   PUMP_PROGRAM, MAX_IMAGE_BYTES, cors, sniffImage, readBody, readJson, sha256,
-  b58decode, isPubkey, isEvmAddress, isCoinId, EVM_CHAINS, DEX_SLUG, chainsOf, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, fail,
+  b58decode, isPubkey, isEvmAddress, isCoinId, EVM_CHAINS, DEX_SLUG, chainsOf, signerKeys, redis, rpc, connection, quoteConfig, pairQuote, marketData, loadPost, cleanThumb, rateLimit, signatureValid, readTweet, fail,
 };

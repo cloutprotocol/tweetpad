@@ -1,0 +1,46 @@
+/* tweetpad agent kit v1: styles for the research browser (browser.js). Its colours come from the page's --ink, --dim, --line and
+   --blue, with dark defaults. In X's card (html[data-mode="embed"], 480×480) it sits small in the top right. */
+.kit-browser { --k-ink: var(--ink, #f2f3f5); --k-dim: var(--dim, #8b9096); --k-line: var(--line, rgba(255, 255, 255, .14)); --k-blue: var(--blue, #1da1f2);
+  position: fixed; top: 14px; right: 14px; z-index: 3; width: min(360px, 31vw); border-radius: 14px; overflow: hidden;
+  background: #17181a; border: 1px solid var(--k-line); box-shadow: 0 20px 60px rgba(0, 0, 0, .55); color: var(--k-ink); font: 15px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+.kit-browser .chrome { display: flex; align-items: center; gap: 7px; padding: 9px 10px; background: #222326; border-bottom: 1px solid #2c2d31; }
+.kit-browser .chrome i { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.kit-browser .chrome i:nth-child(1) { background: #ff5f57; } .kit-browser .chrome i:nth-child(2) { background: #febc2e; } .kit-browser .chrome i:nth-child(3) { background: #28c840; }
+.kit-browser .chrome b { margin-left: 6px; display: flex; align-items: center; gap: 6px; font: 600 13px/1 "Fredoka", "Arial Rounded MT Bold", sans-serif; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.kit-browser .mini { flex: none; width: 16px; height: 16px; border-radius: 50%; position: relative; background: radial-gradient(circle at 38% 32%, #fff, #cfd2d6 70%); }
+.kit-browser .mini::before, .kit-browser .mini::after { content: ""; position: absolute; top: 5px; width: 2.4px; height: 5px; border-radius: 2px; background: #111; transform: rotate(18deg); }
+.kit-browser .mini::before { left: 5px; } .kit-browser .mini::after { left: 9px; }
+.kit-browser .live { margin-left: auto; display: flex; align-items: center; gap: 5px; font: 600 10px/1 sans-serif; letter-spacing: .08em; color: #ff6b6b; }
+.kit-browser .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4d; animation: kit-pulse 1.2s infinite; }
+@keyframes kit-pulse { 50% { opacity: .3; } }
+.kit-browser .url { display: flex; align-items: center; gap: 6px; margin: 8px 10px 0; padding: 7px 10px; border-radius: 9px; background: #0f1011; color: #c9cdd2;
+  font: 12px/1 Menlo, Monaco, monospace; white-space: nowrap; overflow: hidden; }
+.kit-browser .url::before { content: "🔒"; font-size: 10px; }
+.kit-browser .bar { height: 2px; margin: 6px 10px 0; background: #2a2b2e; border-radius: 2px; overflow: hidden; }
+.kit-browser .bar div { height: 100%; width: 0; background: var(--k-blue); transition: width .3s; }
+.kit-browser .view { position: relative; margin: 8px 10px 0; height: calc(min(360px, 31vw) * .75); border-radius: 8px; overflow: hidden; background: #e6e6e6; }
+.kit-browser .view iframe { position: absolute; left: 0; top: 0; width: 480px; height: 360px; border: 0; transform-origin: 0 0; pointer-events: none; }
+.kit-browser .cursor { position: absolute; z-index: 2; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 38% 32%, #fff, #cfd2d6 70%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .5); transition: left .9s cubic-bezier(.45, 0, .2, 1), top .9s cubic-bezier(.45, 0, .2, 1); }
+.kit-browser .blank { position: absolute; inset: 0; display: grid; place-items: center; color: #888; font: 600 13px/1 sans-serif; background: #ececec; transition: opacity .3s; }
+.kit-browser .notes { padding: 10px 12px 12px; display: grid; gap: 6px; min-height: 92px; }
+.kit-browser .notes .doing { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--k-dim); }
+.kit-browser .notes .dots i { display: inline-block; width: 4px; height: 4px; margin: 0 1px; border-radius: 50%; background: var(--k-dim); animation: kit-hop 1s infinite; }
+.kit-browser .notes .dots i:nth-child(2) { animation-delay: .15s; } .kit-browser .notes .dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes kit-hop { 50% { transform: translateY(-3px); opacity: .5; } }
+.kit-browser .notes p { margin: 0; font-size: 13px; animation: kit-rise .3s ease-out both; }
+.kit-browser .notes p b { font-weight: 700; } .kit-browser .up { color: #3ccf6e; } .kit-browser .dn { color: #ff6b6b; }
+@keyframes kit-rise { from { opacity: 0; transform: translateY(8px); } }
+@media (max-width: 760px) { .kit-browser { display: none; } }
+html[data-mode="embed"] .kit-browser { display: block; top: 10px; right: 10px; width: 206px; border-radius: 11px; }
+html[data-mode="embed"] .kit-browser .chrome { padding: 6px 8px; gap: 5px; }
+html[data-mode="embed"] .kit-browser .chrome i { width: 8px; height: 8px; }
+html[data-mode="embed"] .kit-browser .chrome b { margin-left: 3px; font-size: 11px; }
+html[data-mode="embed"] .kit-browser .live { font-size: 8px; }
+html[data-mode="embed"] .kit-browser .url { margin: 6px 8px 0; padding: 5px 7px; font-size: 9.5px; }
+html[data-mode="embed"] .kit-browser .bar { margin: 4px 8px 0; }
+html[data-mode="embed"] .kit-browser .view { margin: 5px 8px 0; height: 142px; }
+html[data-mode="embed"] .kit-browser .notes { padding: 6px 9px 9px; gap: 4px; min-height: 72px; }
+html[data-mode="embed"] .kit-browser .notes p { font-size: 11px; line-height: 1.3; }
+html[data-mode="embed"] .kit-browser .notes .doing { font-size: 10px; }
+@media (prefers-reduced-motion: reduce) { .kit-browser .live::before, .kit-browser .dots i, .kit-browser .notes p, .kit-browser .cursor { animation: none; transition: none; } }

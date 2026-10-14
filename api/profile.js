@@ -6,34 +6,13 @@
 //      wallet), the tweet is read through X's public syndication endpoint (no API key) and must contain the code,
 //      be from after step 1, and its author becomes the wallet's verified @handle.
 // GET ?wallet=<w> or ?wallets=<w>,<w>,…  → profiles (null where none).
-const { createPublicKey, verify: edVerify, randomBytes } = require('node:crypto');
-const { cors, readJson, isPubkey, b58decode, redis, rateLimit, fail } = require('./_lib');
+const { randomBytes } = require('node:crypto');
+const { cors, readJson, isPubkey, redis, signatureValid, readTweet, rateLimit, fail } = require('./_lib');
 
 const CODE_TTL = 60 * 60;
 const MAX_BATCH = 50;
-const ED25519_SPKI = Buffer.from('302a300506032b6570032100', 'hex');
 
 const challengeMessage = (wallet, code) => 'tweetpad profile\nLink this wallet to the X account that tweets the code.\nwallet: ' + wallet + '\ncode: ' + code;
-
-function signatureValid(wallet, message, signatureB58) {
-  const sig = b58decode(String(signatureB58 || ''));
-  if (!sig || sig.length !== 64) return false;
-  try {
-    const key = createPublicKey({ key: Buffer.concat([ED25519_SPKI, Buffer.from(b58decode(wallet))]), format: 'der', type: 'spki' });
-    return edVerify(null, Buffer.from(message, 'utf8'), key, Buffer.from(sig));
-  } catch { return false; }
-}
-
-/* X's embed endpoint; the token is the one its widget derives from the id */
-async function readTweet(id) {
-  const token = ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, '');
-  const r = await fetch('https://cdn.syndication.twimg.com/tweet-result?id=' + id + '&token=' + token, { signal: AbortSignal.timeout(8000) });
-  if (r.status === 404) throw Object.assign(new Error('tweet not found (is it public, and not deleted?)'), { status: 404 });
-  if (!r.ok) throw new Error('could not read the tweet (' + r.status + ')');
-  const t = await r.json();
-  if (!t || !t.user || !t.text) throw Object.assign(new Error('tweet not found (is it public?)'), { status: 404 });
-  return t;
-}
 
 async function start(b, res) {
   const wallet = b.wallet;

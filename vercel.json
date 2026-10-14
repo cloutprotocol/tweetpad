@@ -2,9 +2,27 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     { "source": "/t", "destination": "/c/BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN", "permanent": false },
-    { "source": "/t/", "destination": "/c/BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN", "permanent": false }
+    { "source": "/t/", "destination": "/c/BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN", "permanent": false },
+    { "source": "/agent/:name", "destination": "/a/:name", "permanent": false }
   ],
   "rewrites": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "(?<agent>(?!www\\.)[a-z0-9-]{1,20})\\.tweetpad\\.io" }],
+      "destination": "/api/a?name=:agent"
+    },
+    {
+      "source": "/a",
+      "destination": "/api/a"
+    },
+    {
+      "source": "/agents",
+      "destination": "/api/a"
+    },
+    {
+      "source": "/a/:name",
+      "destination": "/api/a?name=:name"
+    },
     {
       "source": "/c/:mint",
       "destination": "/api/card?mint=:mint"
@@ -253,8 +271,20 @@
           "value": "frame-ancestors 'self' https://x.com https://*.x.com https://twitter.com https://*.twitter.com"
         }
       ]
+    },
+    {
+      "source": "/a/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://x.com https://*.x.com https://twitter.com https://*.twitter.com"
+        }
+      ]
     }
   ],
+  "functions": {
+    "api/a.js": { "includeFiles": "a/agent.html" }
+  },
   "crons": [
     {
       "path": "/api/keeper",

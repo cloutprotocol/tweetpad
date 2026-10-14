@@ -1,0 +1,97 @@
+// What the agent endpoints share (api/agent.js, api/agent-chat.js, api/agent-topup.js): an agent's record, its credits and its ledger.
+// Credits are counted in micro-dollars (µ$, integers) so nothing rounds: 1 credit = $0.001 = 1,000 µ$, at our price (model cost ×
+// MARKUP). They belong to the agent: anyone can add them, nobody can move or withdraw them.
+// Redis keys:
+//   agent:<name>         the record, JSON (owner wallet and @handle, profile, look, persona, state)
+//   credits:<name>       its balance in µ$
+//   spent:<name>:<day>   what it spent today, for the owner's daily cap
+//   fans:<name>          sorted set: wallet → µ$ it added (SOL and burns), for the supporters list
+//   burned:<name>        $TP burned for it, in base units
+//   ledger:<name>        stream of every charge and top-up
+//   xagents:<xId>        set of the names an X account holds
+//   claim:<name>         a reservation while its claim tweet is posted (30 min)
+const { redis } = require('./_lib');
+
+const MARKUP = Number(process.env.AGENT_MARKUP) || 1.6;
+const CREDIT = 1000;                                                      // µ$ in a credit
+const STARTER = Math.round((Number(process.env.AGENT_STARTER_USD) || 0.25) * 1e6);   // a new agent's first credits, so it talks on day one
+const PER_HANDLE = 3;
+const SITE = 'https://www.tweetpad.io';
+/* an agent's address: its subdomain once *.tweetpad.io points here (AGENT_SUBDOMAINS=1), /a/<name> until then */
+const agentUrl = (name) => (process.env.AGENT_SUBDOMAINS === '1' ? 'https://' + name + '.tweetpad.io' : SITE + '/a/' + name);
+
+const LOOKS = {
+  shape: ['ball', 'oval', 'box', 'tilted', 'mallow'],
+  hat: ['none', 'sombrero'],
+  glasses: [false, true],
+};
+const DEFAULT_LOOK = { shape: 'ball', color: '#f4f4f4', hat: 'none', glasses: false };
+const cleanLook = (l) => {
+  const o = l && typeof l === 'object' ? l : {};
+  return {
+    shape: LOOKS.shape.includes(o.shape) ? o.shape : DEFAULT_LOOK.shape,
+    color: /^#[0-9a-f]{6}$/i.test(o.color) ? o.color.toLowerCase() : DEFAULT_LOOK.color,
+    hat: LOOKS.hat.includes(o.hat) ? o.hat : 'none',
+    glasses: o.glasses === true,
+  };
+};
+
+/* Dot is ours: it isn't claimed (its name is reserved), it runs on the same credits as any agent (credits:dot, topped up like any) */
+const DOT = {
+  name: 'dot', owner: null, handle: 'tweetpad_io', xId: null, display: 'Dot', links: ['https://x.com/tweetpad_io'], picture: '',
+  bio: "tweetpad's research agent. Ask about any token; I'll look it up live.", look: { shape: 'ball', color: '#f4f4f4', hat: 'none', glasses: false },
+  state: 'live', cap: 0, tweet: null, createdAt: Date.UTC(2026, 9, 13),
+  persona: `<role> You are Dot, tweetpad's research agent: a small, calm, curious white ball who lives inside an X post. You research tokens and markets with verifiable evidence, not hype or price momentum. </role>
+<voice> Short, plain, a little playful. One idea per sentence. No emoji walls, no "to the moon". </voice>
+<quick_mode> Answer in at most 3 sentences. When your browser shows a token, use its numbers and say where they came from. If a question needs real research, say what you'd check rather than guess. </quick_mode>
+<rules> Never invent a metric; say "I couldn't find that". Social buzz is not evidence. Bring up the bear case when someone sounds too sure. This is research, not advice. </rules>`,
+};
+
+async function loadAgent(name) {
+  const [raw, credits] = await redis(['GET', 'agent:' + name], ['GET', 'credits:' + name]);
+  if (!raw && name === 'dot') return { ...DOT, balance: Number(credits) || 0 };
+  if (!raw) return null;
+  const a = JSON.parse(raw);
+  a.balance = Number(credits) || 0;
+  return a;
+}
+const saveAgent = (a) => { const { balance, ...rest } = a; return ['SET', 'agent:' + a.name, JSON.stringify(rest)]; };
+
+/* what anyone may see */
+function publicAgent(a) {
+  return {
+    name: a.name, url: agentUrl(a.name), display: a.display, bio: a.bio, links: a.links, picture: a.picture, look: a.look,
+    owner: { wallet: a.owner, handle: a.handle }, state: a.state, credits: Math.floor(a.balance / CREDIT), token: a.token || null,
+    claimTweet: a.tweet, createdAt: a.createdAt,
+  };
+}
+
+const day = () => new Date().toISOString().slice(0, 10);
+
+/* take `worst` µ$ before a model call; false (and nothing taken) when the agent can't cover it or its daily cap is reached */
+async function reserve(a, worst) {
+  const [left] = await redis(['DECRBY', 'credits:' + a.name, worst]);
+  if (left < 0) { await redis(['INCRBY', 'credits:' + a.name, worst]); return false; }
+  if (a.cap) {
+    const [spent] = await redis(['GET', 'spent:' + a.name + ':' + day()]);
+    if ((Number(spent) || 0) + worst > a.cap * CREDIT) { await redis(['INCRBY', 'credits:' + a.name, worst]); return false; }
+  }
+  return true;
+}
+/* after the call: charge what it cost, give the rest back, and write it down */
+async function settle(a, worst, charge, entry) {
+  const key = 'spent:' + a.name + ':' + day();
+  await redis(['INCRBY', 'credits:' + a.name, worst - charge], ['INCRBY', key, charge], ['EXPIRE', key, 3 * 86400],
+    ['XADD', 'ledger:' + a.name, 'MAXLEN', '~', '5000', '*', 'kind', 'charge', 'usd', String(charge / 1e6), ...Object.entries(entry).flatMap(([k, v]) => [k, String(v)])]);
+}
+/* a top-up: credit it once per transaction signature */
+async function credit(name, signature, wallet, micro, entry) {
+  const [fresh] = await redis(['SET', 'topup:' + signature, name, 'NX', 'EX', 90 * 86400]);
+  if (fresh !== 'OK') return false;
+  await redis(['INCRBY', 'credits:' + name, micro], ['ZINCRBY', 'fans:' + name, micro, wallet],
+    ['XADD', 'ledger:' + name, 'MAXLEN', '~', '5000', '*', 'kind', 'topup', 'usd', String(micro / 1e6), 'wallet', wallet, 'tx', signature,
+      ...Object.entries(entry).flatMap(([k, v]) => [k, String(v)])]);
+  return true;
+}
+
+module.exports = { MARKUP, CREDIT, STARTER, PER_HANDLE, SITE, agentUrl, DEFAULT_LOOK, cleanLook, loadAgent, saveAgent, publicAgent, reserve, settle, credit };

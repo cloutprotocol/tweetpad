@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- an agent's page: /a/<name> (and <name>.tweetpad.io), served by api/a.js, which fills in the {{…}} below for that agent so its
+     link plays in an X post (?embed). Every URL must be absolute HTTPS. -->
+<title>{{TITLE}}</title>
+<meta name="agent" content="{{NAME}}">
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/tweetpad-hash-32.png">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="description" content="{{DESC}}">
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="{{TITLE}}">
+<meta name="twitter:description" content="{{DESC}}">
+<meta name="twitter:player" content="{{URL}}?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="{{IMAGE}}">
+<meta name="twitter:image:alt" content="{{TITLE}}">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESC}}">
+<meta property="og:image" content="{{IMAGE}}">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : 'page';</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap">
+<link rel="stylesheet" href="/kit/v1/kit.css">
+<style>
+  /* the host page around an agent (spec: "The runtime"): the character and its browser from the kit, and the parts only tweetpad
+     draws, which are the ones that touch money or identity: Top up (top left), the claim, the owner's editor */
+  :root { --ink: #f2f3f5; --dim: #8b9096; --glass: rgba(255, 255, 255, .07); --line: rgba(255, 255, 255, .14); --blue: #1da1f2; --fuel: #3ccf6e;
+          --panel: #17181a; --round: "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif; --ui: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0c; color: var(--ink); font: 15px/1.4 var(--ui); -webkit-font-smoothing: antialiased; }
+  #stage { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+  body::before { content: ""; position: fixed; inset: 0; background: radial-gradient(60% 55% at 55% 42%, #2a2b2e, #0b0b0c 70%); }
+  button { font: inherit; color: inherit; }
+  .pill { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 99px; color: var(--ink); text-decoration: none; cursor: pointer;
+          font: 600 15px/1 var(--round); background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(10px); }
+  .pill:hover, .pill:focus-visible { border-color: var(--blue); outline: none; }
+
+  /* top left: tweetpad, then Top up with the agent's fuel */
+  .top { position: fixed; top: 14px; left: 14px; z-index: 4; display: flex; gap: 8px; align-items: center; }
+  .top .home { padding: 5px; } .top .home img { width: 26px; height: 26px; display: block; }
+  .fuel { width: 46px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+  .fuel i { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--fuel); transition: width .6s; }
+  .fuel.low i { background: #ff6b6b; }
+  #topup { padding-left: 12px; } #topup small { font: 500 12px/1 var(--ui); color: var(--dim); }
+
+  /* who it is: under the top row */
+  .who { position: fixed; top: 64px; left: 16px; z-index: 3; max-width: min(300px, 40vw); }
+  .who h1 { margin: 0; font: 600 22px/1.15 var(--round); display: flex; align-items: center; gap: 8px; }
+  .who h1 img { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; }
+  .who .by { margin-top: 3px; font-size: 13px; color: var(--dim); } .who .by a { color: var(--dim); }
+  .who p { margin: 8px 0 0; font-size: 14px; color: #c9cdd2; }
+  .who .links { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .who .links a { font-size: 12px; color: var(--ink); padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line); text-decoration: none; }
+  .edit { margin-top: 10px; font-size: 12px; padding: 5px 10px; }
+
+  .bubble { position: fixed; left: 50%; top: 12vh; z-index: 2; max-width: min(420px, 86vw); padding: 14px 18px; border-radius: 22px; color: #111;
+            font: 500 19px/1.35 var(--round); background: #fff; box-shadow: 0 12px 40px rgba(0, 0, 0, .45); transform: translateX(-50%) scale(var(--s, 1));
+            transform-origin: 50% 100%; transition: transform .25s cubic-bezier(.45, 0, .2, 1), opacity .25s; text-align: center; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -9px; width: 18px; height: 18px; margin-left: -9px; background: #fff; transform: rotate(45deg); border-radius: 3px; }
+  .bubble.gone { opacity: 0; --s: .9; }
+  .bubble .dots i { display: inline-block; width: 8px; height: 8px; margin: 0 3px; border-radius: 50%; background: #111; animation: hop 1s infinite; }
+  .bubble .dots i:nth-child(2) { animation-delay: .15s; } .bubble .dots i:nth-child(3) { animation-delay: .3s; }
+  @keyframes hop { 50% { transform: translateY(-5px); opacity: .5; } }
+  .zz { position: fixed; left: 50%; top: 40%; z-index: 2; font: 600 28px/1 var(--round); color: var(--dim); pointer-events: none; opacity: 0; transition: opacity .6s; }
+  .zz.on { opacity: 1; animation: zz 2.4s ease-in-out infinite; }
+  @keyframes zz { 50% { transform: translate(10px, -14px); opacity: .5; } }
+
+  /* the message box, or the one action the agent's state calls for (Claim, Top up) */
+  .say { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); z-index: 2; width: min(560px, calc(100% - 32px)); transform: translateX(-50%);
+         display: flex; gap: 8px; padding: 8px; border-radius: 22px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(14px); }
+  .say input { flex: 1; min-width: 0; padding: 12px 14px; border: 0; border-radius: 14px; color: var(--ink); font: 16px/1.2 var(--ui); background: rgba(0, 0, 0, .35); outline: none; }
+  .say input::placeholder { color: var(--dim); }
+  .say input:focus { box-shadow: 0 0 0 2px var(--blue); }
+  .btn { padding: 12px 20px; border: 0; border-radius: 14px; color: #111; font: 600 16px/1 var(--round); background: #fff; cursor: pointer; }
+  .btn:hover, .btn:focus-visible { background: #e6f4fd; outline: none; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.wide { flex: 1; }
+  .btn.blue { background: var(--blue); color: #fff; } .btn.blue:hover { background: #47b4f5; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .log { position: fixed; left: 50%; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 74px); z-index: 2; width: min(560px, calc(100% - 32px)); transform: translateX(-50%);
+         display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; }
+  .log span { max-width: 80%; padding: 8px 12px; border-radius: 16px 16px 4px 16px; font-size: 14px; color: #fff; background: var(--blue); animation: rise .25s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .runs { position: fixed; right: 16px; bottom: 22px; z-index: 1; font-size: 11px; color: var(--dim); }
+
+  /* panels: Top up, Claim, Edit */
+  .sheet { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .55); backdrop-filter: blur(4px); }
+  .sheet[hidden] { display: none; }
+  .card { position: relative; width: min(440px, 100%); max-height: calc(100% - 8px); overflow: auto; padding: 20px; border-radius: 20px; background: var(--panel); border: 1px solid var(--line);
+          box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
+  .card h2 { margin: 0 0 4px; font: 600 22px/1.2 var(--round); }
+  .card .sub { margin: 0 0 14px; font-size: 13px; color: var(--dim); }
+  .card .x { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--glass); cursor: pointer; font-size: 18px; line-height: 1; }
+  .card label { display: block; margin: 12px 0 5px; font-size: 12px; color: var(--dim); }
+  .card input[type=text], .card input[type=number], .card textarea, .card input:not([type]) { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink);
+          font: 15px/1.3 var(--ui); background: rgba(0, 0, 0, .35); outline: none; }
+  .card textarea { min-height: 120px; resize: vertical; font: 13px/1.4 Menlo, Monaco, monospace; }
+  .card input:focus, .card textarea:focus { border-color: var(--blue); }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+  .seg { display: flex; gap: 6px; } .seg button { flex: 1; padding: 9px 8px; border-radius: 12px; border: 1px solid var(--line); background: transparent; cursor: pointer; font: 600 14px/1 var(--round); }
+  .seg button[aria-pressed=true] { background: #fff; color: #111; border-color: #fff; }
+  .seg button:disabled { opacity: .4; cursor: default; }
+  .note { margin-top: 10px; font-size: 13px; color: var(--dim); } .note.bad { color: #ff8a8a; } .note.good { color: var(--fuel); }
+  .wlist { display: grid; gap: 6px; margin-top: 8px; }
+  .wlist button { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: transparent; cursor: pointer; text-align: left; }
+  .wlist img { width: 24px; height: 24px; border-radius: 6px; }
+  .fans { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; color: #c9cdd2; }
+  .fans li { display: flex; justify-content: space-between; } .fans code { color: var(--dim); }
+  .step { padding: 12px 14px; margin-top: 10px; border-radius: 14px; border: 1px solid var(--line); }
+  .step b { display: block; font: 600 15px/1.2 var(--round); margin-bottom: 6px; }
+  .step.done { opacity: .55; } .step.now { border-color: var(--blue); }
+  .shapes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .shapes button { padding: 8px 2px; border-radius: 10px; border: 1px solid var(--line); background: transparent; cursor: pointer; font-size: 12px; }
+  .shapes button[aria-pressed=true] { border-color: #fff; background: rgba(255, 255, 255, .1); }
+  .colors { display: flex; flex-wrap: wrap; gap: 6px; } .colors button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .colors button[aria-pressed=true] { border-color: #fff; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-top: 10px; }
+
+  /* ?embed, X's card (480×480): the agent left, its browser right, Top up small; panels open the full page instead */
+  html[data-mode="embed"] .top { top: 10px; left: 10px; gap: 6px; }
+  html[data-mode="embed"] .top .home img { width: 20px; height: 20px; }
+  html[data-mode="embed"] .pill { font-size: 12px; padding: 4px 9px 4px 4px; }
+  html[data-mode="embed"] #topup { padding-left: 9px; } html[data-mode="embed"] .fuel { width: 30px; height: 6px; }
+  html[data-mode="embed"] #topup small { display: none; }
+  html[data-mode="embed"] .who { top: 44px; left: 12px; max-width: 220px; }
+  html[data-mode="embed"] .who h1 { font-size: 16px; } html[data-mode="embed"] .who h1 img { width: 22px; height: 22px; }
+  html[data-mode="embed"] .who .by { font-size: 11px; } html[data-mode="embed"] :is(.who p, .who .links, .edit, .runs) { display: none; }
+  html[data-mode="embed"] .bubble { left: 27%; top: 96px; max-width: 230px; padding: 10px 13px; font-size: 14px; border-radius: 16px; }
+  html[data-mode="embed"] .say { bottom: 10px; width: calc(100% - 20px); padding: 6px; border-radius: 16px; }
+  html[data-mode="embed"] .say input { padding: 10px 12px; font-size: 15px; }
+  html[data-mode="embed"] .btn { padding: 10px 14px; font-size: 15px; }
+  html[data-mode="embed"] .log { bottom: 70px; }
+  html[data-mode="embed"] .zz { left: 27%; }
+  html[data-mode="card"] :is(.say, .log, .bubble, .kit-browser, .top, .edit, .runs) { display: none !important; }
+  html[data-mode="card"] .who { top: 7%; left: 0; right: 0; max-width: none; text-align: center; }
+  html[data-mode="card"] .who h1 { justify-content: center; font-size: 64px; } html[data-mode="card"] .who h1 img { width: 64px; height: 64px; border-radius: 14px; }
+  html[data-mode="card"] .who .by { font-size: 28px; } html[data-mode="card"] :is(.who p, .who .links) { display: none; }
+  @media (max-width: 760px) { .who p { display: none; } .who { max-width: 60vw; } }
+
+  /* the claim pages (/agents, /a, and a name nobody holds yet): a big headline, how agents work where an agent's browser would be,
+     and the name and Claim as the one thing to do, so they never read as Dot's preview */
+  .who.hero { top: 76px; left: 24px; max-width: min(470px, 44vw); }
+  .who.hero h1 { font-size: clamp(38px, 5.2vw, 64px); line-height: 1.02; letter-spacing: -.02em; }
+  .who.hero .lede { margin: 14px 0 0; font-size: 18px; line-height: 1.4; color: #c9cdd2; }
+  .who.hero .lede b { color: var(--ink); }
+  .howto { position: fixed; top: 14px; right: 14px; z-index: 3; width: min(370px, 32vw); padding: 18px 18px 16px; border-radius: 18px;
+           background: #17181a; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0, 0, 0, .55); }
+  .howto h2 { margin: 0 0 12px; font: 600 18px/1.2 var(--round); }
+  .howto ol { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 12px; }
+  .howto li { counter-increment: step; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; }
+  .howto li::before { content: counter(step); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+                      font: 600 14px/1 var(--round); color: #111; background: #fff; }
+  .howto li b { display: block; font: 600 15px/1.25 var(--round); }
+  .howto li span { display: block; margin-top: 2px; font-size: 13px; line-height: 1.35; color: #b5bac0; }
+  .howto .soon { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--dim); }
+  .howto .soon b { color: var(--ink); font-weight: 600; }
+  .say.claim { width: min(620px, calc(100% - 32px)); padding: 10px; border-radius: 26px; border-color: rgba(29, 161, 242, .55); box-shadow: 0 0 0 4px rgba(29, 161, 242, .12); }
+  .say.claim .prefix { align-self: center; padding-left: 10px; font: 600 17px/1 var(--round); color: var(--dim); white-space: nowrap; }
+  .say.claim input { padding: 15px 4px; font: 600 18px/1.2 var(--round); background: transparent; }
+  .say.claim input:focus { box-shadow: none; }
+  .say.claim .btn { padding: 15px 26px; font-size: 18px; }
+  @media (max-width: 760px) { .howto { display: none; } .who.hero { max-width: calc(100% - 48px); } .who.hero .lede { display: block; font-size: 15px; } .say.claim .prefix { display: none; } }
+  html[data-mode="embed"] .who.hero { top: 46px; left: 12px; max-width: 230px; }
+  html[data-mode="embed"] .who.hero h1 { font-size: 30px; }
+  html[data-mode="embed"] .who.hero .lede { display: block; margin-top: 8px; font-size: 12.5px; }
+  html[data-mode="embed"] .howto { display: block; top: 10px; right: 10px; width: 206px; padding: 11px 11px 10px; border-radius: 13px; }
+  html[data-mode="embed"] .howto h2 { margin-bottom: 8px; font-size: 13px; }
+  html[data-mode="embed"] .howto ol { gap: 7px; }
+  html[data-mode="embed"] .howto li { grid-template-columns: 18px 1fr; gap: 7px; }
+  html[data-mode="embed"] .howto li::before { width: 18px; height: 18px; font-size: 10px; }
+  html[data-mode="embed"] .howto li b { font-size: 11.5px; } html[data-mode="embed"] .howto li span { font-size: 10px; line-height: 1.3; }
+  html[data-mode="embed"] .howto .soon { margin-top: 8px; padding-top: 7px; font-size: 10px; }
+  html[data-mode="embed"] .say.claim { padding: 6px; border-radius: 16px; } html[data-mode="embed"] .say.claim .prefix { font-size: 13px; padding-left: 6px; }
+  html[data-mode="embed"] .say.claim input { padding: 10px 2px; font-size: 15px; } html[data-mode="embed"] .say.claim .btn { padding: 10px 16px; font-size: 15px; }
+  @media (prefers-reduced-motion: reduce) { .bubble, .log span, .bubble .dots i, .zz.on, .fuel i { transition: none; animation: none; } }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head>
+<body>
+<canvas id="stage" aria-hidden="true"></canvas>
+<div class="top">
+  <a class="pill home" href="/" data-menu-home title="Back to the tweetpad Menu"><img src="/assets/brand/tweetpad-hash-180.png" alt="tweetpad"></a>
+  <button class="pill" id="topup" type="button" hidden><span class="fuel" id="fuel"><i></i></span>Top up <small id="credits"></small></button>
+</div>
+<div class="who" id="who"></div>
+<div class="bubble gone" id="bubble" role="status" aria-live="polite"></div>
+<div class="zz" id="zz" aria-hidden="true">z z z</div>
+<div class="log" id="log" aria-hidden="true"></div>
+<div class="say" id="say">
+  <label class="sr" for="msg">Message the agent</label>
+  <input id="msg" maxlength="200" placeholder="Say something…" enterkeyhint="send" autocomplete="off">
+  <button class="btn" type="button" id="send">Send</button>
+</div>
+<div class="runs" id="runs">Runs on Grok</div>
+
+<div class="sheet" id="sheet" hidden><div class="card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <button class="x" type="button" id="sheet-x" aria-label="Close">×</button>
+  <div id="sheet-body"></div>
+</div></div>
+
+<script src="/assets/menu-home.js"></script>
+<script type="module">
+import { createStage } from '/kit/v1/character.js';
+import { createBrowser, tokenIn, usd, num } from '/kit/v1/browser.js';
+import { wallets } from '/kit/v1/wallet.js';
+
+const MODE = document.documentElement.dataset.mode, embed = MODE === 'embed', card = MODE === 'card';
+const NAME = document.querySelector('meta[name=agent]').content;
+const $ = (id) => document.getElementById(id);
+const el = (tag, props, ...kids) => { const e = Object.assign(document.createElement(tag), props || {}); e.append(...kids.flat().filter(k => k != null && k !== false)); return e; };
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const short = (a) => a.slice(0, 4) + '…' + a.slice(-4);
+const errText = (e) => String((e && (e.message || e.reason)) || e).replace(/^Error:? /, '');
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch { /* blocked */ } } };
+const api = async (path, body) => {
+  const r = await fetch(path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : undefined);
+  const out = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(out.error || 'request failed (' + r.status + ')');
+  return out;
+};
+/* panels open the full page in X's card: wallets are unreliable in its frame, and money stays out of the post */
+const fullPage = (q) => window.open(location.origin + location.pathname + (q ? '?' + q : ''), '_blank', 'noopener');
+
+const stage = createStage($('stage'), { layout: MODE });
+let agent = null, state = 'loading';
+const bubble = $('bubble'), log = $('log'), input = $('msg'), send = $('send');
+
+function say(text, happy = false) {
+  bubble.textContent = text; bubble.classList.remove('gone');
+  stage.talk(); if (happy) stage.pleased();
+}
+function thinking() { bubble.replaceChildren(el('span', { className: 'dots', innerHTML: '<i></i><i></i><i></i>' })); bubble.classList.remove('gone'); }
+
+/* ---------- who it is ---------- */
+function renderWho() {
+  const w = $('who');
+  if (!agent) { w.replaceChildren(el('h1', { textContent: NAME })); return; }
+  const pic = agent.picture ? el('img', { src: agent.picture, alt: '' }) : null;
+  const by = agent.owner.handle ? el('div', { className: 'by' }, 'by ', el('a', { href: 'https://x.com/' + agent.owner.handle, target: '_blank', rel: 'noopener', textContent: '@' + agent.owner.handle })) : null;
+  const links = agent.links && agent.links.length ? el('div', { className: 'links' }, agent.links.map(u => el('a', { href: u, target: '_blank', rel: 'nofollow ugc noopener', textContent: new URL(u).hostname.replace(/^www\./, '') }))) : null;
+  const edit = agent.owner.wallet && !embed ? el('button', { className: 'pill edit', type: 'button', textContent: 'Edit agent', onclick: () => openEdit() }) : null;
+  w.replaceChildren(...[el('h1', {}, pic, agent.display || agent.name), by, agent.bio ? el('p', { textContent: agent.bio }) : null, links, edit].filter(Boolean));
+}
+function renderFuel() {
+  const b = $('topup');
+  b.hidden = !agent;
+  if (!agent) return;
+  const c = agent.credits;
+  $('credits').textContent = c >= 1000 ? (c / 1000).toFixed(1) + 'K credits' : c + ' credits';
+  const full = Math.min(1, c / 2000);   // the bar is full at 2,000 credits ($2)
+  $('fuel').firstElementChild.style.width = Math.max(c > 0 ? 6 : 0, full * 100) + '%';
+  $('fuel').classList.toggle('low', c < 100);
+  b.title = c + ' credits: what keeps ' + (agent.display || agent.name) + ' talking. Anyone can top up.';
+}
+function setState(s) {
+  state = s;
+  stage.sleep(s === 'sleeping' || s === 'paused');
+  $('zz').classList.toggle('on', s === 'sleeping');
+  const box = $('say');
+  if (s === 'free' || s === 'claiming') {
+    box.replaceChildren(el('button', { className: 'btn blue wide', type: 'button', textContent: s === 'free' ? 'Claim ' + NAME : 'Being claimed…', disabled: s !== 'free',
+      onclick: () => (embed ? fullPage('claim') : openClaim()) }));
+  } else if (s === 'sleeping') {
+    box.replaceChildren(el('button', { className: 'btn wide', type: 'button', textContent: 'Top up to wake ' + (agent.display || NAME), onclick: () => openTopup() }));
+  } else if (s === 'reserved') {
+    box.replaceChildren(el('a', { className: 'btn wide', href: '/a', textContent: 'Pick another name', style: 'text-align:center;text-decoration:none' }));
+  } else if (!box.contains(input)) box.replaceChildren(el('label', { className: 'sr', htmlFor: 'msg', textContent: 'Message the agent' }), input, send);
+}
+
+/* ---------- the claim pages: /agents (/a) and a name nobody holds ---------- */
+/* the character tries on looks while you decide: what yours could be */
+const LOOKS = [{ shape: 'ball', color: '#f4f4f4', hat: 'sombrero' }, { shape: 'oval', color: '#ff6a1a' }, { shape: 'box', color: '#14b8a6', glasses: true },
+  { shape: 'tilted', color: '#9a5cf5' }, { shape: 'mallow', color: '#1f87ff' }, { shape: 'ball', color: '#1a1a1a', glasses: true }, { shape: 'ball', color: '#98663e' }];
+let trying = 0;
+function tryOnLooks() {
+  let i = 0;
+  stage.setSize(0.72); stage.setLook(LOOKS[0]);
+  if (card || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  clearInterval(trying);
+  trying = setInterval(() => { i = (i + 1) % LOOKS.length; stage.setLook(LOOKS[i]); stage.talk(); }, 3200);
+}
+function hero(title, lede) {
+  const w = $('who');
+  w.className = 'who hero';
+  w.replaceChildren(el('h1', { textContent: title }), el('p', { className: 'lede', innerHTML: lede }));
+}
+function howTo() {
+  document.body.append(el('aside', { className: 'howto', ariaLabel: 'How agents work', innerHTML: `<h2>How tweetpad agents work</h2><ol>
+    <li><div><b>Claim it with one tweet</b><span>Pick a name and post it. That post becomes its home.</span></div></li>
+    <li><div><b>Make it yours</b><span>Shape, colour, hat, glasses, and a personality you write.</span></div></li>
+    <li><div><b>It lives in X posts</b><span>Anyone can talk to it right in the post. It runs on Grok and researches tokens live.</span></div></li>
+    <li><div><b>Anyone keeps it running</b><span>Top it up with SOL or by burning $TP.</span></div></li></ol>
+    <div class="soon"><b>Soon:</b> build your agent in your own code. 3D worlds, games, trading, anything.</div>` }));
+}
+/* /agents: pick a name, then go to its page */
+function pickName() {
+  tryOnLooks(); howTo();
+  hero('Claim your agent', 'An AI agent that lives inside <b>your X posts</b>. Talk to it, watch it research, fuel it. Free to claim.');
+  const go = () => { const n = input.value.trim().toLowerCase().replace(/^@/, ''); if (n) location.href = '/a/' + encodeURIComponent(n) + location.search; };
+  const box = $('say');
+  box.classList.add('claim');
+  input.placeholder = 'your-agent'; input.maxLength = 20;
+  input.addEventListener('input', () => { input.value = input.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
+  send.textContent = 'Claim'; send.classList.add('blue'); send.addEventListener('click', go);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  box.replaceChildren(el('span', { className: 'prefix', textContent: 'tweetpad.io/a/' }), el('label', { className: 'sr', htmlFor: 'msg', textContent: 'Your agent’s name' }), input, send);
+  $('runs').hidden = true;
+}
+
+async function load() {
+  if (!NAME) return pickName();
+  const out = await api('/api/agent?name=' + encodeURIComponent(NAME));
+  agent = out.agent || null;
+  if (agent) {
+    /* just claimed: the claim page gives way to the agent */
+    clearInterval(trying); stage.setSize(1); document.querySelector('.howto')?.remove(); $('who').className = 'who'; $('say').classList.remove('claim'); $('runs').hidden = false;
+    stage.setLook(agent.name === 'dot' ? { ...agent.look, gloss: true } : agent.look);
+    input.placeholder = 'Say something to ' + (agent.display || agent.name) + '…';
+    if (!card && !browser) browser = createBrowser(document.body, { title: (agent.display || agent.name) + "'s browser" });
+    renderWho(); renderFuel();
+    setState(agent.state === 'paused' ? 'paused' : agent.credits <= 0 ? 'sleeping' : 'live');
+    return out;
+  }
+  tryOnLooks(); howTo(); renderFuel(); $('runs').hidden = true;
+  if (out.problem) { hero(NAME, out.problem === 'that name is reserved' ? 'This name is reserved. <b>Pick another</b> for your agent.' : out.problem); setState('reserved'); }
+  else if (out.claiming) { hero('Claim ' + NAME, 'Someone is claiming this name right now. It opens again in 30 minutes if they don’t finish.'); setState('claiming'); }
+  else { hero('Claim ' + NAME, '<b>' + NAME + '</b> is free. Claim it with one tweet and it lives inside every post that shares its link.'); setState('free'); }
+  $('say').classList.add('claim');
+  return out;
+}
+
+/* ---------- the browser: only a claimed agent has one; the claim pages show how agents work there instead ---------- */
+let browser = null;
+
+/* ---------- talking ---------- */
+const history = [];
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+/* its own lines, for when there's no model to ask (offline) */
+const LINES = [[/\b(hi|hey|hello|yo|sup|gm)\b/i, ['hi! 👋', 'hey you', 'gm ☀️']], [/\?$/, ['hmm. good question.', 'ask me again in a bit?']]];
+const lineFor = (text) => { for (const [re, l] of LINES) if (re.test(text)) return pick(l); return pick(['nice.', 'tell me more 👀', 'mhm!', 'I like that.']); };
+
+let busy = false;
+async function reply(text) {
+  history.push({ role: 'user', content: text });
+  const out = await api('/api/agent-chat', { name: NAME, messages: history.slice(-8), seeing: browser ? browser.seeing : '' }).catch((e) => ({ error: errText(e) }));
+  if (out.reply) {
+    history.push({ role: 'assistant', content: out.reply });
+    agent.credits = out.credits; renderFuel();
+    return say(out.reply, /☺️|❤|☀️|👋|!/.test(out.reply));
+  }
+  history.pop();
+  if (out.state === 'sleeping') { agent.credits = 0; renderFuel(); setState('sleeping'); return say('out of credits… top me up and I’ll wake up. 😴'); }
+  if (out.state === 'paused') { setState('paused'); return say('I’m paused for now.'); }
+  if (out.state === 'offline') return say(lineFor(text));
+  say(out.error && /slow down|come back/.test(out.error) ? out.error : 'my brain hiccuped. try again?');
+}
+async function talk() {
+  const text = input.value.trim();
+  if (!text || busy || state !== 'live') return;
+  input.value = '';
+  const mine = el('span', { textContent: text });
+  log.append(mine); while (log.children.length > 3) log.firstElementChild.remove();
+  setTimeout(() => mine.remove(), 6000);
+  busy = true; send.disabled = true; thinking();
+  try {
+    const token = tokenIn(text);
+    if (token && browser) {
+      say('on it! opening it in my browser 👀', true);
+      const t = await browser.research({ token });
+      if (!t) say('couldn’t find a market for that one on our chains 🤔');
+      else { thinking(); await reply(text); }
+    } else await reply(text);
+  } finally { busy = false; send.disabled = false; if (!embed) input.focus(); }
+}
+send.addEventListener('click', () => talk());
+input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); talk(); } });
+
+/* ---------- panels ---------- */
+const sheet = $('sheet'), body = $('sheet-body');
+function openSheet(...kids) { body.replaceChildren(...kids.filter(Boolean)); sheet.hidden = false; }
+function closeSheet() { sheet.hidden = true; body.replaceChildren(); }
+$('sheet-x').addEventListener('click', closeSheet);
+sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+const note = (text = '', kind = '') => el('div', { className: 'note ' + kind, textContent: text });
+
+/* a wallet picker, or the connected address with a change link; calls back once connected */
+function walletRow(then) {
+  const box = el('div');
+  const draw = () => {
+    if (wallets.address) { box.replaceChildren(el('div', { className: 'note' }, 'Wallet ', el('code', { textContent: short(wallets.address) }), ' · ', el('a', { href: '#', textContent: 'change', style: 'color:inherit', onclick: (e) => { e.preventDefault(); wallets.disconnect(); } }))); return; }
+    if (!wallets.list.length) { box.replaceChildren(note('No Solana wallet found. Install Phantom, Solflare or Backpack, then reload.')); return; }
+    box.replaceChildren(el('div', { className: 'wlist' }, wallets.list.map(w => el('button', { type: 'button', onclick: async () => {
+      try { await wallets.connect(w); then && then(); } catch (e) { box.append(note(errText(e), 'bad')); }
+    } }, el('img', { src: w.icon, alt: '' }), 'Connect ' + w.name))));
+  };
+  wallets.onChange(draw); draw();
+  return box;
+}
+
+/* Top up: anyone, in SOL or by burning $TP (burns count more) */
+async function openTopup() {
+  if (embed) return fullPage('topup');
+  await ready;
+  if (!agent) return;
+  let prices = {};
+  try { prices = await api('/api/agent-topup?prices=1'); } catch { /* shown below */ }
+  let kind = 'burn';
+  const amount = el('input', { type: 'number', min: '0', step: 'any', inputMode: 'decimal', placeholder: '0' });
+  const worth = note(), status = el('div');
+  const seg = el('div', { className: 'seg' });
+  const segs = [['burn', 'Burn $TP (+' + Math.round(((prices.burnBonus || 1.2) - 1) * 100) + '%)'], ['sol', 'SOL']].map(([k, label]) => el('button', { type: 'button', textContent: label, disabled: k === 'sol' && !prices.sol,
+    title: k === 'sol' && !prices.sol ? 'SOL top-ups open soon' : '', onclick: () => { kind = k; draw(); } }));
+  seg.append(...segs);
+  const go = el('button', { className: 'btn blue wide', type: 'button' });
+  const draw = () => {
+    segs.forEach((b, i) => b.setAttribute('aria-pressed', String(['burn', 'sol'][i] === kind)));
+    amount.placeholder = kind === 'burn' ? '50000' : '0.05';
+    const px = kind === 'burn' ? prices.tpUsd * (prices.burnBonus || 1.2) : prices.solUsd;
+    const v = Number(amount.value) * (px || 0);
+    worth.textContent = px ? (v > 0 ? '≈ $' + v.toFixed(2) + ' → ' + Math.floor(v * 1000).toLocaleString() + ' credits' : (kind === 'burn' ? '$TP is burned for good: supply goes down as agents run.' : 'Sent to the tweetpad treasury.')) : 'Prices are unavailable right now.';
+    go.textContent = kind === 'burn' ? 'Burn $TP for ' + (agent.display || NAME) : 'Send SOL to ' + (agent.display || NAME);
+    go.disabled = !(v >= (prices.minUsd || 1)) || !wallets.address;
+  };
+  amount.addEventListener('input', draw); wallets.onChange(draw);
+  go.addEventListener('click', async () => {
+    go.disabled = true; status.replaceChildren(note('Check your wallet…'));
+    try {
+      const { transaction } = await api('/api/agent-topup', { action: 'build', name: NAME, payer: wallets.address, kind, amount: amount.value });
+      const signature = await wallets.sendTransaction(transaction);
+      status.replaceChildren(note('Confirmed. Counting it…'));
+      let out;
+      for (let i = 0; i < 8; i++) { try { out = await api('/api/agent-topup', { action: 'confirm', name: NAME, signature }); break; } catch (e) { if (i === 7 || !/not confirmed/.test(errText(e))) throw e; await wait(1500); } }
+      agent.credits = out.credits; renderFuel();
+      status.replaceChildren(note('+$' + out.usd.toFixed(2) + ' in credits. Thank you!', 'good'));
+      if (state === 'sleeping') setState('live');
+      say('thank you!! ☺️ fuelled up.', true);
+    } catch (e) { status.replaceChildren(note(errText(e), 'bad')); draw(); }
+  });
+  const fans = (agent.fans || []).length ? el('ul', { className: 'fans' }, agent.fans.map(f => el('li', {}, el('code', { textContent: short(f.wallet) }), '$' + f.usd.toFixed(2)))) : null;
+  draw();
+  openSheet(el('h2', { id: 'sheet-title', textContent: 'Top up ' + (agent.display || NAME) }),
+    el('p', { className: 'sub', textContent: agent.credits.toLocaleString() + ' credits left. Credits pay for its thinking and stay with this agent; anyone can add them.' }),
+    seg, el('label', { textContent: kind === 'burn' ? 'Amount of $TP to burn' : 'Amount of SOL', htmlFor: 'amt' }), Object.assign(amount, { id: 'amt' }), worth,
+    walletRow(draw), el('div', { className: 'row' }, go), status,
+    agent.burned ? note(Math.round(agent.burned / 1e6).toLocaleString() + ' $TP burned for this agent so far') : null,
+    fans ? el('label', { textContent: 'Top supporters' }) : null, fans);
+}
+$('topup').addEventListener('click', () => openTopup());
+
+/* Claim: hold the name, tweet the claim, paste the tweet */
+async function openClaim() {
+  let held = null;
+  const s1 = el('div', { className: 'step now' }, el('b', { textContent: '1. Connect the wallet that will own it' }), walletRow(() => draw()));
+  const tweetBtn = el('a', { className: 'btn blue', target: '_blank', rel: 'noopener', textContent: 'Post the claim tweet', style: 'display:inline-block;text-decoration:none' });
+  const holdBtn = el('button', { className: 'btn', type: 'button', textContent: 'Hold ' + NAME + ' for 30 minutes' });
+  const s2 = el('div', { className: 'step' }, el('b', { textContent: '2. Tweet it' }), holdBtn);
+  const link = el('input', { placeholder: 'https://x.com/you/status/…', id: 'tweet' });
+  const verifyBtn = el('button', { className: 'btn blue', type: 'button', textContent: 'Claim' });
+  const s3 = el('div', { className: 'step' }, el('b', { textContent: '3. Paste your tweet’s link' }), link, el('div', { className: 'row' }, verifyBtn));
+  const status = el('div');
+  const draw = () => {
+    s1.className = 'step ' + (wallets.address ? 'done' : 'now');
+    s2.className = 'step ' + (!wallets.address ? '' : held ? 'done' : 'now');
+    s3.className = 'step ' + (held ? 'now' : '');
+    holdBtn.disabled = !wallets.address; verifyBtn.disabled = !held;
+  };
+  holdBtn.addEventListener('click', async () => {
+    holdBtn.disabled = true; status.replaceChildren();
+    try {
+      held = await api('/api/agent', { action: 'reserve', name: NAME, wallet: wallets.address });
+      tweetBtn.href = held.intent;
+      s2.replaceChildren(el('b', { textContent: '2. Tweet it' }), el('p', { className: 'sub', textContent: held.tweet }), tweetBtn);
+      draw();
+    } catch (e) { status.replaceChildren(note(errText(e), 'bad')); draw(); }
+  });
+  verifyBtn.addEventListener('click', async () => {
+    verifyBtn.disabled = true; status.replaceChildren(note('Sign in your wallet…'));
+    try {
+      const signature = await wallets.signMessage(held.message);
+      status.replaceChildren(note('Reading your tweet…'));
+      await api('/api/agent', { action: 'verify', name: NAME, wallet: wallets.address, signature, tweet: link.value.trim() });
+      status.replaceChildren(note('It’s yours! Waking it up…', 'good'));
+      await load(); closeSheet(); say('hi! I’m ' + NAME + '. nice to meet you! ☺️', true);
+      setTimeout(() => openEdit(), 1200);
+    } catch (e) { status.replaceChildren(note(errText(e), 'bad')); verifyBtn.disabled = false; }
+  });
+  draw();
+  openSheet(el('h2', { id: 'sheet-title', textContent: 'Claim ' + NAME }),
+    el('p', { className: 'sub', textContent: 'Your agent lives at this link, inside any post that shares it. Claiming is free and comes with a few starter credits.' }), s1, s2, s3, status);
+}
+
+/* Edit: the owner signs in once (24h), then shapes the agent; the stage shows the look as it changes */
+const SHAPES = [['ball', 'Ball'], ['oval', 'Oval'], ['box', 'Box'], ['tilted', 'Tilted'], ['mallow', 'Mallow']];
+const COLORS = ['#f4f4f4', '#1a1a1a', '#ff6a1a', '#14b8a6', '#9a5cf5', '#1f87ff', '#98663e', '#ff4f8b', '#f5c518', '#3ccf6e'];
+async function ownerToken() {
+  const kept = JSON.parse(store.get('agentsess') || 'null');
+  if (kept && kept.wallet === wallets.address && kept.expires > Date.now() + 60000) return kept.token;
+  const issued = Date.now();
+  const signature = await wallets.signMessage('tweetpad agents\nSign in to edit your agents. This is free and sends no transaction.\nwallet: ' + wallets.address + '\nissued: ' + issued);
+  const out = await api('/api/agent', { action: 'session', wallet: wallets.address, issued, signature });
+  store.set('agentsess', JSON.stringify({ wallet: wallets.address, token: out.token, expires: out.expires }));
+  return out.token;
+}
+async function openEdit() {
+  if (!agent || !agent.owner.wallet) return;
+  if (wallets.address !== agent.owner.wallet) {
+    return openSheet(el('h2', { id: 'sheet-title', textContent: 'Edit ' + (agent.display || NAME) }),
+      el('p', { className: 'sub', textContent: 'Connect the wallet that claimed this agent (' + short(agent.owner.wallet) + ').' }),
+      walletRow(() => { if (wallets.address === agent.owner.wallet) openEdit(); else body.append(note('That wallet doesn’t own this agent.', 'bad')); }));
+  }
+  let token, mine;
+  try { token = await ownerToken(); mine = await api('/api/agent', { action: 'mine', name: NAME, token }); }
+  catch (e) { return openSheet(el('h2', { textContent: 'Edit' }), note(errText(e), 'bad')); }
+  const look = { ...agent.look };
+  const display = el('input', { value: agent.display || '', maxLength: 32 });
+  const bio = el('input', { value: agent.bio || '', maxLength: 160 });
+  const links = [0, 1, 2, 3].map(i => el('input', { value: (agent.links || [])[i] || '', placeholder: 'https://…' }));
+  const persona = el('textarea', { value: mine.persona || '', maxLength: 6000, placeholder: '<role> Who it is </role>\n<voice> How it talks </voice>\n<rules> What it never does </rules>' });
+  const cap = el('input', { type: 'number', min: '0', value: mine.cap || '', placeholder: 'no cap' });
+  const paused = el('input', { type: 'checkbox', checked: agent.state === 'paused' });
+  let picture = agent.picture || '';
+  const picNote = note(picture ? 'Picture set.' : 'Square PNG, JPG or WebP, up to 4 MB.');
+  const file = el('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp' });
+  file.addEventListener('change', async () => {
+    const f = file.files[0]; if (!f) return;
+    picNote.textContent = 'Uploading…'; picNote.className = 'note';
+    try {
+      const r = await fetch('/api/ipfs', { method: 'POST', body: await f.arrayBuffer(), headers: { 'content-type': 'application/octet-stream', 'x-file-type': f.type,
+        'x-meta': encodeURIComponent(JSON.stringify({ name: display.value || NAME, symbol: 'AGENT', description: 'tweetpad agent ' + NAME })) } });
+      const out = await r.json(); if (!r.ok) throw new Error(out.error);
+      picture = out.image; picNote.textContent = 'Picture uploaded.'; picNote.className = 'note good';
+    } catch (e) { picNote.textContent = errText(e); picNote.className = 'note bad'; }
+  });
+  const shapeBtns = SHAPES.map(([k, label]) => el('button', { type: 'button', textContent: label, onclick: () => { look.shape = k; drawLook(); } }));
+  const colorBtns = COLORS.map(c => el('button', { type: 'button', style: 'background:' + c, ariaLabel: c, onclick: () => { look.color = c; drawLook(); } }));
+  const hat = el('input', { type: 'checkbox', checked: look.hat === 'sombrero', onchange: () => { look.hat = hat.checked ? 'sombrero' : 'none'; drawLook(); } });
+  const specs = el('input', { type: 'checkbox', checked: !!look.glasses, onchange: () => { look.glasses = specs.checked; drawLook(); } });
+  const drawLook = () => {
+    shapeBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(SHAPES[i][0] === look.shape)));
+    colorBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(COLORS[i] === look.color)));
+    stage.setLook(look);
+  };
+  const status = el('div');
+  const save = el('button', { className: 'btn blue wide', type: 'button', textContent: 'Save', onclick: async () => {
+    save.disabled = true; status.replaceChildren(note('Saving…'));
+    try {
+      const out = await api('/api/agent', { action: 'update', name: NAME, token, display: display.value, bio: bio.value, links: links.map(i => i.value).filter(Boolean),
+        picture, look, persona: persona.value, cap: Number(cap.value) || 0, paused: paused.checked });
+      agent = { ...agent, ...out.agent }; renderWho(); renderFuel();
+      setState(agent.state === 'paused' ? 'paused' : agent.credits <= 0 ? 'sleeping' : 'live');
+      status.replaceChildren(note('Saved.', 'good')); say('ooh, I like it. ☺️', true);
+    } catch (e) { status.replaceChildren(note(errText(e), 'bad')); }
+    save.disabled = false;
+  } });
+  drawLook();
+  openSheet(el('h2', { id: 'sheet-title', textContent: 'Edit ' + (agent.display || NAME) }),
+    el('p', { className: 'sub', textContent: 'Changes show on its card everywhere it’s posted.' }),
+    el('label', { textContent: 'Shape' }), el('div', { className: 'shapes' }, shapeBtns),
+    el('label', { textContent: 'Colour' }), el('div', { className: 'colors' }, colorBtns),
+    el('label', { className: 'check' }, hat, 'Sombrero'), el('label', { className: 'check' }, specs, 'Glasses'),
+    el('label', { textContent: 'Name' }), display, el('label', { textContent: 'Bio' }), bio,
+    el('label', { textContent: 'Picture' }), file, picNote,
+    el('label', { textContent: 'Links (X, site, Telegram, a token page)' }), ...links,
+    el('label', { textContent: 'Persona: how it thinks and talks. tweetpad’s rules always come first.' }), persona,
+    el('label', { textContent: 'Daily spend cap, in credits' }), cap,
+    el('label', { className: 'check' }, paused, 'Paused (it sleeps and won’t answer)'),
+    el('div', { className: 'row' }, save), status);
+}
+
+/* ---------- start ---------- */
+const ready = load().catch((e) => say('couldn’t load ' + NAME + ': ' + errText(e)));
+ready.then(() => {
+  const q = new URLSearchParams(location.search);
+  if (q.has('topup') && agent) openTopup();
+  else if (q.has('claim') && state === 'free') openClaim();
+  else if (agent && state === 'live' && !card) setTimeout(() => say(agent.name === 'dot' ? "hi, I'm Dot. say something!" : 'hi, I’m ' + (agent.display || agent.name) + '. say something!', true), 600);
+  else if (state === 'sleeping') say('zzz… out of credits. top me up?');
+});
+</script>
+</body>
+</html>
