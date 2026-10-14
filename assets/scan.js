@@ -24,7 +24,6 @@ const solscan = (a) => 'https://solscan.io/account/' + a;
 const imgSrc = (url) => { const m = /\/ipfs\/([A-Za-z0-9]+)/.exec(url || ''); return m ? '/api/image?cid=' + m[1] + '&w=128' : url; };
 /* the app, in this same frame (the X card, the pop-out) or as the page */
 const appUrl = (q) => '/embed.html?' + new URLSearchParams({ ...(mode === 'popup' && { mode: 'popup' }), ...q });
-if (mode === 'embed' || mode === 'popup') document.querySelector('.head .home').href = appUrl({});
 
 /* an address, linked to Solscan */
 const addr = (a, label) => h('a', { class: 'sc-addr', href: solscan(a), target: '_blank', rel: 'noopener', title: a }, label || short(a));

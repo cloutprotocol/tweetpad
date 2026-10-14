@@ -3277,7 +3277,8 @@ $('lightbox').addEventListener('keydown', (ev) => {
   if (ev.shiftKey && i <= 0) { ev.preventDefault(); items[items.length - 1].focus(); }
   else if (!ev.shiftKey && i === items.length - 1) { ev.preventDefault(); items[0].focus(); }
 });
-$('btn-home').addEventListener('click', () => { closeMenu(); selectTab('wallets'); });
+/* the logo goes home to the Menu (assets/menu-home.js picks the page, the card's Menu, or the whole window) */
+$('btn-home').addEventListener('click', () => { closeMenu(); window.tweetpadMenu.go(); });
 $('btn-debug-close').addEventListener('click', () => selectTab(mainView));
 $('wc-btn').addEventListener('click', toggleMenu);
 document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.wc')) closeMenu(); });
@@ -3314,10 +3315,11 @@ document.addEventListener('keydown', (ev) => {
   else if (k >= '1' && k <= '9') selectSlot(Number(k));
   else if (k === 'h') toggleFeed();
 });
-/* ---------- skins: '2012' (the default) dresses the app as the old bird app; 'tweetcraft' is the pixel HUD; 'lights' is
+/* ---------- skins: 'wii' (the default) is the 2012 skin dressed as the home Menu (assets/skin-wii.css); '2012' dresses the app
+   as the old bird app; 'tweetcraft' is the pixel HUD; 'lights' is
    Lights out, dark like today's X (assets/skin-lights.css, built on the 2012 skin's selectors); 'bordrless' is Bordrless's
    grey paper and ink cards (assets/skin-bordrless.css, the same selectors) ---------- */
-const SKINS = ['2012', 'tweetcraft', 'lights', 'bordrless'];
+const SKINS = ['wii', '2012', 'tweetcraft', 'lights', 'bordrless'];
 const SKIN_KEY = 'tweetpad:skin';
 function setSkin(name) {
   if (!SKINS.includes(name)) name = SKINS[0];
@@ -3337,7 +3339,7 @@ function renderOfficial() {
   if (TOKEN_CA) $('official-ca').replaceChildren(caButton());
 }
 renderOfficial();
-const SKIN_NAMES = { 2012: '2012', tweetcraft: 'Tweetcraft', lights: 'Lights out', bordrless: 'Bordrless' };
+const SKIN_NAMES = { wii: 'Wii', 2012: '2012', tweetcraft: 'Tweetcraft', lights: 'Lights out', bordrless: 'Bordrless' };
 function renderAbout() {
   $('about-ver').textContent = 'Version ' + VERSION + (CLUSTER === 'mainnet' ? '' : ' · ' + CLUSTER);
   $('about-skin').textContent = SKIN_NAMES[document.documentElement.dataset.skin] || document.documentElement.dataset.skin;

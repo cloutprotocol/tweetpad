@@ -36,5 +36,3 @@ $('ac-open').addEventListener('click', () => {
 
 if (document.documentElement.dataset.mode !== 'card') { load(); setInterval(load, 30000); }
 
-/* the bar's way home: the launchpad's own page in the X card and the pop-out (the landing page would frame it again) */
-if (document.documentElement.dataset.mode !== 'page') document.querySelector('.head .home').href = '/embed.html';

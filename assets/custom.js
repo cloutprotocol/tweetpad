@@ -266,5 +266,3 @@ window.dispatchEvent(new Event('eip6963:requestProvider'));   // after every hel
 render();
 setTimeout(render, 600);   // wallets that announce late
 
-/* the bar's way home: the launchpad's own page in the X card and the pop-out (the landing page would frame it again) */
-if (document.documentElement.dataset.mode !== 'page') document.querySelector('.head .home').href = '/embed.html';

@@ -1,0 +1,136 @@
+/* tweetpad skin "wii" (the default): the front page's Menu carried into the app. It is the 2012 skin underneath (skin-2012.css
+   matches [data-skin="wii"] too) dressed as the Menu: pinstripes, a silver bar with the blue edge, frosted-glass cards with
+   soft bezels, round pill buttons, the dock with its blue line at the bottom, Fredoka for titles, the white hand.
+   Everything here is scoped to html[data-skin="wii"]; the swatch at the end is for the skin picker in every skin. */
+
+html[data-skin="wii"] {
+  --bg: #eef1f3; --line: #e6ebee; --text: #3b4146; --dim: #8f9aa1;
+  --blue: #0084b4; --blue-hi: #5cc4ff; --blue-lo: #1a8fe0;
+  --chart-grid: #e9eef1; --chart-text: #8f9aa1;
+  --wii-blue: #1da1f2; --wii-bezel: #d2d9de; --wii-glow: rgba(29, 161, 242, .25); --wii-ease: cubic-bezier(.45, 0, .2, 1);
+  --wii-round: "Fredoka", "Varela Round", "Arial Rounded MT Bold", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --wii-glass: linear-gradient(162deg, rgba(255, 255, 255, .9) 0 22%, rgba(255, 255, 255, 0) 22.3%), linear-gradient(#fff, #f3f6f8);
+  --wii-card: inset 0 0 0 1.5px #fff, 0 0 0 1px rgba(160, 175, 185, .2), 0 2px 5px rgba(40, 60, 75, .14);
+}
+/* the Menu's pinstripes behind everything */
+html[data-skin="wii"] body::before { background: repeating-linear-gradient(#f7f9fa 0 3px, #eef1f3 3px 5px); }
+
+/* ---------- the bar: silver, with the Menu's blue edge and its glow ---------- */
+html[data-skin="wii"] header { background: linear-gradient(#fdfefe, #e8edf0); border-bottom: 2px solid var(--wii-blue);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 6px rgba(29, 161, 242, .35); }
+html[data-skin="wii"] h1 { color: #3b4146; text-shadow: 0 1px 0 #fff; }
+/* the logo is the Menu's # gem, and it goes home to the Menu */
+html[data-skin="wii"] h1 .gem { width: 28px; height: 28px; margin: 0 4px 0 -1px; vertical-align: -7px; -webkit-mask: none; mask: none;
+  background: url(brand/tweetpad-hash-180.png) center / contain no-repeat; filter: drop-shadow(0 1px 1.5px rgba(20, 60, 100, .3)); }
+html[data-skin="wii"] .home:hover { color: var(--wii-blue); }
+html[data-skin="wii"] .home:hover .gem { background: url(brand/tweetpad-hash-180.png) center / contain no-repeat; }
+html[data-skin="wii"] .home:focus-visible { outline-color: var(--wii-blue); }
+/* bar buttons: white pills in a silver bezel; the open tab lights blue */
+html[data-skin="wii"] .ghost, html[data-skin="wii"] .wc-btn {
+  color: #59636a; font: 600 13px/1 var(--wii-round); text-shadow: 0 1px 0 #fff; background: linear-gradient(#fff, #e9eef1);
+  border: 2px solid #c9d0d5; border-radius: 99px; box-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(40, 60, 75, .15);
+  transition: border-color .2s var(--wii-ease), box-shadow .2s var(--wii-ease), color .2s var(--wii-ease); }
+html[data-skin="wii"] .ghost:hover, html[data-skin="wii"] .wc-btn:hover { color: var(--wii-blue); background: linear-gradient(#fff, #e9eef1); border-color: #a9d7f5; }
+html[data-skin="wii"] .ghost[aria-pressed="true"], html[data-skin="wii"] .ghost[aria-selected="true"], html[data-skin="wii"] .wc-btn[aria-expanded="true"] {
+  color: var(--wii-blue); background: linear-gradient(#fff, #eef6fc); border-color: var(--wii-blue);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 3px var(--wii-glow); }
+html[data-skin="wii"] .ghost:focus-visible, html[data-skin="wii"] .wc-btn:focus-visible { outline: 2px solid var(--wii-blue); outline-offset: 1px; }
+html[data-skin="wii"] .wc-btn.primary { color: #fff; text-shadow: 0 -1px 0 rgba(0, 0, 0, .2); background: linear-gradient(#5cc4ff, #1a8fe0);
+  border-color: #1678c0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 1px 4px rgba(29, 120, 200, .35); }
+html[data-skin="wii"] .wc-btn.primary:hover { color: #fff; background: linear-gradient(#6fcbff, #1f97e8); border-color: #1678c0; }
+html[data-skin="wii"] .tab-ico { fill: currentColor; filter: none; }
+html[data-skin="wii"] .ghost[aria-selected="true"] .tab-ico { fill: var(--wii-blue); filter: drop-shadow(0 0 3px rgba(29, 161, 242, .45)); }
+html[data-skin="wii"] .views .count { color: #fff; background: var(--wii-blue); }
+
+/* ---------- cards: frosted glass with the Menu's bezel ---------- */
+html[data-skin="wii"] .panel, html[data-skin="wii"] .official, html[data-skin="wii"] .welcome {
+  background: var(--wii-glass); border: 2px solid var(--wii-bezel); border-radius: 16px; box-shadow: var(--wii-card); }
+html[data-skin="wii"] .official, html[data-skin="wii"] .welcome { margin-bottom: 12px; }
+html[data-skin="wii"] .launch-head { color: #3b4146; font: 600 15px/1.2 var(--wii-round); background: linear-gradient(#fdfefe, #eef2f4);
+  border-bottom: 1px solid #e1e7ea; border-radius: 14px 14px 0 0; }
+html[data-skin="wii"] .launch, html[data-skin="wii"] .tokens, html[data-skin="wii"] .about, html[data-skin="wii"] .more-pane, html[data-skin="wii"] .games,
+html[data-skin="wii"] .agents, html[data-skin="wii"] .coin, html[data-skin="wii"] .profile, html[data-skin="wii"] .settings, html[data-skin="wii"] .card,
+html[data-skin="wii"] .lightbox-card { border-top: 2px solid var(--wii-bezel); }
+
+/* ---------- buttons: rounder, with the bezel; the main action is the glossy blue ---------- */
+html[data-skin="wii"] .btn { border-radius: 10px; border: 1.5px solid #c9d0d5; background: linear-gradient(#fff, #e9eef1);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(40, 60, 75, .12); }
+html[data-skin="wii"] .btn:hover { background: linear-gradient(#fff, #e9eef1); border-color: #a9d7f5; }
+html[data-skin="wii"] .btn.primary { background: linear-gradient(#5cc4ff, #1a8fe0); border-color: #1678c0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 1px 4px rgba(29, 120, 200, .3); }
+html[data-skin="wii"] .btn.primary:hover { background: linear-gradient(#6fcbff, #1f97e8); border-color: #1678c0; }
+html[data-skin="wii"] .btn:focus-visible { outline: 2px solid var(--wii-blue); outline-offset: 2px; }
+/* segmented controls: one rounded pill, the picked part in the Menu's blue */
+html[data-skin="wii"] .sort button:first-child, html[data-skin="wii"] .tf button:first-child { border-radius: 99px 0 0 99px; }
+html[data-skin="wii"] .sort button:last-child, html[data-skin="wii"] .tf button:last-child { border-radius: 0 99px 99px 0; }
+html[data-skin="wii"] .sort button, html[data-skin="wii"] .tf button { border-color: #c9d0d5; background: linear-gradient(#fff, #edf1f3); }
+html[data-skin="wii"] .sort button[aria-pressed="true"], html[data-skin="wii"] .tf button[aria-pressed="true"] {
+  background: linear-gradient(#5cc4ff, #1a8fe0); border-color: #1678c0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35); }
+html[data-skin="wii"] .launch-head .net-switch button { border-color: #c9d0d5; background: linear-gradient(#fff, #edf1f3); }
+html[data-skin="wii"] .launch-head .net-switch button[aria-checked="true"] { background: linear-gradient(#5cc4ff, #1a8fe0); border-color: #1678c0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35); }
+
+/* ---------- the bottom: the Menu's dock, silver under a glowing blue line ---------- */
+html[data-skin="wii"] .hud { background: linear-gradient(#fdfefe, #e3e9ec); border-top: 2px solid var(--wii-blue);
+  box-shadow: inset 0 2px 0 #fff, 0 -1px 6px rgba(29, 161, 242, .3); }
+html[data-skin="wii"] .slot { color: #59636a; }
+html[data-skin="wii"] .slot:hover:not([disabled]) { background: rgba(29, 161, 242, .08); }
+html[data-skin="wii"] .slot[disabled] { background: rgba(120, 140, 155, .06); box-shadow: inset 0 1px 2px rgba(40, 60, 75, .12); }
+html[data-skin="wii"] .slot .n { color: #59636a; text-shadow: 0 1px 0 #fff; }
+html[data-skin="wii"] .slot .dot { box-shadow: 0 0 0 1.5px #fff; }
+html[data-skin="wii"] .slot[aria-pressed="true"] { background: linear-gradient(#fff, #eef6fc);
+  box-shadow: 0 0 0 2px var(--wii-blue), 0 0 0 5px var(--wii-glow); }
+html[data-skin="wii"] .chat-slot { color: var(--wii-blue); }
+html[data-skin="wii"] .chat-slot svg { filter: none; }
+html[data-skin="wii"] .hud-row .net-switch { background: #e3e9ec; border: 1.5px solid #c9d0d5; box-shadow: inset 0 1px 3px rgba(40, 60, 75, .18), 0 1px 0 #fff; }
+html[data-skin="wii"] .hud-row .net-switch button { color: #8f9aa1; }
+html[data-skin="wii"] .hud-row .net-switch button:hover:not([disabled]) { color: #59636a; }
+html[data-skin="wii"] .hud-row .net-switch button[aria-checked="true"] { color: #fff; background: linear-gradient(#5cc4ff, #1a8fe0);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 1px 3px rgba(29, 120, 200, .4); }
+/* the status note rises from behind the dock as a silver strip */
+html[data-skin="wii"] .toast { background: rgba(250, 252, 253, .97); border-top: 1px solid #d2d9de; box-shadow: 0 -2px 6px rgba(40, 60, 75, .12); }
+html[data-skin="wii"] .toast-title, html[data-skin="wii"] .toast.ok .toast-title { color: #3b4146; }
+html[data-skin="wii"] .toast.bad .toast-title { color: #d0343a; }
+html[data-skin="wii"] .toast-text { color: #59636a; }
+html[data-skin="wii"] .toast-text small { color: #8f9aa1; }
+
+/* ---------- full page (720 px and up): the same screens with room ---------- */
+@media (min-width: 720px) {
+  html[data-skin="wii"] main { padding: 22px 24px 64px; }
+  html[data-skin="wii"] .pane { max-width: 600px; }
+  /* Tokens: a grid of channels instead of a thin list */
+  html[data-skin="wii"] #tab-tokens .pane { max-width: 1080px; }
+  html[data-skin="wii"] #token-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin: 14px 0 4px; padding: 2px; }
+  html[data-skin="wii"] #token-list > li { min-width: 0; border: 0; }
+  html[data-skin="wii"] #token-list > li.more-row, html[data-skin="wii"] #token-list > li.note { grid-column: 1 / -1; text-align: center; }
+  html[data-skin="wii"] #token-list .tok { height: 100%; min-height: 116px; flex-wrap: wrap; align-content: space-between; gap: 10px; padding: 12px 14px;
+    overflow: hidden; border: 2px solid var(--wii-bezel); border-radius: 16px; background: var(--wii-glass); box-shadow: var(--wii-card);
+    transition: border-color .25s var(--wii-ease), box-shadow .25s var(--wii-ease), transform .25s var(--wii-ease); }
+  html[data-skin="wii"] #token-list .tok:hover, html[data-skin="wii"] #token-list .tok:focus-visible { background: var(--wii-glass); border-color: var(--wii-blue);
+    box-shadow: inset 0 0 0 1.5px #fff, 0 0 0 3px var(--wii-glow), 0 4px 14px var(--wii-glow); transform: scale(1.03); outline: none; }
+  html[data-skin="wii"] #token-list .tok img, html[data-skin="wii"] #token-list .tok .ph { width: 52px; height: 52px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
+  html[data-skin="wii"] #token-list .tok-main b { font-size: 15px; }
+  /* the market line runs along the bottom of the tile */
+  html[data-skin="wii"] #token-list .tok-mkt { order: 5; flex: 1 0 100%; flex-direction: row; justify-content: space-between; align-items: baseline; min-width: 0;
+    padding-top: 8px; border-top: 1px solid #edf0f2; }
+  html[data-skin="wii"] #token-list .tok-mkt b { font-size: 15px; }
+  /* a coin: a wider page and a taller chart */
+  html[data-skin="wii"] #tab-coin .pane { max-width: 780px; }
+  html[data-skin="wii"] #coin-chart { height: 280px; border-radius: 10px; }
+}
+
+/* the white hand, as on the Menu (mouse only) */
+@media (pointer: fine) {
+  html[data-skin="wii"] :is(a, button, summary, label.drop, [role="radio"], [role="tab"]) {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='34' viewBox='0 0 22 23'%3E%3Cpath d='M7 1.5c1 0 1.8.8 1.8 1.8V9h.4V7.6c0-1 .8-1.7 1.7-1.7s1.7.7 1.7 1.7v1.8h.4v-.8c0-1 .8-1.6 1.6-1.6.9 0 1.6.7 1.6 1.6v1.2h.3c0-.9.7-1.5 1.5-1.5s1.5.7 1.5 1.5v5.4c0 3.9-2.6 6.8-6.4 6.8H11c-2 0-3.4-.8-4.6-2.4L2.6 14c-.6-.8-.4-1.9.4-2.4.7-.5 1.7-.3 2.3.3l.9 1V3.3C6.2 2.3 6 1.5 7 1.5z' fill='%23fff' stroke='%23333' stroke-width='1.1' stroke-linejoin='round'/%3E%3C/svg%3E") 10 2, pointer; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin="wii"] :is(.ghost, .wc-btn, #token-list .tok) { transition: none; }
+  html[data-skin="wii"] #token-list .tok:hover { transform: none; }
+}
+
+/* the skin picker's swatch: pinstripes, a glass tile, the blue line */
+.s-wii { background: repeating-linear-gradient(#f7f9fa 0 2px, #e6eaed 2px 4px); border-radius: 6px; border-color: #c9d0d5; }
+.s-wii i:nth-child(1) { background: linear-gradient(#fdfefe, #e3e9ec); border-bottom: 2px solid #1da1f2; }
+.s-wii i:nth-child(2) { background: linear-gradient(#fff, #eef2f4); border: 1px solid #c9d0d5; border-radius: 3px; }
+.s-wii i:nth-child(3) { background: linear-gradient(#fdfefe, #e3e9ec); border-top: 2px solid #1da1f2; }

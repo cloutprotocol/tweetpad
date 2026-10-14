@@ -34,7 +34,7 @@
 <a class="brand" href="/"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad <span>· Games</span></a>
 <main class="frame tall">
   <div class="head">
-    <a class="home" href="/" title="Back to tweetpad"><span class="back" aria-hidden="true">‹</span><img class="gem" src="/assets/brand/tweetpad-hash-180.png" alt=""><span class="word">tweetpad</span></a>
+    <a class="home" href="/" data-menu-home title="Back to the tweetpad Menu"><span class="back" aria-hidden="true">‹</span><img class="gem" src="/assets/brand/tweetpad-hash-180.png" alt=""><span class="word">tweetpad</span></a>
     <h1 class="title"><span class="gk-mark" aria-hidden="true">▲▼</span>Games</h1>
   </div>
   <div class="scroll">
@@ -51,12 +51,10 @@
   </div>
 </main>
 <script>
-  /* the games open in the same mode (the X card, the app's frame); the bar goes back to tweetpad's own page in a frame */
+  /* the games open in the same mode (the X card, the app's frame); the bar goes back to the Menu (assets/menu-home.js) */
   const mode = document.documentElement.dataset.mode;
-  if (mode === 'embed' || mode === 'popup') {
-    for (const a of document.querySelectorAll('[data-game]')) a.href += '?' + mode;
-    document.querySelector('.head .home').href = mode === 'popup' ? '/embed.html?tab=games' : '/embed.html';
-  }
+  if (mode === 'embed' || mode === 'popup') for (const a of document.querySelectorAll('[data-game]')) a.href += '?' + mode;
 </script>
+<script src="/assets/menu-home.js"></script>
 </body>
 </html>
