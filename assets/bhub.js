@@ -14,7 +14,11 @@ const q0 = new URLSearchParams(location.search);
 const view = { tab: TABS.includes(q0.get('tab')) ? q0.get('tab') : 'tokens' };
 /* a coin's page and the app, in this same frame (the X card, the pop-out) or as pages */
 const coinUrl = (mint) => '/b/' + mint + (MODE === 'embed' || MODE === 'popup' ? '?' + MODE : '');
-if (MODE === 'embed' || MODE === 'popup') $('bh-home').href = '/embed.html' + (MODE === 'popup' ? '?mode=popup' : '');
+/* ‹ goes back to the home, the Menu (index.html); playing in the Menu's own channel screen it takes the whole page there, so the
+   Menu doesn't open inside itself */
+const inMenu = window.self !== window.top && (() => { try { return window.top.location.origin === location.origin; } catch { return false; } })();
+$('bh-home').href = '/';
+if (inMenu) $('bh-home').target = '_top';
 const card = (fig, title, ...kids) => h('section', { class: 'sc-card' }, h('div', { class: 'sc-card-head' }, h('span', { class: 'sc-tag', text: fig }), h('b', { text: title })), ...kids);
 const kv = (k, v, tone) => h('div', { class: 'sc-kv' + (tone ? ' ' + tone : '') }, h('span', { text: k }), h('b', null, v));
 const addr = (a, label) => h('a', { class: 'sc-addr', href: 'https://solscan.io/account/' + a, target: '_blank', rel: 'noopener', title: a }, label || short(a));
