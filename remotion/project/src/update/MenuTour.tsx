@@ -4,16 +4,16 @@
  * its current look: glass tiles with reflected icons, the dock's glowing blue line, the embossed clock, the raised round buttons),
  * is the segue between every part. The Wii hand opens a channel the way index.html's open() does (the home scales ×1.12 toward
  * the tile and blurs out while the screen grows from the tile's own shape, 520 ms on cubic-bezier(.45,0,.2,1); the banner breathes
- * until the app is in; then Menu | name | Start), shows that app in the Wii skin (now the default), and presses Menu, which runs it
+ * until the app is in; then Menu | name | Start), shows that app in the 2012 skin (the default), and presses Menu, which runs it
  * all backwards into the tile (420 ms). Launch on five chains, Tokens and the new any-token pages, Feed, Hooks Launch, Games,
- * Profile, Bordrless, then More → Themes, where the Wii skin is picked. Demo coins and numbers only.
+ * Profile, Bordrless, then More → Themes. Demo coins and numbers only.
  * Cut to the trading story: Tokens (paste any token's address, its page), the link posted on X playing as a card and traded
  * from the post, then Launch on five chains.
  */
 import React from "react";
 import { AbsoluteFill, Img, staticFile, useCurrentFrame } from "remotion";
 import { loadFonts } from "../brand/fonts";
-import { BRAND, FONTS, SKIN_2012, SKIN_WII } from "../brand/tokens";
+import { BRAND, FONTS, SKIN_2012 } from "../brand/tokens";
 import { Caption, Cursor, cursorAt, Fine } from "../components/Film";
 import { LaunchForm } from "../components/LaunchForm";
 import { AppFrame, Btn, Input, Net, NETS_5, netXY, Panel, SkinCtx } from "../components/ui";
@@ -148,7 +148,7 @@ const Screen: React.FC<{ f: number; tile: number; name: string; icon: string; bo
 const MENU_PILL = toFilm(94, 456);
 
 /* =========================================================================================
- * Inside each channel: the app at its real 480-unit width, in the Wii skin
+ * Inside each channel: the app at its real 480-unit width, in the 2012 skin
  * ========================================================================================= */
 const K = 480 / 460, AH = 432 / K;                  // the card (460 app px wide) fills the tv
 const appToFilm = (ax: number, ay: number) => toFilm(ax * K, ay * K);
@@ -420,7 +420,7 @@ export const TweetpadMenuTour: React.FC = () => {
   const inPost = inWin(f, R.post.from, R.post.from + R.post.dur);
   const lastChain = v?.k === "launch" ? chainIdx(v.rel) : 0;
   return (
-    <SkinCtx.Provider value={SKIN_WII}>
+    <SkinCtx.Provider value={SKIN_2012}>
       <AbsoluteFill style={{ background: STRIPES }}>
         {/* the Menu, in its frame */}
         <div style={{ position: "absolute", inset: 0, transform: `scale(${1 + outro * 0.08})`, transformOrigin: "540px 600px", opacity: 1 - outro }}>

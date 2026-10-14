@@ -794,21 +794,27 @@ export const TOUR_COPY = {
  * ========================================================================================= */
 export const SHILL = {
   hook: { from: 0, dur: 75 },     // ETH Guy and Agent Inu: "Shilling a token on X?"
-  old: { from: 75, dur: 270 },    // ETH Guy types it out, posts it; then the reader's four tabs
-  neu: { from: 345, dur: 240 },   // Agent Inu drops one link; the card plays; Open to trade; bought
-  chains: { from: 585, dur: 230 },// the same post on Solana, Robinhood Chain, BNB Chain, Base, Ethereum
-  how: { from: 815, dur: 210 },   // 1 copy the address · 2 post tweetpad.io/t/<address> · 3 anyone trades it from the post
-  end: { from: 1025, dur: 150 },  // "The first launchpad inside an @X post.", the cast in the corners
+  old: { from: 75, dur: 160 },    // ETH Guy posts the CA and a chart link: nothing to buy in the post
+  neu: { from: 235, dur: 240 },   // Agent Inu drops one link; the card plays; Open to trade; bought
+  chains: { from: 475, dur: 230 },// the same post on Solana, Robinhood Chain, BNB Chain, Base, Ethereum
+  launch: { from: 705, dur: 150 },// and launch your own: five chains, custom Uniswap v4 hooks, Bordrless tokens
+  how: { from: 855, dur: 210 },   // 1 copy the address · 2 post tweetpad.io/t/<address> · 3 anyone trades it from the post
+  end: { from: 1065, dur: 150 },  // "The first launchpad inside an @X post.", the cast in the corners
 } as const;
-export const SHILL_TOTAL = SHILL.end.from + SHILL.end.dur; // 1175 f = 39.2 s
+export const SHILL_TOTAL = SHILL.end.from + SHILL.end.dur; // 1215 f = 40.5 s
 
 export const SHILL_COPY = {
   hook: { head: "Shilling a token on X?", head2: "There's a better way." },
-  old: { tag: "THE OLD WAY", head: "A wall of text.", head2: "Then four tabs to buy." },
-  oldSteps: ["Copy the CA", "Open the chart", "Find a DEX, connect", "Paste the CA, swap"],
+  old: { tag: "THE OLD WAY", head: "A CA and a chart link.", head2: "Nothing to buy in the post." },
   neu: { tag: "THE NEW WAY", head: "Drop one link.", head2: "It trades right in the post." },
   chains: { tag: "ANY TOKEN", head: "Five chains. One link." },
-  how: { tag: "HOW TO", head: "Three steps.", head2: "No wall of text." },
+  launch: { tag: "LAUNCH", head: "Launch yours too.", head2: "Hooks, Bordrless, five chains.",
+    tiles: [
+      ["menu/launch.svg", "Five chains", "Solana, Robinhood Chain, BNB Chain, Base and Ethereum, from one card."],
+      ["menu/custom.svg", "Custom v4 hooks", "Your coin with its own Uniswap v4 fee hook on Ethereum. Fixed, or upgradeable in public."],
+      ["menu/bordrless.png", "Bordrless tokens", "Rules that run in every trade: creator fees, burns, holder rewards."],
+    ] },
+  how: { tag: "HOW TO", head: "Three steps.", head2: "One link, any token." },
   steps: [
     ["1", "Copy any token's address", "Solana or EVM: tweetpad finds its chain."],
     ["2", "Post it as tweetpad.io/t/…", "tweetpad.io/t/ + the address becomes the token's own card."],
@@ -817,6 +823,7 @@ export const SHILL_COPY = {
   end: { tagline: "The first launchpad inside an @X post.", tagline2: "Shill any token with one link." },
   fine: {
     old: "Illustration. Demo token and links.",
+    launch: "Hooks Launch via Launch Party: 0.001 ETH + gas · Bordrless: about 0.035 SOL · tweetpad takes nothing.",
     neu: "Demo token and numbers. The link plays as its own X card; trades open in a tweetpad window · tweetpad takes nothing.",
     chains: "Demo tokens and numbers. Jupiter on Solana, KyberSwap on the EVM chains · tweetpad takes nothing · network fees apply.",
     how: "Any token with a market on these chains. Not financial advice.",

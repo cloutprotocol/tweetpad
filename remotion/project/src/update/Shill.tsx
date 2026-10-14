@@ -1,9 +1,9 @@
 /**
  * TweetpadShill: "The new way to shill a token." 1080x1080 @30, 38.7 s.
- * The old way: a shill typed out in X's composer (rockets, the CA, a chart link, a swap link), posted as a wall of text with a
- * plain link preview, then the reader's four tabs to actually buy. The new way: one tweetpad link (tweetpad.io/<chain>/<address>,
+ * The old way: a shill typed out in X's composer (the CA and a chart link), posted with a plain link preview and nothing to buy. The new way: one tweetpad link (tweetpad.io/<chain>/<address>,
  * api/t.js) that X plays as the token's own card (its image: api/t.js img=1); the card is the token's page (?embed), and Open to
- * trade brings up tweetpad's window, where the wallet signs. Then the same post on all five chains, and the three steps.
+ * trade brings up tweetpad's window, where the wallet signs. Then the same post on all five chains; launching your own (five chains,
+ * custom Uniswap v4 hooks, Bordrless tokens); and the three steps.
  * The cast: the old way is typed by ETH Guy (film 11's shades-wearing Ethereum diamond, a cartoon, named for no one), the new way
  * is posted by Agent Inu, the doge of the app's welcome post; both open the film and see it out.
  * Demo tokens, links and numbers only.
@@ -175,25 +175,24 @@ const Hook: React.FC<{ f: number }> = ({ f }) => (
 /* =========================================================================================
  * 1. The old way: the shill typed out, posted, then the reader's four tabs
  * ========================================================================================= */
-const SHILL_TEXT = "🚀🚀 $FROG is about to SEND 🐸🔥\nCA: 0x4e1f8c0b2d974d1e9a0f3b6c55a7c2\nChart: dexscreener.com/base/0x4e1f8c0b…\nBuy: app.uniswap.org/swap?outputCurrency=0x4e1f8c…\nNFA DYOR 🚀🚀🚀";
-const O = { type: 6, post: 104, posted: 112, tabs: 140, tabGap: 22 } as const;
-const TABS = [["dexscreener.com/base/0x4e1f8c…", "Copy the CA"], ["dexscreener.com/base/0x4e1f8c…", "Open the chart"], ["app.uniswap.org", "Find a DEX, connect"], ["app.uniswap.org/swap", "Paste the CA, swap"]] as const;
+const SHILL_TEXT = "$FROG is about to send 🐸🚀\nCA: 0x4e1f8c0b2d974d1e9a0f3b6c55a7c2\nChart: dexscreener.com/base/0x4e1f8c0b…";
+const O = { type: 6, post: 62, posted: 70 } as const;
 const Old: React.FC<{ f: number }> = ({ f }) => {
   const rel = f - R.old.from, d = R.old.dur;
   const show = ramp(rel, 0, 10) * (1 - ramp(rel, d - 10, d));
   const text = typed(SHILL_TEXT, rel, O.type, 2.2);
   const posted = ramp(rel, O.posted, O.posted + 10);
-  const hand = cursorAt(rel, [[0, 980, 980], [O.post - 14, 820, 560], [O.post, 806, 548], [O.tabs + 10, 860, 940]]);
+  const hand = cursorAt(rel, [[0, 980, 980], [O.post - 14, 905, 520], [O.post, 890, 508], [O.posted + 30, 860, 900]]);
   return (
-    <AbsoluteFill style={{ background: STRIPES, opacity: show, filter: `grayscale(${0.35 * ramp(rel, O.tabs, O.tabs + 40)})` }}>
+    <AbsoluteFill style={{ background: STRIPES, opacity: show, filter: `grayscale(${0.35 * ramp(rel, O.posted + 20, O.posted + 50)})` }}>
       {rel < O.posted ? (
-        <PostShell x={150} y={230} w={780}><Composer who="eth" jaw={talk(rel, [[O.type, O.post - 6]])} text={text} caret={rel < O.post} press={inWin(rel, O.post, O.post + 5)} ready size={23} /></PostShell>
+        <PostShell x={55} y={200} w={720} style={{ zoom: 1.3 }}><Composer who="eth" jaw={talk(rel, [[O.type, O.post - 6]])} text={text} caret={rel < O.post} press={inWin(rel, O.post, O.post + 5)} ready size={25} /></PostShell>
       ) : (
-        <PostShell x={150} y={230} w={780} style={{ opacity: posted, transform: `translateY(${(1 - posted) * 14}px)` }}>
+        <PostShell x={55} y={200} w={720} style={{ zoom: 1.3, opacity: posted, transform: `translateY(${(1 - posted) * 14}px)` }}>
           <div style={{ padding: "18px 20px 20px" }}>
             <Head who="eth" />
             <div style={{ margin: "10px 0 12px 60px", font: `400 22px/1.38 ${XF}`, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-              {SHILL_TEXT.split("\n").map((l, i) => <div key={i} style={{ color: i === 2 || i === 3 ? "#1d9bf0" : "#0f1419" }}>{l}</div>)}</div>
+              {SHILL_TEXT.split("\n").map((l, i) => <div key={i} style={{ color: i === 2 ? "#1d9bf0" : "#0f1419" }}>{l}</div>)}</div>
             {/* the only preview X makes of it: a plain link card */}
             <div style={{ marginLeft: 60, display: "flex", alignItems: "center", gap: 14, padding: 12, border: "1px solid #cfd9de", borderRadius: 14 }}>
               <span style={{ width: 80, height: 80, borderRadius: 10, background: "#e7ecf0", flex: "none" }} />
@@ -202,24 +201,7 @@ const Old: React.FC<{ f: number }> = ({ f }) => {
           </div>
         </PostShell>
       )}
-      {/* the reader's side: copy, a tab, another tab, a wallet, paste */}
-      {TABS.map(([url, what], i) => {
-        const at = O.tabs + i * O.tabGap, t = ramp(rel, at, at + 10, settle);
-        return (
-          <div key={i} style={{ position: "absolute", left: 380 + i * 40, top: 440 + i * 108, width: 540, opacity: t, transform: `translateY(${(1 - t) * 30}px)`, borderRadius: 12, overflow: "hidden",
-            background: "#fff", border: "1px solid #b9c1c6", boxShadow: "0 18px 40px rgba(0,0,0,.22)", fontFamily: UI }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 12px", background: "linear-gradient(#f4f6f7, #dfe4e7)", borderBottom: "1px solid #c3cacf" }}>
-              {["#ff5f57", "#febc2e", "#28c840"].map((c) => <span key={c} style={{ width: 12, height: 12, borderRadius: "50%", background: c }} />)}
-              <span style={{ marginLeft: 10, font: `500 15px/1 ${UI}`, color: "#59636a" }}>{url}</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 18px" }}>
-              <span style={{ width: 34, height: 34, borderRadius: "50%", background: "#d0343a", color: "#fff", display: "grid", placeItems: "center", font: `800 18px/1 ${UI}` }}>{i + 1}</span>
-              <b style={{ font: `700 24px/1.2 ${UI}`, color: "#333" }}>{what}</b>
-            </div>
-          </div>
-        );
-      })}
-      <Cursor x={hand.x} y={hand.y} hand size={1.3} down={inWin(rel, O.post, O.post + 5)} t={1 - ramp(rel, O.tabs, O.tabs + 10)} />
+      <Cursor x={hand.x} y={hand.y} hand size={1.3} down={inWin(rel, O.post, O.post + 5)} t={1 - ramp(rel, O.posted + 20, O.posted + 30)} />
     </AbsoluteFill>
   );
 };
@@ -311,7 +293,36 @@ const Chains: React.FC<{ f: number }> = ({ f }) => {
 };
 
 /* =========================================================================================
- * 4. How to: three steps
+ * 4. Launch yours too: five chains, custom Uniswap v4 hooks, Bordrless tokens (the Menu's glass tiles)
+ * ========================================================================================= */
+const Launch: React.FC<{ f: number }> = ({ f }) => {
+  const rel = f - R.launch.from, d = R.launch.dur;
+  const show = ramp(rel, 0, 10) * (1 - ramp(rel, d - 10, d));
+  return (
+    <AbsoluteFill style={{ background: STRIPES, opacity: show }}>
+      <div style={{ position: "absolute", top: 250, left: 60, right: 60, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 26 }}>
+        {C.launch.tiles.map(([icon, head, sub], i) => {
+          const t = pop(rel, 8 + i * 14);
+          const bordr = icon.endsWith(".png");
+          return (
+            <div key={head} style={{ display: "grid", justifyItems: "center", alignContent: "start", gap: 18, padding: "34px 22px 30px", textAlign: "center", borderRadius: 28,
+              background: "linear-gradient(162deg, rgba(255,255,255,.95) 0 34%, rgba(255,255,255,0) 34.4%), linear-gradient(#fbfcfd, #e8edf0)", border: "4px solid #d2d9de",
+              boxShadow: "inset 0 0 0 2px #fff, 0 6px 16px rgba(40,60,75,.16)", transform: `scale(${t})`, opacity: Math.min(1, t * 1.4) }}>
+              <Img src={staticFile(icon)} style={{ width: bordr ? 150 : 132, height: bordr ? 150 : 132, margin: bordr ? "-9px 0" : 0, objectFit: "contain", mixBlendMode: bordr ? "multiply" : undefined,
+                filter: bordr ? undefined : "drop-shadow(0 5px 6px rgba(30,45,60,.25))" }} />
+              <b style={{ font: `600 36px/1.1 ${ROUND}`, color: "#3b4146" }}>{head}</b>
+              <span style={{ font: `500 22px/1.35 ${UI}`, color: BRAND.darkGray }}>{sub}</span>
+              {i === 0 ? <div style={{ display: "flex", gap: 8, marginTop: 4 }}>{TOKS.map((x) => <ChainDisc key={x.net} net={x.net} size={36} />)}</div> : null}
+            </div>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+/* =========================================================================================
+ * 5. How to: three steps
  * ========================================================================================= */
 const How: React.FC<{ f: number }> = ({ f }) => {
   const rel = f - R.how.from, d = R.how.dur;
@@ -349,6 +360,7 @@ const capOf = (f: number) => {
     const i = Math.min(TOKS.length - 1, Math.floor((f - R.chains.from) / FLIP));
     return { c: { ...C.chains, head2: TOKS[i].chain }, t: at(R.chains), fine: C.fine.chains };
   }
+  if (inWin(f, R.launch.from, R.launch.from + R.launch.dur)) return { c: C.launch, t: at(R.launch), fine: C.fine.launch };
   if (inWin(f, R.how.from, R.how.from + R.how.dur)) return { c: C.how, t: at(R.how), fine: C.fine.how };
   return null;
 };
@@ -377,6 +389,7 @@ export const TweetpadShill: React.FC = () => {
       {inWin(f, R.old.from, R.old.from + R.old.dur) ? <Old f={f} /> : null}
       {inWin(f, R.neu.from, R.neu.from + R.neu.dur) ? <New f={f} /> : null}
       {inWin(f, R.chains.from, R.chains.from + R.chains.dur) ? <Chains f={f} /> : null}
+      {inWin(f, R.launch.from, R.launch.from + R.launch.dur) ? <Launch f={f} /> : null}
       {inWin(f, R.how.from, R.how.from + R.how.dur) ? <How f={f} /> : null}
       {cap ? (
         <div style={{ filter: oldTag ? "grayscale(1)" : undefined }}>

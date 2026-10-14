@@ -11,7 +11,7 @@
     "render:tour": "remotion render src/index.ts TweetpadMenuTour ../out/tweetpad-menu-tour.mp4",
     "stills:tour": "node scripts/stills.mjs ../out/stills 30:tour-title 110:tour-menu 200:tour-tokens 250:tour-paste 300:tour-frog 400:tour-compose 470:tour-card 500:tour-page 545:tour-window 575:tour-bought 680:tour-rh 760:tour-eth 820:tour-outro 900:tour-end --comp=TweetpadMenuTour",
     "render:shill": "remotion render src/index.ts TweetpadShill ../out/tweetpad-shill.mp4",
-    "stills:shill": "node scripts/stills.mjs ../out/stills 50:sh-hook 140:sh-typing 300:sh-tabs 450:sh-card 500:sh-bought 780:sh-eth 1120:sh-end --comp=TweetpadShill",
+    "stills:shill": "node scripts/stills.mjs ../out/stills 50:sh-hook 120:sh-typing 200:sh-old-post 340:sh-card 390:sh-bought 680:sh-eth 790:sh-launch 1000:sh-how 1160:sh-end --comp=TweetpadShill",
     "render:robinhood": "remotion render src/index.ts TweetpadRobinhoodUpdate ../out/tweetpad-robinhood-update.mp4",
     "stills": "node scripts/stills.mjs",
     "stills:robinhood": "node scripts/stills.mjs ../out/stills 0:rh-title 238:rh-switch 377:rh-network 570:rh-estimate 680:rh-fees 833:rh-approve 900:rh-live 1025:rh-coin 1210:rh-claimed 1300:rh-end --comp=TweetpadRobinhoodUpdate",
