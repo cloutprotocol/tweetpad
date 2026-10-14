@@ -1,0 +1,687 @@
+/* tweetpad skin "bordrless": Bordrless's paper look (bordrless.app). Warm grey paper, near-black ink, square cards with a hard
+   offset shadow, a condensed heavy headline face, mono labels in grey chips, black and electric-blue buttons. Built on the 2012
+   skin's selectors (same structure, flattened: no gradients, no gloss), then tuned in the block at the end. Layered over
+   tweetpad.css like the 2012 skin; html[data-skin="bordrless"] scopes every rule. */
+
+html[data-skin="bordrless"] {
+  --bg: #e3e3df; --panel: #fafaf8; --panel-hi: transparent; --panel-lo: #111;
+  --line: #cfcfca; --text: #111; --dim: #6b6b66;
+  --ok: #2bb34a; --warn: #b8730f; --bad: #e5484d; --accent: #1f3cff; --gold: #4a4a46; --pink: #1f3cff;
+  --px: "Space Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --head: "Anton", "Impact", "Haettenschweiler", "Arial Narrow Bold", sans-serif;
+  --shadow: none;
+  --blue: #1f3cff; --blue-hi: #3d57ff; --blue-lo: #1530d9;
+  --chart-up: #2bb34a; --chart-down: #e5484d; --chart-grid: #e3e3df; --chart-text: #6b6b66; --chart-last: #1f3cff;
+  --chart-font: 10px "JetBrains Mono", ui-monospace, Menlo, monospace; --chart-font-lg: 13px "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+html[data-skin="bordrless"] body { font: 13px/1.35 var(--px); -webkit-font-smoothing: antialiased; image-rendering: auto; background: #e3e3df; color: #111; }
+html[data-skin="bordrless"] body::before { background: #e3e3df; }
+html[data-skin="bordrless"] *, html[data-skin="bordrless"] *::before, html[data-skin="bordrless"] *::after { scrollbar-color: #9a9a94 transparent; }
+
+/* every bevelled HUD panel becomes a square paper card on a hard shadow */
+html[data-skin="bordrless"] .panel, html[data-skin="bordrless"] .slot, html[data-skin="bordrless"] textarea {
+  background: #fafaf8; border: 1px solid #111; border-radius: 0; box-shadow: 3px 3px 0 #111;
+}
+html[data-skin="bordrless"] kbd { display: none; }
+
+/* ---------- top bar: paper, a hairline under it, text tabs and square buttons like Bordrless's nav ---------- */
+html[data-skin="bordrless"] header { padding: 6px 8px; gap: 6px; background: #e3e3df; border-bottom: 1px solid #9a9a94; box-shadow: none; position: relative; z-index: 10; }
+/* the logo: the # mark in a white square on a hard shadow, then the name in the headline face */
+html[data-skin="bordrless"] h1 { font: 400 21px/1 var(--head); letter-spacing: -.01em; color: #111; text-overflow: clip; }
+html[data-skin="bordrless"] .home { text-transform: lowercase; gap: 8px; }
+html[data-skin="bordrless"] h1 .gem { width: 28px; height: 28px; margin: 0 6px 0 0; transform: none; vertical-align: -7px; border: 1px solid #111; box-shadow: 2px 2px 0 #111;
+  background: url(brand/hash-blue.png) center / 18px no-repeat, #fff; filter: none; image-rendering: auto; }
+html[data-skin="bordrless"] .home:hover { color: #111; }
+html[data-skin="bordrless"] .home:hover .gem { box-shadow: 1px 1px 0 #111; transform: translate(1px, 1px); }
+html[data-skin="bordrless"] .home:focus-visible { outline: 2px solid #1f3cff; outline-offset: 2px; }
+/* tabs: plain ink words with a small icon; the open one sits in a white square on a hard shadow */
+html[data-skin="bordrless"] .ghost { padding: 6px 8px; gap: 6px; color: #111; font: 600 13px/1 var(--px); background: transparent; border: 1px solid transparent;
+  border-radius: 0; outline: none; box-shadow: none; }
+html[data-skin="bordrless"] .ghost:hover { color: #111; background: rgba(255, 255, 255, .55); }
+html[data-skin="bordrless"] .ghost[aria-pressed="true"], html[data-skin="bordrless"] .ghost[aria-selected="true"] {
+  background: #fff; border-color: #111; box-shadow: 2px 2px 0 #111; }
+/* the wallet button: Bordrless's black Connect */
+html[data-skin="bordrless"] .wc-btn, html[data-skin="bordrless"] .wc-btn.primary {
+  padding: 6px 9px; gap: 6px; color: #fff; font: 600 13px/1 var(--px); background: #111; border: 1px solid #111; border-radius: 0; outline: none;
+  box-shadow: 2px 2px 0 #9a9a94; }
+html[data-skin="bordrless"] .wc-btn:hover { color: #fff; background: #2b2b29; }
+html[data-skin="bordrless"] .wc-btn[aria-expanded="true"] { background: #111; box-shadow: none; transform: translate(2px, 2px); }
+html[data-skin="bordrless"] .wc-btn:active { padding: 6px 9px; }
+html[data-skin="bordrless"] .ghost:focus-visible, html[data-skin="bordrless"] .wc-btn:focus-visible { outline: 2px solid #1f3cff; outline-offset: 2px; }
+html[data-skin="bordrless"] .wc-btn img, html[data-skin="bordrless"] .wc-btn .ph { border: 0; border-radius: 0; }
+html[data-skin="bordrless"] .wc-btn .caret { font: 10px/1 var(--px); opacity: .85; }
+/* tab icons: flat glyphs in Bordrless's nav colors, green, orange and teal */
+html[data-skin="bordrless"] .tab-ico { display: block; flex: none; width: 15px; height: 15px; fill: currentColor; filter: none; }
+html[data-skin="bordrless"] .views .ghost:nth-of-type(1) .tab-ico { fill: #f07a1a; }
+html[data-skin="bordrless"] .views .ghost:nth-of-type(2) .tab-ico { fill: #2bb34a; }
+html[data-skin="bordrless"] .views .ghost:nth-of-type(3) .tab-ico { fill: #1a9a8a; }
+html[data-skin="bordrless"] .views .count { font: 600 10px/1 var(--mono); color: #111; background: #d4d4cf; padding: 2px 4px; border-radius: 0; }
+
+/* ---------- stage ---------- */
+html[data-skin="bordrless"] main { padding: 10px 8px 40px; scrollbar-color: #111 transparent; }
+/* "Sending Tweet": the toast is an ink strip that rises from behind the tab bar and ducks back under it */
+html[data-skin="bordrless"] .toast { top: auto; bottom: 0; left: 0; right: 0; max-width: none; justify-content: center; gap: 6px; padding: 5px 10px; border: 0;
+  border-radius: 0; background: rgba(20, 20, 20, .92); box-shadow: none; transition: transform .3s ease, opacity .3s ease; }
+html[data-skin="bordrless"] .toast.gone { transform: translateY(100%); opacity: 1; }
+/* the tab bar sits above the stage so the strip slides out from under it */
+html[data-skin="bordrless"] .hud { position: relative; z-index: 8; }
+/* keep floating chat lines clear of the strip, and lift the strip over the chat bar when that's open */
+html[data-skin="bordrless"] #feed-lines { transition: transform .3s ease; }
+html[data-skin="bordrless"] .toast:not(.gone) ~ #feed-lines:not(.open) { transform: translateY(-28px); }
+html[data-skin="bordrless"] .stage:has(.chatbar:not([hidden])) .toast { bottom: 46px; z-index: 7; }
+html[data-skin="bordrless"] .stage:has(.chatbar:not([hidden])) .toast.gone { opacity: 0; }
+html[data-skin="bordrless"] .toast::before, html[data-skin="bordrless"] .toast::after, html[data-skin="bordrless"] .toast-icon { display: none; }
+html[data-skin="bordrless"] .toast-body { display: flex; align-items: baseline; gap: 6px; min-width: 0; text-align: center; }
+html[data-skin="bordrless"] .toast-title, html[data-skin="bordrless"] .toast.ok .toast-title { flex: none; font: 600 12px/1.2 var(--px); color: #fff; }
+html[data-skin="bordrless"] .toast.bad .toast-title { color: #ff8a8a; }
+html[data-skin="bordrless"] .toast-text { font: 12px/1.2 var(--px); color: #cfcfca; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="bordrless"] .toast-text small { display: inline; font-size: 11px; color: #86867f; }
+
+/* chat lines float as little square paper notes */
+html[data-skin="bordrless"] #feed-lines li { font: 12px/1.3 var(--px); padding: 4px 8px; margin-top: 4px; gap: 6px; color: #111; background: rgba(255, 255, 255, .96);
+  border: 1px solid #cfcfca; border-radius: 0; box-shadow: 2px 2px 0 #111; animation: line-in .2s ease both; transition: opacity .6s ease; }
+html[data-skin="bordrless"] #feed-lines li b { font: 600 12px/1 var(--px); color: #111; }
+html[data-skin="bordrless"] #feed-lines li b.verified, html[data-skin="bordrless"] #feed-lines li.mine b { color: var(--blue); }
+html[data-skin="bordrless"] #feed-lines li.note { color: #6b6b66; background: rgba(255, 255, 255, .96); }
+/* open chat: clear of the (taller) chat bar, even gaps, and no replayed slide-ins */
+html[data-skin="bordrless"] #feed-lines.open { bottom: 58px; padding: 8px 0 2px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+  background: linear-gradient(transparent, rgba(227, 227, 223, .97) 24px); }
+html[data-skin="bordrless"] #feed-lines.open { max-height: calc(100% - 70px); }
+html[data-skin="bordrless"] #feed-lines.open li { flex: none; margin-top: 0; animation: none; }
+html[data-skin="bordrless"] .chat-ava { border: 0; border-radius: 0; }
+html[data-skin="bordrless"] .chatbar { padding: 5px; border: 1px solid #111; border-radius: 0; background: #f9f9f9;
+  box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .chat-room { font: 600 12px/1 var(--px); color: var(--blue); }
+html[data-skin="bordrless"] #chat-input { padding: 6px 8px; color: #111; font: 13px/1 var(--px); background: #fff; border: 1px solid #111; border-radius: 0;
+  box-shadow: none; }
+html[data-skin="bordrless"] #chat-input:focus { border-color: #1f3cff; box-shadow: 2px 2px 0 #111; }
+
+/* ---------- section headers: a condensed headline over a hairline, like Bordrless's card titles ---------- */
+html[data-skin="bordrless"] .launch, html[data-skin="bordrless"] .tokens, html[data-skin="bordrless"] .about, html[data-skin="bordrless"] .more-pane, html[data-skin="bordrless"] .games, html[data-skin="bordrless"] .agents, html[data-skin="bordrless"] .coin, html[data-skin="bordrless"] .profile,
+html[data-skin="bordrless"] .settings, html[data-skin="bordrless"] .card, html[data-skin="bordrless"] .lightbox-card { border-top: 1px solid #111; }
+html[data-skin="bordrless"] .launch-head { margin: -10px -10px 0; padding: 10px 10px 8px; font: 400 18px/1.1 var(--head); letter-spacing: 0; text-transform: none; color: #111;
+  background: transparent; border-bottom: 1px solid #111; border-radius: 0; }
+/* small headings are mono labels, as Bordrless writes "Launches" and "Volume 24h" over its numbers */
+html[data-skin="bordrless"] .menu-head, html[data-skin="bordrless"] .menu-sec { font: 500 11px/1.2 var(--mono); letter-spacing: 0; text-transform: none; color: #4a4a46; }
+html[data-skin="bordrless"] .menu-sec { margin: 12px 2px 5px; }
+
+/* ---------- text ---------- */
+html[data-skin="bordrless"] .note, html[data-skin="bordrless"] .status, html[data-skin="bordrless"] .img-meta, html[data-skin="bordrless"] .more,
+html[data-skin="bordrless"] .tok-sub, html[data-skin="bordrless"] .drop-hint small, html[data-skin="bordrless"] .devbuy span,
+html[data-skin="bordrless"] .coin-meta, html[data-skin="bordrless"] .trades, html[data-skin="bordrless"] .steps, html[data-skin="bordrless"] table,
+html[data-skin="bordrless"] .rewards-label, html[data-skin="bordrless"] .acct-box .via, html[data-skin="bordrless"] .menu-foot, html[data-skin="bordrless"] .skin-main small {
+  font-family: var(--px); font-size: 12px; line-height: 1.3; }
+html[data-skin="bordrless"] .note.fine, html[data-skin="bordrless"] #launch-note { font-size: 11px; }
+html[data-skin="bordrless"] .menu-foot { font-size: 11px; text-transform: none; letter-spacing: 0; border-top: 1px solid #cfcfca; }
+html[data-skin="bordrless"] a, html[data-skin="bordrless"] .linkish { color: var(--blue); }
+html[data-skin="bordrless"] .linkish { text-decoration: none; }
+html[data-skin="bordrless"] .linkish:hover { text-decoration: underline; }
+
+/* ---------- buttons: white with an ink border, black or blue when they matter, all on a hard shadow ---------- */
+html[data-skin="bordrless"] .btn { padding: 7px 12px; color: #111; font: 600 12px/1 var(--px); border-radius: 0;
+  background: #fff; border: 1px solid #111; border-bottom-color: #111; outline: none;
+  box-shadow: none; }
+html[data-skin="bordrless"] .btn:hover { background: #fff; outline: none; }
+html[data-skin="bordrless"] .btn:active { padding: 7px 12px; background: #e0e0e0; box-shadow: none; }
+html[data-skin="bordrless"] .btn.primary { color: #fff; background: var(--blue);
+  border-color: #111; border-bottom-color: #111; }
+html[data-skin="bordrless"] .btn.primary:hover { background: var(--blue); }
+html[data-skin="bordrless"] .btn.primary:active { background: #0287c6; }
+html[data-skin="bordrless"] .btn.danger { color: #fff; background: #e5484d; border-color: #111; }
+html[data-skin="bordrless"] .btn.danger:hover { background: #e5484d; }
+html[data-skin="bordrless"] .btn.sm { padding: 5px 9px; font-size: 11px; }
+html[data-skin="bordrless"] .btn.sm:active { padding: 5px 9px; }
+html[data-skin="bordrless"] .btn[disabled] { opacity: .5; }
+html[data-skin="bordrless"] .btn:focus-visible, html[data-skin="bordrless"] .tok:focus-visible, html[data-skin="bordrless"] .opt:focus-visible,
+html[data-skin="bordrless"] .addr:focus-visible, html[data-skin="bordrless"] .skin-opt:focus-visible { outline: 2px solid #1f3cff; outline-offset: 1px; }
+html[data-skin="bordrless"] .menu-x { color: #86867f; font: 20px/1 var(--px); }
+html[data-skin="bordrless"] .menu-x:hover { color: #111; }
+html[data-skin="bordrless"] .chiplink { padding: 3px 7px 3px 3px; color: #111; font: 600 11px/1 var(--px); background: #fff;
+  border: 1px solid #111; border-radius: 0; }
+html[data-skin="bordrless"] .chiplink:hover { border-color: #6b6b66; }
+html[data-skin="bordrless"] .chiplink .ph { border-radius: 0; }
+
+/* segmented controls */
+html[data-skin="bordrless"] .sort, html[data-skin="bordrless"] .tf { gap: 0; }
+html[data-skin="bordrless"] .sort button, html[data-skin="bordrless"] .tf button { padding: 4px 8px; margin-left: -1px; color: #2b2b29; font: 600 11px/1 var(--px);
+  letter-spacing: 0; text-transform: none; background: #fff; border: 1px solid #111; }
+html[data-skin="bordrless"] .sort button:first-child, html[data-skin="bordrless"] .tf button:first-child { border-radius: 0; }
+html[data-skin="bordrless"] .sort button:last-child, html[data-skin="bordrless"] .tf button:last-child { border-radius: 0; }
+html[data-skin="bordrless"] .sort button:hover, html[data-skin="bordrless"] .tf button:hover { color: #111; }
+html[data-skin="bordrless"] .sort button[aria-pressed="true"], html[data-skin="bordrless"] .tf button[aria-pressed="true"] {
+  color: #fff; background: #111; border-color: #111;
+  box-shadow: none; }
+
+/* ---------- form fields ---------- */
+html[data-skin="bordrless"] .launch input:not([type=file]), html[data-skin="bordrless"] .launch textarea, html[data-skin="bordrless"] .verify-row input {
+  padding: 8px; color: #111; font: 14px/1.2 var(--px); background: #fff; border: 1px solid #111; border-radius: 0;
+  box-shadow: none; }
+html[data-skin="bordrless"] .launch textarea { line-height: 1.3; }
+html[data-skin="bordrless"] .launch input:focus, html[data-skin="bordrless"] .launch textarea:focus, html[data-skin="bordrless"] .verify-row input:focus {
+  border-color: #1f3cff; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .launch input::placeholder, html[data-skin="bordrless"] .launch textarea::placeholder { color: #86867f; }
+html[data-skin="bordrless"] .devbuy { background: #fff; border: 1px solid #111; border-radius: 0; box-shadow: none; }
+html[data-skin="bordrless"] .devbuy:focus-within { border-color: #1f3cff; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .launch .devbuy input { border: 0; box-shadow: none; background: transparent; }
+html[data-skin="bordrless"] .drop { background: #f4f4f2; border: 1px dashed #111; border-radius: 0; }
+html[data-skin="bordrless"] .drop:hover, html[data-skin="bordrless"] .drop.over, html[data-skin="bordrless"] .drop:focus-visible { border-color: #1f3cff; background-color: #e4e7ff; }
+html[data-skin="bordrless"] .drop.has { border: 1px solid #111; }
+html[data-skin="bordrless"] .drop-hint { font: 300 26px/1 var(--px); color: var(--blue); }
+html[data-skin="bordrless"] .launch-btn { padding: 10px 12px; font-size: 14px; }
+html[data-skin="bordrless"] .launch-btn:active { padding: 10px 12px; }
+html[data-skin="bordrless"] textarea { color: #111; font: 11px/1.35 var(--mono); background: #f4f4f2; box-shadow: none; }
+
+/* checklists */
+html[data-skin="bordrless"] .quests li { border-top: 1px solid #d8d8d3; font: 12px/1.3 var(--px); }
+html[data-skin="bordrless"] .launch .quests li { font-size: 12px; }
+html[data-skin="bordrless"] .check { width: 14px; height: 14px; border: 1px solid #111; border-radius: 0; background: #fff; }
+html[data-skin="bordrless"] .quests li.done .check { border-color: #2bb34a;
+  background: radial-gradient(circle, #fff 0 2px, transparent 2.5px), #5ccc6f; }
+html[data-skin="bordrless"] .launch .quests li.bad .check { border-color: var(--bad); }
+
+/* tags and chips */
+/* tags are Bordrless's grey mono chips ("Fig. 1"); the live one is blue */
+html[data-skin="bordrless"] .tag { padding: 3px 5px; font: 500 10px/1.1 var(--mono); letter-spacing: 0; color: #fff; background: var(--blue); border-radius: 0; }
+html[data-skin="bordrless"] .tag.dim { color: #2b2b29; background: #d4d4cf; box-shadow: none; }
+html[data-skin="bordrless"] .tag.gold { background: #f07a1a; }
+html[data-skin="bordrless"] .tag.bad { background: var(--bad); }
+html[data-skin="bordrless"] .launch-head .tag.dim { background: #d4d4cf; }
+html[data-skin="bordrless"] .ph { font: 600 12px/1 var(--px); border-radius: 0; }
+html[data-skin="bordrless"] .ca { padding: 2px 6px; color: var(--blue); font: 12px/1 var(--px); background: #e4e7ff; border: 1px solid #111; border-radius: 0; }
+html[data-skin="bordrless"] .ca:hover { background: #d6dbff; }
+html[data-skin="bordrless"] .addr, html[data-skin="bordrless"] .who-addr { font: 12px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .copy, html[data-skin="bordrless"] .ext { color: #86867f; font: 13px/1 var(--px); }
+html[data-skin="bordrless"] .copy:hover, html[data-skin="bordrless"] .ext:hover { color: var(--blue); }
+html[data-skin="bordrless"] .pair { color: var(--blue); }
+/* live: a green dot before a mono word, like "● Live" on Bordrless's stat cards */
+html[data-skin="bordrless"] .live { padding: 2px 0; font: 500 10px/1 var(--mono); letter-spacing: 0; color: #6b6b66; border: 0; border-radius: 0; }
+html[data-skin="bordrless"] .live::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 5px; vertical-align: 0; background: #9a9a94; border-radius: 50%; }
+html[data-skin="bordrless"] .live.on { color: #111; }
+html[data-skin="bordrless"] .live.on::before { background: #2bb34a; animation: blink 1.6s ease-in-out infinite; }
+
+/* ---------- token rows read like tweets in the timeline ---------- */
+html[data-skin="bordrless"] .tokens, html[data-skin="bordrless"] .profile { padding-bottom: 4px; }
+html[data-skin="bordrless"] .token-list { margin: 0 -10px; }
+html[data-skin="bordrless"] .tok { gap: 10px; padding: 9px 10px; border-top: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .token-list > :first-child .tok, html[data-skin="bordrless"] .token-list > .tok:first-child { border-top: 0; }
+html[data-skin="bordrless"] .tok:hover { background: #ececea; }
+html[data-skin="bordrless"] .tok img, html[data-skin="bordrless"] .tok .ph { width: 40px; height: 40px; border: 0; border-radius: 0; background: #cfcfca; }
+html[data-skin="bordrless"] .tok-main b { font: 600 14px/1.2 var(--px); color: #111; }
+html[data-skin="bordrless"] .tok-sub { font-size: 12px; color: #6b6b66; }
+html[data-skin="bordrless"] .tok-by { color: var(--blue); }
+html[data-skin="bordrless"] .tok-mkt b { font: 600 12px/1 var(--mono); color: #111; }
+html[data-skin="bordrless"] .tok-mkt .up, html[data-skin="bordrless"] .tok-mkt .down { font: 12px/1 var(--px); }
+html[data-skin="bordrless"] .more-row { padding: 10px 0 6px; }
+html[data-skin="bordrless"] .spark-line { stroke-width: 1.5; }
+html[data-skin="bordrless"] .spark.up .spark-line { stroke: rgba(43, 179, 74, .45); } html[data-skin="bordrless"] .spark.down .spark-line { stroke: rgba(229, 72, 77, .4); }
+html[data-skin="bordrless"] .spark.up .spark-area { fill: rgba(43, 179, 74, .08); } html[data-skin="bordrless"] .spark.down .spark-area { fill: rgba(229, 72, 77, .06); }
+
+/* ---------- coin screen ---------- */
+html[data-skin="bordrless"] .coin-top { font: 12px/1 var(--px); }
+html[data-skin="bordrless"] .coin-head .coin-img { width: 44px; height: 44px; border: 0; border-radius: 0; }
+html[data-skin="bordrless"] .coin-img-btn:hover .coin-img, html[data-skin="bordrless"] .coin-img-btn:focus-visible .coin-img { outline-color: #1f3cff; }
+/* the zoom badge: a plus drawn with two bars, so it sits dead centre at any size, tucked on the corner */
+html[data-skin="bordrless"] .coin-img-btn .zoom { right: -5px; bottom: -5px; width: 18px; height: 18px; font-size: 0; border: 2px solid #fff; border-radius: 50%;
+  background: linear-gradient(#fff, #fff) center / 8px 2px no-repeat, linear-gradient(#fff, #fff) center / 2px 8px no-repeat, var(--blue);
+  box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .coin-name b { font: 400 22px/1.05 var(--head); color: #111; }
+html[data-skin="bordrless"] .coin-name span { font: 500 12px/1.1 var(--mono); color: #6b6b66; }
+html[data-skin="bordrless"] #coin-chart { height: 140px; background: #fff; border: 1px solid #111; border-radius: 0; image-rendering: auto; }
+html[data-skin="bordrless"] .trades { font-size: 12px; }
+html[data-skin="bordrless"] .trades li { padding: 4px 2px; font-size: 11px; border-top: 1px solid #d8d8d3; }
+html[data-skin="bordrless"] .trades .kind { font: 500 10px/1 var(--mono); letter-spacing: 0; }
+html[data-skin="bordrless"] .trades .who { color: #6b6b66; }
+html[data-skin="bordrless"] .trades .who:hover { color: var(--blue); }
+
+/* ---------- wallet menu: a paper popover on a hard shadow ---------- */
+html[data-skin="bordrless"] .menu { top: calc(100% + 8px); padding: 10px; background: #fafaf8; border: 1px solid #111; border-radius: 0;
+  box-shadow: 4px 4px 0 #111; animation: menu-in .15s ease both; }
+html[data-skin="bordrless"] .opt { margin-bottom: 4px; padding: 8px; color: #111; font: 600 13px/1.2 var(--px); background: #fff; border: 1px solid #111; border-radius: 0; }
+html[data-skin="bordrless"] .opt:hover { color: #fff; background: #111; border-color: #111; }
+html[data-skin="bordrless"] .opt img, html[data-skin="bordrless"] .opt .ph { border: 0; border-radius: 0; }
+html[data-skin="bordrless"] .acct-box { padding: 10px; background: #ececea; border: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .acct-box .via img, html[data-skin="bordrless"] .acct-box .via .ph { border: 0; border-radius: 0; }
+
+/* ---------- profile ---------- */
+html[data-skin="bordrless"] .avatar { border: 0; border-radius: 0; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .avatar.lg { width: 48px; height: 48px; }
+html[data-skin="bordrless"] .avatar.pixel { background: #cfcfca; }
+html[data-skin="bordrless"] .who-name, html[data-skin="bordrless"] .card-name { font: 600 15px/1.2 var(--px); color: #111; }
+html[data-skin="bordrless"] .handle { font: 13px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .handle:hover { color: var(--blue); }
+html[data-skin="bordrless"] .check-badge { width: 13px; height: 13px; font: 600 8px/1 var(--px); color: #fff; background: #1f3cff; border-radius: 50%; }
+html[data-skin="bordrless"] .rewards { margin-top: 10px; padding: 9px 10px; background: #ececea; border: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .rewards-label { font: 500 11px/1.2 var(--mono); color: #6b6b66; text-transform: none; letter-spacing: 0; }
+html[data-skin="bordrless"] .rewards b { font: 600 17px/1.2 var(--mono); color: #111; }
+
+/* ---------- debug panel ---------- */
+html[data-skin="bordrless"] .subnav { gap: 0; background: linear-gradient(#e3e3df 70%, transparent); }
+html[data-skin="bordrless"] .subnav [role="tab"] { padding: 5px 10px; margin-left: -1px; color: #2b2b29; font: 600 11px/1 var(--px);
+  background: #fff; border: 1px solid #111; }
+html[data-skin="bordrless"] .subnav [role="tab"]:first-child { border-radius: 0; }
+html[data-skin="bordrless"] .subnav [role="tab"]:nth-child(4) { border-radius: 0; }
+html[data-skin="bordrless"] .subnav [role="tab"][aria-selected="true"] { color: #fff;
+  background: #111; border-color: #111; box-shadow: none; }
+html[data-skin="bordrless"] td { border-bottom: 1px solid #cfcfca; }
+html[data-skin="bordrless"] td:first-child { color: #4a4a46; font-weight: 600; }
+
+/* ---------- modals ---------- */
+html[data-skin="bordrless"] .lightbox { background: rgba(0, 0, 0, .55); animation: menu-in .15s ease both; }
+html[data-skin="bordrless"] .lightbox-card { border-radius: 0; box-shadow: 4px 4px 0 #111; }
+html[data-skin="bordrless"] .lightbox-head b, html[data-skin="bordrless"] .steps b { font: 600 14px/1.2 var(--px); color: #111; }
+html[data-skin="bordrless"] .lightbox-frame { background: #f5f5f5; border: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .step-n { width: 20px; height: 20px; font: 600 11px/1 var(--px); color: #fff; background: var(--blue); border-radius: 50%; }
+html[data-skin="bordrless"] .steps code { font: 12px/1 var(--mono); color: var(--blue); }
+html[data-skin="bordrless"] .tweet-text { padding: 8px; color: #111; background: #ececea; border: 1px solid #cfcfca; border-radius: 0; }
+
+/* ---------- bottom: the tab bar, paper under an ink rule ---------- */
+html[data-skin="bordrless"] .hud { padding: 6px 10px 7px; background: #e3e3df; border-top: 1px solid #111; box-shadow: none; }
+html[data-skin="bordrless"] .slot { padding: 2px; max-width: 34px; color: #111; background: #fafaf8; border: 1px solid #111; border-radius: 0; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .slot:hover:not([disabled]) { background: #fff; }
+html[data-skin="bordrless"] .slot[disabled] { background: transparent; border: 1px dashed #9a9a94; box-shadow: none; }
+/* square slots need air between them for their shadows */
+html[data-skin="bordrless"] #hotbar { gap: 3px; }
+html[data-skin="bordrless"] .slot img, html[data-skin="bordrless"] .slot .ph { border-radius: 0; }
+html[data-skin="bordrless"] .slot .n { right: 2px; bottom: 1px; padding: 1px 2px; font: 500 9px/1 var(--mono); color: #111; background: #fafaf8; }
+html[data-skin="bordrless"] .slot .dot { right: 2px; top: 2px; width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 0 1px #fafaf8; }
+/* the selected slot: the blue under it instead of ink */
+html[data-skin="bordrless"] .slot[aria-pressed="true"] { outline: none; background: #fff; border-color: #1f3cff; box-shadow: 2px 2px 0 #1f3cff; }
+html[data-skin="bordrless"] .chat-slot { color: #1f3cff; }
+html[data-skin="bordrless"] .chat-slot svg { shape-rendering: auto; filter: none; }
+
+/* ---------- settings ---------- */
+html[data-skin="bordrless"] .settings { padding-bottom: 10px; }
+html[data-skin="bordrless"] .skin-opt { padding: 9px; color: #111; background: #fff; border: 1px solid #111; border-radius: 0; }
+html[data-skin="bordrless"] .skin-opt:hover { background: #f4f4f2; }
+html[data-skin="bordrless"] .skin-opt[aria-checked="true"] { border-color: #111; background: #fff; box-shadow: 3px 3px 0 #1f3cff; }
+html[data-skin="bordrless"] .skin-main b { font: 600 14px/1.2 var(--px); }
+html[data-skin="bordrless"] .skin-main small { color: #6b6b66; }
+
+/* social links: a plain blue disclosure link, and fields with a grey add-on label */
+html[data-skin="bordrless"] .socials summary { font: 600 12px/1.2 var(--px); letter-spacing: 0; text-transform: none; color: var(--blue); }
+html[data-skin="bordrless"] .socials summary::before { font: 600 14px/1 var(--px); }
+html[data-skin="bordrless"] .socials summary .dim { font-weight: normal; color: #6b6b66; }
+html[data-skin="bordrless"] .socials summary:focus-visible { outline-color: #1f3cff; }
+html[data-skin="bordrless"] .socials-count { padding: 2px 6px; font: 600 10px/1.1 var(--px); color: #fff; background: var(--blue); border-radius: 2px; }
+html[data-skin="bordrless"] .link-field { background: #fff; border: 1px solid #111; border-radius: 0; box-shadow: none; overflow: hidden; }
+html[data-skin="bordrless"] .link-field:focus-within { border-color: #1f3cff; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .link-pre { align-self: stretch; display: grid; place-items: center; width: 42px; font: 600 11px/1 var(--px); color: #5c5c57; background: #f4f4f2; border-right: 1px solid #111; }
+html[data-skin="bordrless"] .launch .link-field input { border: 0; box-shadow: none; background: transparent; border-radius: 0; }
+
+/* ---------- about: the app icon over the name and version ---------- */
+html[data-skin="bordrless"] .about-hero { padding: 10px 0 6px; gap: 3px; }
+html[data-skin="bordrless"] .about-badge { width: 76px; height: 76px; margin-bottom: 8px; transform: none; border: 1px solid #111; border-radius: 0; box-shadow: 3px 3px 0 #111;
+  background: url(brand/hash-blue.png) center / 46px no-repeat, #fff; }
+html[data-skin="bordrless"] .about-name { font: 400 30px/1 var(--head); letter-spacing: -.01em; text-transform: lowercase; color: #111; }
+html[data-skin="bordrless"] .about-ver { font: 500 11px/1.3 var(--mono); color: #6b6b66; }
+html[data-skin="bordrless"] .about-hero small { font: 12px/1.3 var(--mono); color: #5c5c57; }
+html[data-skin="bordrless"] .about-table { margin: 4px 0 0; border: 1px solid #cfcfca; border-radius: 0; border-collapse: separate; border-spacing: 0; overflow: hidden; }
+html[data-skin="bordrless"] .about-table td { padding: 8px 10px; font-size: 13px; }
+html[data-skin="bordrless"] .about-table td:last-child { text-align: right; color: #111; }
+html[data-skin="bordrless"] .about-table tr:last-child td { border-bottom: 0; }
+html[data-skin="bordrless"] .about-links { gap: 0; border: 1px solid #cfcfca; border-radius: 0; overflow: hidden; }
+html[data-skin="bordrless"] .about-links li { padding: 9px 10px; background: #f4f4f2; border: 0; border-top: 1px solid #cfcfca; opacity: .55; }
+html[data-skin="bordrless"] .about-links li:first-child { border-top: 0; }
+html[data-skin="bordrless"] .about-link-name { font: 600 13px/1 var(--px); color: #111; }
+html[data-skin="bordrless"] .about-link-sub { font: 12px/1 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .about-links li.about-contact { opacity: 1; background: #fff; }
+html[data-skin="bordrless"] .about-contact a.about-link-sub { color: var(--blue); }
+html[data-skin="bordrless"] .about-foot { font-size: 11px; color: #86867f; }
+
+/* crafting: the pair picker is a select-style field, and the picker an icon grid of square tiles */
+html[data-skin="bordrless"] .pairs-card { background: #fff; }
+html[data-skin="bordrless"] .field-label { font: 500 11px/1 var(--mono); letter-spacing: 0; text-transform: none; color: #4a4a46; }
+html[data-skin="bordrless"] .pair-pick { padding: 6px 8px; color: #111; background: #fff; border: 1px solid #111; border-radius: 0;
+  box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .pair-pick:hover, html[data-skin="bordrless"] .pair-pick:focus-visible { border-color: #1f3cff; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .pair-pick b { font: 600 13px/1 var(--px); }
+html[data-skin="bordrless"] .pair-pick small { font: 12px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .pair-pick .caret { font: 10px/1 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .pair-img { width: 22px; height: 22px; border: 0; border-radius: 0; }
+html[data-skin="bordrless"] .sol-ico { border: 0; border-radius: 50%; }
+html[data-skin="bordrless"] .launch-head .pair-pick { padding: 3px 7px 3px 5px; border-radius: 2px; }
+html[data-skin="bordrless"] .launch-head .pair-pick small { font: 11px/1 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .launch-head .pair-pick b { font: 600 12px/1 var(--px); }
+html[data-skin="bordrless"] .launch-head .pair-img { width: 18px; height: 18px; border-radius: 50%; }
+html[data-skin="bordrless"] .pairs-search { padding: 8px 10px 8px 30px; color: #111; font: 14px/1.2 var(--px); border: 1px solid #111; border-radius: 2px;
+  box-shadow: none;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6.5' cy='6.5' r='4.5' fill='none' stroke='%23999' stroke-width='2'/%3E%3Cpath d='m10 10 4 4' stroke='%23999' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 10px 50% / 14px no-repeat; }
+html[data-skin="bordrless"] .pairs-search:focus { border-color: #1f3cff; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .pairs-grid { gap: 6px; scrollbar-color: #111 transparent; }
+html[data-skin="bordrless"] .pair-tile { padding: 7px 3px 6px; color: #111; background: #fff; border: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .pair-tile:hover:not([disabled]) { background: #ececea; border-color: #111; }
+html[data-skin="bordrless"] .pair-tile:focus-visible { outline: 2px solid #1f3cff; }
+html[data-skin="bordrless"] .pair-tile[aria-selected="true"] { background: #e4e7ff; border-color: #1f3cff; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .pair-tile b { font: 600 12px/1.2 var(--px); }
+html[data-skin="bordrless"] .pair-tile small { font: 10px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .pair-tile-img { width: 30px; height: 30px; border: 0; border-radius: 0; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .pair-tile .sol-ico { border-radius: 50%; }
+html[data-skin="bordrless"] .pair-tile small.pair-mcap { font-weight: 600; color: #111; }
+html[data-skin="bordrless"] .pair-tile small.no { color: #e5484d; }
+
+/* dev buy: a paper well with a segmented preset control */
+html[data-skin="bordrless"] .devbuy-box { padding: 10px; background: #ececea; border: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .devbuy-hint { font: 11px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .buy-chips { gap: 0; }
+html[data-skin="bordrless"] .buy-chips button { padding: 0 10px; margin-left: -1px; color: #2b2b29; font: 600 12px/1 var(--px);
+  background: #fff; border: 1px solid #111; }
+html[data-skin="bordrless"] .buy-chips button:first-child { margin-left: 0; border-radius: 0; }
+html[data-skin="bordrless"] .buy-chips button:last-child { border-radius: 0; }
+html[data-skin="bordrless"] .buy-chips button[aria-pressed="true"] { color: #fff;
+  background: #111; border-color: #111; box-shadow: none; }
+html[data-skin="bordrless"] .devbuy-est { font: 12px/1.35 var(--px); color: #5c5c57; }
+html[data-skin="bordrless"] .devbuy-est.ok b { color: #2bb34a; font-weight: 600; }
+html[data-skin="bordrless"] .devbuy-est small { font-size: 11px; color: #86867f; }
+
+/* description countdown */
+html[data-skin="bordrless"] .desc-left { font: 11px/1 var(--px); color: #86867f; }
+html[data-skin="bordrless"] .desc-left.warn, html[data-skin="bordrless"] .post-left.warn { color: #e5484d; }
+
+html[data-skin="bordrless"] .trades-more { font: 600 11px/1 var(--px); }
+
+/* posts: a composer and a little timeline */
+html[data-skin="bordrless"] .posts { margin: 4px -10px -10px; padding: 0; gap: 0; border-top: 0; }
+html[data-skin="bordrless"] .posts-head { padding: 9px 10px 7px; font: 400 17px/1.1 var(--head); letter-spacing: 0; text-transform: none; color: #111; background: transparent; border-top: 1px solid #111; border-bottom: 1px solid #111; }
+html[data-skin="bordrless"] .posts-count { padding: 2px 6px; font: 600 10px/1.1 var(--px); color: #fff; background: #6b6b66; border-radius: 2px; }
+html[data-skin="bordrless"] .composer { padding: 10px; gap: 6px; background: #ececea; border-bottom: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .composer textarea { padding: 8px; color: #111; font: 14px/1.3 var(--px); background: #fff; border: 1px solid #111; border-radius: 0;
+  box-shadow: none; }
+html[data-skin="bordrless"] .composer textarea:focus { border-color: #1f3cff; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .post-left { font: 12px/1 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .posts-list > li.note { padding: 12px 10px; margin: 0; font-size: 12px; }
+html[data-skin="bordrless"] .post { gap: 10px; padding: 10px; border-top: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .posts-list > .post:first-child { border-top: 0; }
+html[data-skin="bordrless"] .post-ava { width: 36px; height: 36px; }
+html[data-skin="bordrless"] .post-head b { font: 600 13px/1.2 var(--px); color: #111; }
+html[data-skin="bordrless"] .post.mine .post-head b { color: #111; }
+html[data-skin="bordrless"] .post-time { font: 12px/1 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .post-text { margin-top: 2px; font: 14px/1.3 var(--px); color: #111; }
+
+/* creator: the author row, with a stat and a Follow button */
+html[data-skin="bordrless"] .creator { margin: 0 -10px; padding: 10px; gap: 6px; background: #fff; border: 0; border-top: 1px solid #cfcfca; border-bottom: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .creator-label { font: 500 11px/1 var(--mono); letter-spacing: 0; color: #6b6b66; }
+html[data-skin="bordrless"] .creator-ava { width: 24px; height: 24px; border-radius: 0; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .creator-name { font: 600 14px/1.2 var(--px); color: #111; }
+html[data-skin="bordrless"] .creator-addr { font: 12px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .creator-addr .ext { color: var(--blue); }
+html[data-skin="bordrless"] .creator-who:hover .creator-name { color: var(--blue); }
+html[data-skin="bordrless"] .creator-who:focus-visible { outline-color: #1f3cff; }
+html[data-skin="bordrless"] .creator-stat { padding: 0 10px; border-left: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .creator-stat b { font: 600 15px/1.1 var(--mono); color: #111; }
+html[data-skin="bordrless"] .creator-stat small { font: 500 10px/1 var(--mono); color: #6b6b66; letter-spacing: 0; }
+
+/* sharing: a paper well with the link in a mono chip, Copy, and the blue Post on X */
+html[data-skin="bordrless"] .share-box { padding: 9px 10px; background: #ececea; border: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .share-title { font: 600 13px/1.2 var(--px); color: #111; }
+html[data-skin="bordrless"] .share-url { padding: 6px 8px; font: 12px/1.2 var(--mono); color: var(--blue); background: #fff; border: 1px solid #111; border-radius: 0; }
+html[data-skin="bordrless"] .open-coin { font: 600 12px/1 var(--px); }
+html[data-skin="bordrless"] li.with-share { border-top: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .token-list > li.with-share:first-child { border-top: 0; }
+html[data-skin="bordrless"] .share-mini { margin-right: 6px; padding: 4px 8px; font: 600 11px/1 var(--px); color: #2b2b29;
+  background: #fff; border: 1px solid #111; border-radius: 0; }
+html[data-skin="bordrless"] .share-mini:hover { color: #111; border-color: #6b6b66; }
+
+/* feed: a composer over the timeline */
+html[data-skin="bordrless"] .feed { padding-bottom: 0; gap: 0; }
+html[data-skin="bordrless"] .feed-composer { margin: 0 -10px; padding: 10px; gap: 6px; background: #ececea; border-bottom: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .feed-list { margin: 0 -10px; }
+html[data-skin="bordrless"] .feed-list > li.note { padding: 14px 10px; text-align: center; font-size: 12px; }
+html[data-skin="bordrless"] .tag-coin { padding: 5px 9px; color: var(--blue); font: 600 11px/1 var(--px);
+  background: #fff; border: 1px solid #111; border-radius: 2px; }
+html[data-skin="bordrless"] .tag-coin:hover { border-color: #1f3cff; }
+html[data-skin="bordrless"] .attach-chip { padding: 3px 6px 3px 3px; color: #111; font: 600 12px/1 var(--px); background: #fff; border: 1px solid #111; border-radius: 2px; }
+html[data-skin="bordrless"] .attach-img { border-radius: 50%; }
+html[data-skin="bordrless"] .attach-x { color: #86867f; font: 15px/1 var(--px); }
+html[data-skin="bordrless"] .post-name { font: 600 13px/1.2 var(--px); color: #111; }
+html[data-skin="bordrless"] .post-name:hover, html[data-skin="bordrless"] .post.mine .post-name { color: var(--blue); }
+html[data-skin="bordrless"] .cashtag, html[data-skin="bordrless"] .post-text .hashtag, html[data-skin="bordrless"] .post-text .mention { color: var(--blue); }
+html[data-skin="bordrless"] .post-coin { margin-top: 8px; padding: 8px; color: #111; background: #fff; border: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .post-coin:hover { background: #ececea; border-color: #111; }
+html[data-skin="bordrless"] .post-coin-img { width: 36px; height: 36px; border: 0; border-radius: 0; }
+html[data-skin="bordrless"] .post-coin-main b { font: 600 13px/1.2 var(--px); }
+html[data-skin="bordrless"] .post-coin-main small { font: 12px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .post-coin-mcap { font: 600 12px/1 var(--px); color: #111; }
+
+/* tweets: the action row (green repost, yellow star), and the detail view */
+html[data-skin="bordrless"] .post.tweet:hover { background: #ececea; }
+html[data-skin="bordrless"] .rt-label { margin-left: 46px; font: 11px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .reply-label { font: 12px/1.3 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .tw-act { color: #8f8f88; font: 600 11px/1 var(--px); border-radius: 0; }
+html[data-skin="bordrless"] .tw-act:hover:not([disabled]) { color: var(--blue); background: #e4e7ff; }
+html[data-skin="bordrless"] .tw-act.rt[aria-pressed="true"] { color: #1f8a3a; }
+html[data-skin="bordrless"] .tw-act.like[aria-pressed="true"] { color: #f2c230; }
+html[data-skin="bordrless"] .thread { padding-bottom: 0; gap: 0; }
+html[data-skin="bordrless"] #thread-post { padding-bottom: 4px; }
+html[data-skin="bordrless"] .posts-list.big { margin: 0 -10px; }
+html[data-skin="bordrless"] .posts-list.big .post { cursor: default; background: none; }
+html[data-skin="bordrless"] .posts-list.big .post-ava { width: 48px; height: 48px; }
+html[data-skin="bordrless"] .posts-list.big .post-text { font: 18px/1.35 var(--px); }
+html[data-skin="bordrless"] .tweet-stamp { margin: 0 0 8px; font: 12px/1 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .tweet-counts { padding: 8px 0; gap: 16px; font: 11px/1 var(--px); letter-spacing: .03em; color: #6b6b66; border-top: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .tweet-counts b { font: 600 13px/1 var(--px); color: #111; }
+html[data-skin="bordrless"] .tweet-acts.big { margin: 0 -10px; padding: 6px 10px 8px; gap: 10px; background: none; border: 0; }
+/* the detail view's labeled actions, in the blue */
+html[data-skin="bordrless"] .tweet-acts.big .tw-act { color: var(--blue); font: 12px/1 var(--px); }
+html[data-skin="bordrless"] .tweet-acts.big .tw-act:hover { background: none; text-decoration: underline; }
+html[data-skin="bordrless"] .tweet-acts.big .tw-act.rt[aria-pressed="true"] { color: #1f8a3a; }
+html[data-skin="bordrless"] .tweet-acts.big .tw-act.like[aria-pressed="true"] { color: #f2c230; }
+html[data-skin="bordrless"] .reply-composer { margin: 0 -10px; padding: 10px; gap: 6px; background: #ececea; border-bottom: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .replies-head { margin: 0 -10px; }
+html[data-skin="bordrless"] #thread-replies { margin: 0 -10px; }
+html[data-skin="bordrless"] #thread-replies > li.note { padding: 14px 10px; text-align: center; font-size: 12px; }
+html[data-skin="bordrless"] .posts-list.timeline { margin: 0 -10px; border-top: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .posts-list.timeline > li.note { padding: 12px 10px; text-align: center; font-size: 12px; }
+
+/* official $TP contract strip: a slim paper bar above the welcome post */
+html[data-skin="bordrless"] .official { margin-bottom: 10px; padding: 8px 10px; background: #fff; border: 1px solid #111; border-radius: 0; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .official-label { font: 12px/1.2 var(--px); letter-spacing: 0; text-transform: none; color: #5c5c57; }
+html[data-skin="bordrless"] .official-label b { color: #111; font-weight: 600; }
+
+/* launch network: a segmented control of square cells, the picked chain in ink, in the tab bar and in the Launch header alike.
+   Logos are white when picked, grey otherwise. */
+html[data-skin="bordrless"] .net-switch { gap: 0; }
+html[data-skin="bordrless"] .hud-row .net-switch { padding: 0; background: #fff; border: 1px solid #111; border-radius: 0; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .hud-row .net-switch button { width: 32px; height: 24px; color: #8f8f88; background: transparent; border: 0; border-radius: 0; }
+html[data-skin="bordrless"] .hud-row .net-switch button:hover:not([disabled]) { color: #111; }
+html[data-skin="bordrless"] .hud-row .net-switch button[aria-checked="true"] { color: #fff; background: #111;
+  box-shadow: none; }
+html[data-skin="bordrless"] .launch-head .net-switch button { width: 30px; height: 24px; margin-left: -1px; color: #8f8f88; background: #fff; border: 1px solid #111; }
+html[data-skin="bordrless"] .launch-head .net-switch button:first-child { margin-left: 0; border-radius: 2px 0 0 2px; }
+html[data-skin="bordrless"] .launch-head .net-switch button:last-child { border-radius: 0 2px 2px 0; }
+html[data-skin="bordrless"] .launch-head .net-switch button[aria-checked="true"] { color: #fff; background: #111; border-color: #111;
+  box-shadow: none; }
+html[data-skin="bordrless"] .net-switch .net-logo { width: 15px; height: 15px; }
+html[data-skin="bordrless"] .evm-wallet { font: 12px/1.3 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .evm-wallet b { font: 600 12px/1 var(--px); color: #111; }
+html[data-skin="bordrless"] .chain-tag { color: #5a7a00; }
+
+/* Robinhood fees: a paper well like the dev buy, the blue on the slider */
+html[data-skin="bordrless"] .fee-box { padding: 10px; background: #ececea; border: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .fee-split input { accent-color: #1f3cff; }
+html[data-skin="bordrless"] .fee-side { font: 600 12px/1 var(--px); color: #111; }
+html[data-skin="bordrless"] .coin-fees-line { font: 12px/1.3 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .coin-fees-line b { color: #111; font-weight: 600; }
+html[data-skin="bordrless"] .net-sec .net-logo { color: #111; }
+html[data-skin="bordrless"] .fee-sub { font: 11px/1.3 var(--px); color: #86867f; }
+html[data-skin="bordrless"] .fee-sub a { color: inherit; text-decoration-color: #111; }
+html[data-skin="bordrless"] .fee-sub a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+/* chain badge and filter */
+html[data-skin="bordrless"] .chain-badge { box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .slot .chain-badge { box-shadow: none; }
+html[data-skin="bordrless"] .chain-filter { gap: 0; margin: 0 -10px; padding: 8px 10px; border-bottom: 1px solid #cfcfca; }
+html[data-skin="bordrless"] .chain-filter button { margin-left: -1px; padding: 5px 10px; color: #2b2b29; font: 600 11px/1 var(--px);
+  background: #fff; border: 1px solid #111; }
+html[data-skin="bordrless"] .chain-filter button:first-child { margin-left: 0; border-radius: 0; }
+html[data-skin="bordrless"] .chain-filter button:last-child { border-radius: 0; }
+html[data-skin="bordrless"] .chain-filter button[aria-checked="true"] { color: #fff;
+  background: #111; border-color: #111; box-shadow: none; }
+html[data-skin="bordrless"] .chain-name .net-logo { color: #6b6b66; }
+
+/* trading and Jito: the dev buy box's look, green Buy and red Sell */
+html[data-skin="bordrless"] .jito-row { font: 12px/1.3 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .launch .jito-row input { width: auto; padding: 0; border: 0; box-shadow: none; background: none; }
+html[data-skin="bordrless"] .jito-name { color: #111; font-weight: 600; }
+html[data-skin="bordrless"] .jito-row input:not(:checked) ~ .jito-name { color: #6b6b66; }
+html[data-skin="bordrless"] .trade { gap: 8px; margin: 10px 0; padding: 10px; background: #ececea; border: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .trade-side { gap: 0; }
+html[data-skin="bordrless"] .trade-side button { padding: 6px 16px; color: #2b2b29; font: 600 13px/1 var(--px);
+  background: #fff; border: 1px solid #111; }
+html[data-skin="bordrless"] .trade-side .buy { border-radius: 0; }
+html[data-skin="bordrless"] .trade-side .sell { margin-left: -1px; border-radius: 0; }
+html[data-skin="bordrless"] .trade-side .buy[aria-selected="true"] { color: #fff; background: #2bb34a;
+  border-color: #1f8a3a; box-shadow: none; }
+html[data-skin="bordrless"] .trade-side .sell[aria-selected="true"] { color: #fff; background: #e5484d;
+  border-color: #111; box-shadow: none; }
+html[data-skin="bordrless"] .trade-slip { padding: 5px 8px; color: #5c5c57; font: 11px/1 var(--px); border: 1px solid #cfcfca; border-radius: 0; background: #fff; }
+html[data-skin="bordrless"] .trade-amt { background: #fff; border: 1px solid #111; border-radius: 0; box-shadow: none; }
+html[data-skin="bordrless"] .trade-amt:focus-within { border-color: #1f3cff; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .trade-amt input { padding: 8px 4px 8px 10px; color: #111; font: 16px/1 var(--px); box-shadow: none; }
+html[data-skin="bordrless"] .trade-unit { font: 600 12px/1 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .trade-est { font: 13px/1.35 var(--px); color: #111; }
+html[data-skin="bordrless"] .trade-est b { color: #1f8a3a; } html[data-skin="bordrless"] .trade-est .hold { color: #111; }
+html[data-skin="bordrless"] .trade-est .dim { color: #6b6b66; } html[data-skin="bordrless"] .trade-est .bad { color: #c8322f; }
+html[data-skin="bordrless"] .trade-btn.sell { color: #fff; background: #e5484d; border-color: #111; }
+html[data-skin="bordrless"] .trade-status { font: 12px/1.35 var(--px); }
+html[data-skin="bordrless"] .trade-status.ok { color: #1f8a3a; } html[data-skin="bordrless"] .trade-status.bad { color: #c8322f; } html[data-skin="bordrless"] .trade-status.warn { color: #b8730f; }
+
+/* trade extras */
+html[data-skin="bordrless"] .trade-bal { font: 12px/1.3 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .trade-bal b { color: #111; font-weight: 600; }
+html[data-skin="bordrless"] .trade-est .gap { color: #6b6b66; } html[data-skin="bordrless"] .trade-est .gap.warn { color: #b8730f; font-weight: 600; }
+html[data-skin="bordrless"] .jito-speed { gap: 0; }
+html[data-skin="bordrless"] .jito-speed button { margin-left: -1px; padding: 3px 8px; color: #2b2b29; font: 600 11px/1 var(--px);
+  background: #fff; border: 1px solid #111; }
+html[data-skin="bordrless"] .jito-speed button:first-child { margin-left: 0; border-radius: 0; }
+html[data-skin="bordrless"] .jito-speed button:last-child { border-radius: 0; }
+html[data-skin="bordrless"] .jito-speed button[aria-checked="true"] { color: #fff;
+  background: #111; border-color: #111; box-shadow: none; }
+
+/* ---------- welcome post: a tweet above the launch form, on a paper card ---------- */
+html[data-skin="bordrless"] .welcome { display: flex; gap: 10px; margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #111;
+  border-radius: 0; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .tweet-ava { flex: none; width: 48px; height: 48px; border-radius: 0; box-shadow: 2px 2px 0 #111; object-fit: cover; }
+html[data-skin="bordrless"] .tweet-body { flex: 1; min-width: 0; }
+html[data-skin="bordrless"] .tweet-head { display: flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+html[data-skin="bordrless"] .tweet-head b { font: 600 14px/1.2 var(--px); color: #111; }
+html[data-skin="bordrless"] .tweet-handle { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 12px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .tweet-time { margin-left: auto; font: 12px/1.2 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .tweet-copy { margin: 3px 0 0; font: 14px/1.35 var(--px); color: #111; }
+html[data-skin="bordrless"] .hashtag { color: var(--blue); }
+html[data-skin="bordrless"] .tweet-actions { display: flex; gap: 6px; margin: 6px 0 -4px -6px; }
+html[data-skin="bordrless"] .tweet-act { appearance: none; display: inline-flex; align-items: center; gap: 5px; min-width: 52px; padding: 4px 6px; cursor: pointer;
+  color: #8f8f88; font: 600 12px/1 var(--px); background: none; border: 0; border-radius: 0; }
+html[data-skin="bordrless"] .tweet-act svg { width: 15px; height: 15px; fill: currentColor; transition: transform .15s ease; }
+html[data-skin="bordrless"] .tweet-act .lbl { display: none; }
+html[data-skin="bordrless"] .tweet-act:hover { color: var(--blue); background: #e4e7ff; }
+html[data-skin="bordrless"] .tweet-act:focus-visible { outline: 2px solid #1f3cff; outline-offset: 0; }
+html[data-skin="bordrless"] .tweet-act.share[aria-pressed="true"] { color: var(--blue); }
+html[data-skin="bordrless"] .tweet-act.repost[aria-pressed="true"] { color: #1f8a3a; }
+html[data-skin="bordrless"] .tweet-act.star[aria-pressed="true"] { color: #f2c230; }
+html[data-skin="bordrless"] .tweet-act.pop svg { animation: pop .35s ease; }
+@keyframes pop { 40% { transform: scale(1.45); } }
+
+/* ---------- more: grouped rows with chevrons, ink on hover ---------- */
+html[data-skin="bordrless"] .more-pane { padding-bottom: 0; }
+html[data-skin="bordrless"] .more-list { gap: 0; margin: -8px -10px 0; }
+html[data-skin="bordrless"] .more-row-btn { padding: 10px; color: #111; background: #fff; border: 0; border-top: 1px solid #cfcfca; border-radius: 0; }
+html[data-skin="bordrless"] .more-list li:first-child .more-row-btn { border-top: 0; }
+html[data-skin="bordrless"] .more-list li:last-child .more-row-btn { border-radius: 0; }
+html[data-skin="bordrless"] .more-row-btn:hover { color: #fff; background: #111; }
+html[data-skin="bordrless"] .more-row-btn:hover small, html[data-skin="bordrless"] .more-row-btn:hover .chev { color: #cfcfca; }
+html[data-skin="bordrless"] .more-row-btn:hover .tag.dim { color: #fff; background: rgba(255, 255, 255, .2); box-shadow: none; }
+html[data-skin="bordrless"] .more-row-btn:focus-visible { outline: 2px solid #1f3cff; outline-offset: -2px; }
+html[data-skin="bordrless"] .more-ico { width: 32px; height: 32px; color: #111; border: 1px solid #111; border-radius: 0; background: #fff; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .more-ico svg { shape-rendering: auto; }
+html[data-skin="bordrless"] .more-main b { font: 600 14px/1.2 var(--px); }
+html[data-skin="bordrless"] .more-main small { font: 12px/1.3 var(--px); color: #6b6b66; }
+html[data-skin="bordrless"] .more-row-btn .chev { font: 300 24px/1 var(--px); color: #111; }
+html[data-skin="bordrless"] .games-grid { gap: 8px; opacity: .45; }
+html[data-skin="bordrless"] .games-grid li { background: #d4d4cf; border: 1px dashed #111; border-radius: 0; }
+html[data-skin="bordrless"] .soon b { font: 600 15px/1 var(--px); color: #2b2b29; padding: 8px 14px; background: #fff;
+  border: 1px solid #111; border-radius: 0; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .soon small { font: 12px/1.35 var(--px); color: #5c5c57; padding: 4px 8px; background: rgba(255, 255, 255, .9); border-radius: 0; }
+
+/* card-sized widths: Launch and Tokens show just their icons */
+@media (max-width: 480px) {
+  html[data-skin="bordrless"] .views .lbl { display: none; }
+  html[data-skin="bordrless"] #btn-more .lbl { display: inline; }   /* More has no icon, so it keeps its word */
+  html[data-skin="bordrless"] .views .ghost { padding: 5px 9px; }
+  html[data-skin="bordrless"] .tab-ico { width: 17px; height: 17px; }
+}
+/* narrow cards: Tweetcraft falls back to key hints, which this skin hides, so keep the labels and fold the title into its # square */
+@media (max-width: 420px) {
+  html[data-skin="bordrless"] #btn-more .lbl { display: inline; }
+  html[data-skin="bordrless"] header { gap: 4px; }
+  html[data-skin="bordrless"] h1 { font-size: 0; flex: 1 0 auto; }
+  html[data-skin="bordrless"] h1 .gem { width: 28px; height: 28px; margin: 0; }
+  html[data-skin="bordrless"] .ghost, html[data-skin="bordrless"] .wc-btn, html[data-skin="bordrless"] .wc-btn.primary { padding: 6px; font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) { html[data-skin="bordrless"] .live.on { animation: none; } }
+html[data-skin="bordrless"] .launch input[type=range], html[data-skin="bordrless"] .launch input[type=range]:focus, html[data-skin="bordrless"] .launch input[type=range]:hover {
+  padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; outline: none; }
+
+/* ---------- Bordrless tuning: ink buttons that press into their shadow, the headline face, mono numbers ---------- */
+/* buttons: white on a hard shadow, pushed flat when pressed; the primary one is ink, the launch one the electric blue */
+html[data-skin="bordrless"] .btn { color: #111; background: #fff; border: 1px solid #111; box-shadow: 2px 2px 0 #111; transition: transform .06s ease, box-shadow .06s ease; }
+html[data-skin="bordrless"] .btn:hover:not([disabled]) { background: #f4f4f2; }
+html[data-skin="bordrless"] .btn:active:not([disabled]) { background: #fff; box-shadow: none; transform: translate(2px, 2px); }
+html[data-skin="bordrless"] .btn.primary { color: #fff; background: #111; border-color: #111; box-shadow: 2px 2px 0 #9a9a94; }
+html[data-skin="bordrless"] .btn.primary:hover:not([disabled]) { background: #2b2b29; }
+html[data-skin="bordrless"] .btn.primary:active:not([disabled]) { background: #111; box-shadow: none; }
+html[data-skin="bordrless"] .launch-btn, html[data-skin="bordrless"] .launch-btn.primary { color: #fff; background: #1f3cff; border-color: #111; box-shadow: 3px 3px 0 #111; }
+html[data-skin="bordrless"] .launch-btn:hover:not([disabled]) { background: #3d57ff; }
+html[data-skin="bordrless"] .btn.danger, html[data-skin="bordrless"] .trade-btn.sell { color: #fff; background: #e5484d; border-color: #111; }
+html[data-skin="bordrless"] .btn[disabled] { opacity: .45; box-shadow: none; }
+/* the wallet button stays Bordrless's black Connect (it is a .btn.primary too) */
+html[data-skin="bordrless"] .wc-btn, html[data-skin="bordrless"] .wc-btn.primary { color: #fff; background: #111; border-color: #111; box-shadow: 2px 2px 0 #9a9a94; }
+html[data-skin="bordrless"] .wc-btn:hover:not([disabled]) { background: #2b2b29; }
+/* fields: white, ink border, a blue ring that sits like a shadow when focused */
+html[data-skin="bordrless"] input, html[data-skin="bordrless"] select { border-radius: 0; }
+html[data-skin="bordrless"] .launch input:focus, html[data-skin="bordrless"] .launch textarea:focus, html[data-skin="bordrless"] .verify-row input:focus,
+html[data-skin="bordrless"] .devbuy:focus-within, html[data-skin="bordrless"] .trade-amt:focus-within { border-color: #111; box-shadow: 2px 2px 0 #1f3cff; outline: none; }
+html[data-skin="bordrless"] .launch input::placeholder, html[data-skin="bordrless"] .launch textarea::placeholder { color: #9a9a94; }
+html[data-skin="bordrless"] .drop { background: #f4f4f2; border: 1px dashed #111; }
+html[data-skin="bordrless"] .drop:hover, html[data-skin="bordrless"] .drop.over, html[data-skin="bordrless"] .drop:focus-visible { border-color: #1f3cff; background-color: #e4e7ff; }
+html[data-skin="bordrless"] .drop-hint { font: 400 28px/1 var(--head); color: #111; }
+/* wells: paper with an ink hairline, no shadow, so the cards on them keep theirs */
+html[data-skin="bordrless"] .devbuy-box, html[data-skin="bordrless"] .fee-box, html[data-skin="bordrless"] .trade, html[data-skin="bordrless"] .share-box,
+html[data-skin="bordrless"] .rewards, html[data-skin="bordrless"] .acct-box { background: #f0f0ec; border: 1px solid #111; }
+/* trading: green Buy and red Sell cells, the amount in mono like Bordrless's stat figures */
+html[data-skin="bordrless"] .trade-side .buy[aria-selected="true"] { color: #fff; background: #2bb34a; border-color: #111; box-shadow: none; }
+html[data-skin="bordrless"] .trade-side .sell[aria-selected="true"] { color: #fff; background: #e5484d; border-color: #111; box-shadow: none; }
+html[data-skin="bordrless"] .trade-amt input { font: 500 16px/1 var(--mono); }
+html[data-skin="bordrless"] .trade-unit, html[data-skin="bordrless"] .trade-slip { font-family: var(--mono); }
+html[data-skin="bordrless"] .trade-est b, html[data-skin="bordrless"] .tok-mkt .up { color: #1f8a3a; }
+html[data-skin="bordrless"] .tok-mkt .down { color: #c8322f; }
+/* addresses, numbers and small print are mono */
+html[data-skin="bordrless"] .ca, html[data-skin="bordrless"] .addr, html[data-skin="bordrless"] .who-addr, html[data-skin="bordrless"] .creator-addr,
+html[data-skin="bordrless"] .coin-meta, html[data-skin="bordrless"] .tok-sub, html[data-skin="bordrless"] .post-time, html[data-skin="bordrless"] .tweet-time,
+html[data-skin="bordrless"] .tweet-counts, html[data-skin="bordrless"] .trades, html[data-skin="bordrless"] .desc-left, html[data-skin="bordrless"] .post-left { font-family: var(--mono); }
+html[data-skin="bordrless"] .ca { color: #111; background: #d4d4cf; border: 0; }
+html[data-skin="bordrless"] .ca:hover { background: #c6c6c0; }
+/* headlines: the condensed face on card names and section titles */
+html[data-skin="bordrless"] .who-name, html[data-skin="bordrless"] .card-name, html[data-skin="bordrless"] .lightbox-head b, html[data-skin="bordrless"] .share-title {
+  font: 400 19px/1.1 var(--head); letter-spacing: 0; }
+html[data-skin="bordrless"] .launch-head .menu-x { color: #111; }
+/* the welcome post and the contract strip sit on the paper as cards */
+html[data-skin="bordrless"] .welcome { background: #fafaf8; border: 1px solid #111; border-radius: 0; box-shadow: 3px 3px 0 #111; }
+html[data-skin="bordrless"] .tweet-ava { border-radius: 0; box-shadow: 2px 2px 0 #111; }
+html[data-skin="bordrless"] .tweet-copy { font: 14px/1.4 var(--px); }
+/* the main frame gets Bordrless's figure brackets in two corners */
+html[data-skin="bordrless"] .launch, html[data-skin="bordrless"] .coin { position: relative; }
+html[data-skin="bordrless"] .launch::after, html[data-skin="bordrless"] .coin::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 9px; height: 9px;
+  border: solid #111; border-width: 0 2px 2px 0; pointer-events: none; }
+/* chat and toast: ink strips */
+html[data-skin="bordrless"] .toast { background: #111; }
+html[data-skin="bordrless"] .toast-title, html[data-skin="bordrless"] .toast.ok .toast-title { font-family: var(--mono); font-weight: 500; }
+html[data-skin="bordrless"] .chatbar { background: #fafaf8; }
+html[data-skin="bordrless"] .chain-badge { box-shadow: 0 0 0 2px #fafaf8; }
+
+/* the skin picker's swatch: paper, an ink rule, a card on a hard shadow, a blue button */
+.s-bordrless { background: #e3e3df; border-radius: 0; border-color: #111; }
+.s-bordrless i:nth-child(1) { background: #e3e3df; border-bottom: 1px solid #111; }
+.s-bordrless i:nth-child(2) { background: #fafaf8; border: 1px solid #111; box-shadow: 2px 2px 0 #111; }
+.s-bordrless i:nth-child(3) { left: 8px; right: 8px; bottom: 3px; height: 6px; background: #1f3cff; box-shadow: 1px 1px 0 #111; }

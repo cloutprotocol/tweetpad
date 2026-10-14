@@ -436,6 +436,32 @@ const STONK = 'https://www.stonkfun.xyz';
 const stonkOpts = { mode: 'standard', taxBps: 100 };
 const stonkInfo = { tiers: [100, 300], shareBps: 3300 };
 const STONK_MODES = { standard: 'Creator fees', reward: 'Holder rewards', community: 'Community' };
+/* Bordrless (api/bordrless.js): its own token standard on Solana, where the coin's rules (holder rewards, burns, locks) run in
+   the token on every trade; launched on its curve, paired with SOL, and bought and sold here through its DEX. Its holdings
+   aren't SPL accounts, so balances, quotes and swaps come from /api/bordrless, never the wallet's token list or Jupiter. */
+const isBordr = (l) => !!(l && l.venue === 'bordrless');
+const BORDR = 'https://bordrless.app';
+const bordrOpts = { feeBps: 100, preset: 'plain' };
+const bordrInfo = { fees: [50, 100, 200], presets: [], curve: null, launchFeeSol: 0.01, sniperSecs: 30 };
+/* a preset's rules in words, without its creator fee (the fee is picked on its own) */
+const bordrRules = (r) => [r.holderFeeBuyBps || r.holderFeeSellBps ? 'holder rewards ' + (r.holderFeeBuyBps === r.holderFeeSellBps ? r.holderFeeBuyBps / 100 + '%'
+    : (r.holderFeeBuyBps / 100) + '% buys, ' + (r.holderFeeSellBps / 100) + '% sells') : null,
+  r.burnBuyBps || r.burnSellBps ? 'burn ' + (r.burnBuyBps === r.burnSellBps ? r.burnBuyBps / 100 + '%' : (r.burnBuyBps / 100) + '% buys, ' + (r.burnSellBps / 100) + '% sells') : null,
+  r.maxWalletBps ? 'max wallet ' + r.maxWalletBps / 100 + '%' : null,
+  r.creatorLockDays || r.creatorLockSecs ? 'creator wallet locked ' + (r.creatorLockDays || Math.round(r.creatorLockSecs / 86400)) + ' d' : null,
+  r.earlyWindowSecs ? 'buys in the first ' + Math.round(r.earlyWindowSecs / 60) + ' min locked ' + Math.round(r.earlyLockSecs / 3600) + ' h' : null].filter(Boolean);
+async function loadBordrInfo() {
+  if (bordrInfo.curve || bordrInfo.loading) return;
+  bordrInfo.loading = true;
+  try {
+    const res = await fetch('/api/bordrless');
+    if (!res.ok) return;
+    Object.assign(bordrInfo, await res.json());
+    if (!bordrInfo.fees.includes(bordrOpts.feeBps)) bordrOpts.feeBps = bordrInfo.fees[0];
+    if (launch.venue === 'bordrless') renderLaunch();
+  } catch { /* the form still launches; the estimate waits */ }
+  finally { setTimeout(() => { bordrInfo.loading = false; }, bordrInfo.curve ? 0 : 30000); }   // a failed read is tried again in 30s, not on every render
+}
 const CHAIN_NAME = { solana: 'Solana', robinhood: 'Robinhood Chain', bnb: 'BNB Chain', base: 'Base', ethereum: 'Ethereum' };
 const CHAIN_LOGO = { solana: 'sol', robinhood: 'rh', bnb: 'bnb', base: 'base', ethereum: 'eth' };
 /* the chain a coin (its launch record) is on: older EVM records are Robinhood's */
@@ -524,6 +550,7 @@ function renderStonkBox() {
   const stonk = launch.chain === 'solana' && launch.venue === 'stonk', pair = currentPair();
   $('venue-row').hidden = launch.chain !== 'solana';
   for (const b of document.querySelectorAll('[data-venue]')) { b.disabled = launch.busy; b.setAttribute('aria-pressed', String(b.dataset.venue === launch.venue)); }
+  renderBordrBox();
   const box = $('stonk-box');
   box.hidden = !stonk;
   if (!stonk) return;
@@ -547,6 +574,25 @@ function renderStonkBox() {
         '. No creator fee.'),
     h('small', { text: ' Fixed at launch.' }),
     h('span', { class: 'fee-sub' }, 'On ', h('a', { href: STONK, target: '_blank', rel: 'noopener' }, 'Stonkfun'), ' (Raydium LaunchLab) · about 0.009 SOL · no dev buy yet')]);
+}
+/* Bordrless's setup: the creator fee, and the rules the token runs on every trade (a preset), both fixed at launch */
+function renderBordrBox() {
+  const on = launch.chain === 'solana' && launch.venue === 'bordrless', box = $('bordr-box');
+  box.hidden = !on;
+  if (!on) return;
+  loadBordrInfo();
+  $('bordr-fee').replaceChildren(...bordrInfo.fees.map(bps => h('button', { type: 'button', disabled: launch.busy, 'aria-pressed': String(bps === bordrOpts.feeBps),
+    onclick: () => { bordrOpts.feeBps = bps; renderLaunch(); } }, bps / 100 + '%')));
+  const presets = bordrInfo.presets.length ? bordrInfo.presets : [{ slug: 'plain', name: 'Plain', rules: {} }];
+  $('bordr-rules').replaceChildren(...presets.map(p => h('button', { type: 'button', disabled: launch.busy, 'aria-pressed': String(p.slug === bordrOpts.preset),
+    title: bordrRules(p.rules).join(' · ') || 'No token rules', onclick: () => { bordrOpts.preset = p.slug; renderLaunch(); } }, p.name)));
+  const p = presets.find(x => x.slug === bordrOpts.preset) || presets[0], words = bordrRules(p.rules || {});
+  $('bordr-note').replaceChildren(...[
+    h('span', null, 'Each trade: ', h('b', { text: bordrOpts.feeBps / 100 + '% to you' }), ' in SOL, claimed on the coin page',
+      words.length ? h('span', null, ' · the token itself runs ', h('b', { text: words.join(', ') })) : ' · no token rules', '.'),
+    h('small', { text: ' Fixed at launch: the rules live in the token.' }),
+    h('span', { class: 'fee-sub' }, 'On ', h('a', { href: BORDR, target: '_blank', rel: 'noopener' }, 'Bordrless'), "'s token standard · "
+      + bordrInfo.launchFeeSol + ' SOL launch fee · ' + bordrInfo.sniperSecs + ' s sniper fee · graduates at ~' + (bordrInfo.curve ? Math.round(bordrInfo.curve.graduationSol) : 105) + ' SOL')]);
 }
 function renderFeeBox() {
   const box = $('fee-box');
@@ -878,11 +924,12 @@ function renderLaunch() {
   btn.disabled = launch.busy;
   const rh = launch.chain !== 'solana', n = launchNet();
   for (const b of document.querySelectorAll('.net-switch [data-net]')) { b.setAttribute('aria-checked', String(b.dataset.net === launch.chain)); b.disabled = launch.busy; }
-  $('pair-pick').hidden = rh;
+  $('pair-pick').hidden = rh || launch.venue === 'bordrless';
   $('launch-note').textContent = rh && n.custom ? 'Launches on Ethereum through Launch Party · ' + ethOpts.feePct + '% fee to you · 0.001 ETH launch fee + gas'
     : rh ? 'Launches on ' + n.name + ' · 1% trading fee · 0.0005 ' + n.symbol + ' launch fee + gas'
     : launch.venue === 'stonk' ? 'Launches on Stonkfun' + (currentPair() ? ', paired with ' + (currentPair().symbol === 'SOL' ? 'SOL' : '$' + currentPair().symbol) : '') + ' · '
       + (stonkOpts.mode === 'standard' ? 'your share of the 1% fee forwarded by Stonkfun' : stonkOpts.taxBps / 100 + '% holder tax, paid out by Stonkfun') + ' · about 0.009 SOL'
+    : launch.venue === 'bordrless' ? 'Launches on Bordrless, paired with SOL · ' + bordrOpts.feeBps / 100 + '% fee to you · about ' + (bordrInfo.launchFeeSol + 0.025).toFixed(3) + ' SOL'
     : 'Launches on pump.fun · 0 pad fee · network fees apply';
   renderEvmWallet();
   renderFeeBox();
@@ -894,7 +941,8 @@ function renderLaunch() {
   } else btn.textContent = launch.busy ? 'Launching…'
     : launch.done ? 'Launch another'
     : !active ? (list.length || !settled ? 'Connect wallet' : 'Get a wallet')
-    : problem || 'Launch $' + $('tk-ticker').value.trim() + (launch.venue === 'stonk' ? ' on Stonkfun' : !currentPair() && devBuy() > 0 ? ' · buy ' + devBuy() + ' SOL' : '');
+    : problem || 'Launch $' + $('tk-ticker').value.trim() + (launch.venue === 'stonk' ? ' on Stonkfun' : (launch.venue === 'bordrless' ? ' on Bordrless' : '')
+      + (!currentPair() && devBuy() > 0 ? ' · buy ' + devBuy() + ' SOL' : ''));
   /* coins paired with the platform token: show the pairing, hide the SOL dev buy (it would need a SOL → quote swap) */
   const pair = currentPair();
   /* after a launch, the next move is sharing it: its link plays as its own card on X */
@@ -1009,7 +1057,7 @@ async function onLaunch(ev) {
   const feature = wallet.kind === 'standard' && wallet.ref.features['solana:signTransaction'];
   Object.assign(launch, { busy: true, done: false, result: null, checks: [] });
   if (!feature) { launch.busy = false; return check('bad', wallet.name + ' cannot sign transactions here. Use Phantom, Solflare or Backpack.'); }
-  const pair = currentPair(), stonk = isStonk(pair), bundle = !stonk && jitoOn();
+  const pair = currentPair(), stonk = isStonk(pair), bordr = launch.venue === 'bordrless', bundle = !stonk && !bordr && jitoOn();
   const meta = { name: $('tk-name').value.trim(), symbol: $('tk-ticker').value.trim(), description: $('tk-desc').value.trim(), ...socialLinks() };
   let signature = null;
   try {
@@ -1020,22 +1068,28 @@ async function onLaunch(ev) {
     if (ipfs.sha256 !== launch.sha) throw new Error('IPFS step hashed a different image');
     check('ok', 'Image and metadata on IPFS', ipfs.uri, 'JSON ↗');
 
-    /* 2. a fresh mint, and the create transaction: pump.fun's (PumpPortal or its SDK), or LaunchLab's for Stonkfun (checked server side) */
-    check('warn', stonk ? 'Building the Stonkfun transaction…' : 'Building the pump.fun transaction…');
+    /* 2. a fresh mint, and the create transaction: pump.fun's (PumpPortal or its SDK), LaunchLab's for Stonkfun, or Bordrless's
+       launchpad (with the dev buy as a second transaction), each checked server side */
+    check('warn', stonk ? 'Building the Stonkfun transaction…' : bordr ? 'Building the Bordrless launch…' : 'Building the pump.fun transaction…');
     const mintKeys = await newKeypair();
     const mint = b58encode(mintKeys.publicKey);
-    const built = stonk
+    const built = bordr
+      ? await api('/api/bordrless', { json: { action: 'launch', publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image, thumb: launch.thumb,
+        feeBps: bordrOpts.feeBps, preset: bordrOpts.preset, devBuy: devBuy() } })
+      : stonk
       ? await api('/api/stonk', { json: { publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image, thumb: launch.thumb, quote: pair.mint,
         mode: stonkOpts.mode, taxBps: stonkOpts.mode === 'standard' ? 0 : stonkOpts.taxBps } })
       : await api('/api/create', { json: { publicKey: wallet.account.address, mint, ...meta, uri: ipfs.uri, image: ipfs.image,
         thumb: launch.thumb, devBuy: pair ? 0 : devBuy(), quote: pair ? pair.mint : 'sol', jito: jitoSpeed() || false } });
     check('ok', 'Transaction built · mint ' + shortAddr(mint) + (pair && pair.symbol !== 'SOL' ? ' · paired with $' + pair.symbol : '')
-      + (stonk ? ' · ' + STONK_MODES[stonkOpts.mode] + (stonkOpts.mode === 'standard' ? '' : ' ' + stonkOpts.taxBps / 100 + '%') : '') + (stonk && built.startUsd ? ' · opens at ' + fmtUsd(built.startUsd) : ''));
+      + (stonk ? ' · ' + STONK_MODES[stonkOpts.mode] + (stonkOpts.mode === 'standard' ? '' : ' ' + stonkOpts.taxBps / 100 + '%') : '') + (stonk && built.startUsd ? ' · opens at ' + fmtUsd(built.startUsd) : '')
+      + (bordr ? ' · ' + bordrOpts.feeBps / 100 + '% creator fee' + (built.buyTx ? ' · dev buy ready' : '') : ''));
 
     /* 3. wallet signs first (it may add instructions), then the mint signs whatever the wallet returned */
     check('warn', 'Approve in ' + wallet.name + '…');
     log('warn', wallet.name + ' → sign launch transaction requested');
-    const [out] = await feature.signTransaction({ account: wallet.account.raw, transaction: b64dec(built.tx), chain: CHAIN });
+    /* a Bordrless dev buy is approved in the same prompt, and sent once the launch has landed */
+    const [out, buyOut] = await feature.signTransaction(...[built.tx, built.buyTx].filter(Boolean).map(tx => ({ account: wallet.account.raw, transaction: b64dec(tx), chain: CHAIN })));
     const tx = new Uint8Array(out.signedTransaction);
     const parts = txParts(tx);
     const payerSlot = parts.signers.indexOf(wallet.account.address);
@@ -1054,8 +1108,17 @@ async function onLaunch(ev) {
 
     /* 5. list it: the server re-checks the transaction on chain before it goes in the list */
     const rec = await api('/api/launches', { json: { signature, mint } });
-    check('ok', '$' + meta.symbol + ' is live', venueLink(rec.launch), stonk ? 'Stonkfun ↗' : 'pump.fun ↗');
+    check('ok', '$' + meta.symbol + ' is live', venueLink(rec.launch), stonk ? 'Stonkfun ↗' : bordr ? 'Bordrless ↗' : 'pump.fun ↗');
     if (stonk) check('ok', 'Stonkfun picks it up within a minute or two');
+    /* 6. Bordrless's dev buy, signed above: a failure here leaves the coin live, only unbought */
+    if (buyOut) {
+      try {
+        check('warn', 'Sending the dev buy…');
+        const buySig = await sendTx(new Uint8Array(buyOut.signedTransaction), false);
+        await confirm(buySig);
+        check('ok', 'Dev buy confirmed · ≈ ' + fmtAmount(Number(built.expected) / 1e6) + ' $' + meta.symbol, 'https://solscan.io/tx/' + buySig, 'Tx ↗');
+      } catch (err) { check('bad', 'Dev buy failed: ' + errText(err).replace(/^Error /, '') + '. Buy on the coin page.'); }
+    }
     Object.assign(launch, { done: true, result: rec.launch });
     setVerdict('ok', 'Token launched!', 'Share it: the link plays as its own card on X');
     tokens.loaded = false;
@@ -1098,7 +1161,8 @@ async function onDryRun() {
 }
 
 /* ---------- tokens launched through the pad ---------- */
-const tokens = { list: [], next: null, total: 0, loaded: false, loading: false, error: null, market: {}, sort: 'new', chain: 'all', pin: null };
+const tokens = { list: [], next: null, total: 0, loaded: false, loading: false, error: null, market: {}, sort: 'new', chain: 'all', pin: null,
+  bordr: { list: [], loaded: false, loading: false, error: null } };
 const pad = { quote: null };   // the server's default pair (QUOTE_MINT), from /api/launches
 
 /* ---------- dev buy: presets, and a live estimate from a fresh curve's reserves and fee (api/launches?curve=new) ---------- */
@@ -1110,8 +1174,7 @@ async function loadCurve() {
   } catch { /* no estimate, the buy still works */ }
 }
 /* the SDK's getBuyTokenAmountFromSolAmount for a new curve: fee off the top, then constant product, capped at the real reserves */
-function estimateBuy(sol) {
-  const c = curve.data;
+function estimateBuy(sol, c = curve.data) {
   if (!c || !(sol > 0)) return null;
   const lamports = BigInt(Math.floor(sol * 1e9));
   if (lamports < 1n) return null;
@@ -1131,12 +1194,13 @@ function renderDevBuy(pair) {
   const box = $('devbuy-box'), est = $('devbuy-est'), sol = devBuy();
   const rh = launch.chain !== 'solana', n = launchNet();
   $('devbuy-unit').textContent = rh ? n.symbol : 'SOL';
-  $('jito-row').hidden = rh;
+  $('jito-row').hidden = rh || launch.venue === 'bordrless';   // a Bordrless launch and its dev buy go as two plain transactions
   renderJitoRow();
   /* presets follow the network: ETH and BNB amounts are far smaller than SOL ones */
   const presets = rh ? n.presets : ['0', '0.1', '0.5', '1'];
   box.querySelectorAll('[data-buy]').forEach((b, i) => { b.dataset.buy = presets[i]; b.textContent = i ? presets[i] : 'None'; });
   box.hidden = rh ? !!n.custom : launch.venue === 'stonk';   // no dev buy on Ethereum's custom launch or Stonkfun: buy on the coin page once it is live
+  $('devbuy-box').querySelector('.devbuy-hint').textContent = launch.venue === 'bordrless' ? 'optional · bought right after the launch, one approval' : 'optional · bought in the launch transaction';
   if (box.hidden) return;
   if (rh) {
     for (const b of box.querySelectorAll('[data-buy]')) { b.disabled = launch.busy; b.setAttribute('aria-pressed', String(Number(b.dataset.buy) === sol && ($('tk-buy').value !== '' || sol === 0))); }
@@ -1164,7 +1228,13 @@ function renderDevBuy(pair) {
   if (pair) { est.textContent = 'Dev buy works on SOL pairs only for now.'; return; }
   if (!(sol >= 0 && sol <= MAX_DEV_BUY)) { est.className += ' bad'; est.textContent = 'Between 0 and ' + MAX_DEV_BUY + ' SOL.'; return; }
   if (!sol) { est.textContent = 'No dev buy: you launch holding none of your coin.'; return; }
-  const e = estimateBuy(sol);
+  /* Bordrless: its own fresh curve, the creator fee and holder rewards (a quarter more for Bordrless) and the LP fee off the
+     top, a buy's burn from what arrives; the dev buy goes right after the launch, in a second transaction */
+  const bp = launch.venue === 'bordrless' && (bordrInfo.presets.find(x => x.slug === bordrOpts.preset) || {}).rules || {};
+  const c = launch.venue === 'bordrless' && bordrInfo.curve && { ...bordrInfo.curve, feeBps: bordrInfo.curve.feeBps + Math.round((bordrOpts.feeBps + (bp.holderFeeBuyBps || 0)) * 1.25) };
+  const e = c ? estimateBuy(sol, c) : launch.venue === 'bordrless' ? null : estimateBuy(sol);
+  if (e && bp.burnBuyBps) { e.tokens *= 1 - bp.burnBuyBps / 10000; e.pct *= 1 - bp.burnBuyBps / 10000; }
+  if (e && bp.maxWalletBps && e.pct > bp.maxWalletBps / 100) { est.className += ' bad'; est.textContent = 'Over the ' + bp.maxWalletBps / 100 + '% max wallet this preset sets: buy less.'; return; }
   if (!e) { est.textContent = 'Buying ' + sol + ' SOL of ' + (ticker ? '$' + ticker : 'your coin') + ' at launch.'; return; }
   est.className += ' ok';
   est.replaceChildren('You get ≈ ', h('b', { text: fmtAmount(e.tokens) + ' ' + (ticker ? '$' + ticker : 'tokens') }),
@@ -1188,7 +1258,8 @@ async function loadStonkPairs() {
   } catch { /* the tweetpad pairs still show */ }
 }
 /* undefined until someone picks, so a QUOTE_MINT default still applies; null = SOL */
-const currentPair = () => (launch.chain === 'solana' && launch.venue === 'stonk' ? launch.stonkPair : launch.pair !== undefined ? launch.pair : pad.quote);
+const currentPair = () => (launch.chain === 'solana' && launch.venue === 'stonk' ? launch.stonkPair : launch.chain === 'solana' && launch.venue === 'bordrless' ? null
+  : launch.pair !== undefined ? launch.pair : pad.quote);
 const solIcon = (cls) => h('span', { class: 'sol-ico ' + (cls || ''), role: 'img', 'aria-label': 'Solana' });
 function renderPairPick() {
   const pair = currentPair();
@@ -1337,15 +1408,18 @@ async function loadMarket(mints = tokens.list.map(l => l.mint)) {
   renderTokens();
   if (coin.mint) renderCoinHead();
 }
+let bordrTick = false;
 /* refresh numbers every 30s, only while the token list is on screen */
 /* refresh numbers every 10s while the page is in view: the list when it's open, the hotbar's coins always */
 setInterval(() => {
   if (document.hidden) return;
-  const mints = [...(!$('tab-tokens').hidden ? [...tokens.list, ...(tokens.pin ? [tokens.pin] : [])].map(l => l.mint) : []), ...inventory().map(l => l.mint)];
+  /* the Bordrless list refreshes whole (its prices come with it), every other tick */
+  if (!$('tab-tokens').hidden && tokens.chain === 'bordrless' && (bordrTick = !bordrTick)) loadBordrList(true);
+  const mints = [...(!$('tab-tokens').hidden && tokens.chain !== 'bordrless' ? [...tokens.list, ...(tokens.pin ? [tokens.pin] : [])].map(l => l.mint) : []), ...inventory().map(l => l.mint)];
   if (mints.length) loadMarket(mints);
 }, 10000);
-/* where a Solana coin trades outside tweetpad: pump.fun, or Stonkfun's page for its coins */
-const venueLink = (l) => (isStonk(l) ? STONK + '/token/' : 'https://pump.fun/coin/') + l.mint;
+/* where a Solana coin trades outside tweetpad: pump.fun, Stonkfun's page for its coins, or Bordrless's */
+const venueLink = (l) => (isStonk(l) ? STONK + '/token/' : isBordr(l) ? BORDR + '/token/' : 'https://pump.fun/coin/') + l.mint;
 /* IPFS links go through our cached gateway proxy; anything else is shown as is */
 const imageSrc = (url, w) => { const m = /\/ipfs\/([A-Za-z0-9]+)/.exec(url || ''); return m ? '/api/image?cid=' + m[1] + (w ? '&w=' + w : '') : url; };
 const coinPic = (l, cls) => (l.thumb || l.image)
@@ -1384,6 +1458,27 @@ async function loadTokens(more) {
     renderTokens();
   }
 }
+/* the Bordrless list: every Bordrless token, launched here or not (/api/bordrless?list), highest market cap first. Its prices come
+   with it, so the rows and the coin page have them before the market refresh */
+async function loadBordrList(quiet) {
+  const b = tokens.bordr;
+  if (b.loading) return;
+  b.loading = true;
+  if (!quiet) renderTokens();
+  try {
+    const res = await fetch('/api/bordrless?list=1');
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
+    for (const l of out.tokens) tokens.market[l.mint] = { ...tokens.market[l.mint], mcap: l.mcap, price: l.price, priceNative: l.priceNative, change24h: l.change24h,
+      volume24h: l.volume24h, liquidity: l.liquidity, dex: 'bordrless', pair: l.pool, progress: l.progress, holders: l.holders };
+    Object.assign(b, { list: out.tokens.map(l => ({ ...l, venue: 'bordrless' })), loaded: true, error: null });
+  } catch (err) {
+    b.error = errText(err);
+  } finally {
+    b.loading = false;
+    renderTokens();
+  }
+}
 /* $TP, launched on tweetpad, sits on top of the list under every sort; fetched on its own once it is past the first page */
 async function loadPin(first) {
   if (!TOKEN_CA || tokens.pin || first.some(l => l.mint === TOKEN_CA)) return;
@@ -1397,6 +1492,9 @@ async function loadPin(first) {
 function renderTokens() {
   $('token-count').textContent = tokens.loaded ? tokens.total : '';
   renderHud();
+  $('cf-bordrless').textContent = tokens.bordr.loaded ? tokens.bordr.list.length : '';
+  $('tokens-title').textContent = tokens.chain === 'bordrless' ? 'Every Bordrless token' : 'Launched on tweetpad';
+  if (tokens.chain === 'bordrless') return renderBordrTokens();
   const me = state.active && state.active.account && state.active.account.address;
   const mk = (l) => tokens.market[l.mint] || {};
   const by = { mcap: (l) => mk(l).mcap || 0, hot: (l) => mk(l).volume1h || 0 }[tokens.sort];
@@ -1409,7 +1507,7 @@ function renderTokens() {
   const shown = all.filter(l => l !== pin && onChain(l, tokens.chain));
   const sorted = [...(pin && onChain(pin, tokens.chain) ? [pin] : []), ...(by ? [...shown].sort((a, b) => by(b) - by(a)) : shown)];
   for (const b of document.querySelectorAll('.sort [data-sort]')) b.setAttribute('aria-pressed', String(b.dataset.sort === tokens.sort));
-  for (const l of sorted) if (mk(l).pair) queueSpark(l.mint, mk(l).pair, coinChain(l));
+  for (const l of sorted) if (mk(l).pair) queueSpark(l.mint, mk(l).pair, isBordr(l) ? 'bordrless' : coinChain(l));
   const rows = sorted.map(l => h('li', {},
     h('button', { class: 'tok', title: 'Open $' + l.symbol, onclick: () => openCoin(l.mint) },
       sparkline(sparks.data[l.mint]),
@@ -1427,6 +1525,31 @@ function renderTokens() {
     text: tokens.error ? 'Could not load: ' + tokens.error : tokens.loading ? 'Loading…' : 'Nothing launched yet. Be the first.' })]));
 }
 
+/* the Bordrless list: highest market cap first (New and Hot re-sort it: newest, most 24h volume); coins launched here are tagged */
+function renderBordrTokens() {
+  const b = tokens.bordr, mk = (l) => tokens.market[l.mint] || {}, me = state.active && state.active.account && state.active.account.address;
+  for (const x of document.querySelectorAll('.chain-filter [data-chain]')) x.setAttribute('aria-checked', String(x.dataset.chain === 'bordrless'));
+  for (const x of document.querySelectorAll('.sort [data-sort]')) x.setAttribute('aria-pressed', String(x.dataset.sort === tokens.sort));
+  const by = { new: (l) => l.time, hot: (l) => mk(l).volume24h || 0, mcap: (l) => mk(l).mcap || 0 }[tokens.sort];
+  const sorted = [...b.list].sort((x, y) => by(y) - by(x));
+  const ours = new Set(tokens.list.filter(isBordr).map(l => l.mint));
+  for (const l of sorted.slice(0, 40)) if (l.pool) queueSpark(l.mint, l.pool, 'bordrless');
+  const rows = sorted.map((l, i) => h('li', {},
+    h('button', { class: 'tok', title: 'Trade $' + l.symbol + ' on its own page', onclick: () => openBordr(l.mint) },
+      sparkline(sparks.data[l.mint]),
+      coinImg(l),
+      h('span', { class: 'tok-main' }, h('b', { text: l.name }),
+        h('span', { class: 'tok-sub', title: l.status === 'graduated' ? 'Graduated' : l.progress != null ? Math.round(l.progress * 100) + '% up its curve' : '' },
+          '$' + l.symbol + ' · ' + ago(l.time) + (l.holders != null ? ' · ' + l.holders + ' holders' : ''))),
+      tokens.sort === 'mcap' ? h('span', { class: 'tag rank', text: '#' + (i + 1) }) : null,
+      ours.has(l.mint) ? h('span', { class: 'tag', title: 'Launched on tweetpad', text: 'TWEETPAD' }) : null,
+      l.creator === me ? h('span', { class: 'tag gold', text: 'YOURS' }) : null,
+      h('span', { class: 'tok-mkt' }, h('b', { text: fmtUsd(mk(l).mcap) }),
+        mk(l).change24h != null ? h('span', { class: mk(l).change24h >= 0 ? 'up' : 'down', title: 'Last 24 hours', text: fmtPct(mk(l).change24h) }) : null))));
+  $('token-list').replaceChildren(...(rows.length ? rows : [h('li', { class: 'note', style: 'padding:14px 4px;text-align:center',
+    text: b.error ? 'Could not load Bordrless: ' + b.error : 'Loading Bordrless tokens…' })]));
+}
+
 /* ---------- row charts: the last day's prices drawn faintly behind each token row ---------- */
 const sparks = { data: {}, queued: new Set(), running: 0 };
 const SPARK_PARALLEL = 3;   // GeckoTerminal rate-limits per IP; the server caches each coin for 5 minutes
@@ -1442,7 +1565,7 @@ async function pumpSparks(job) {
     const [mint, pool, chain] = sparkQueue.shift();
     sparks.running++;
     /* a v4 pool id doesn't say its chain: the row's coin does */
-    fetch('/api/chart?spark=1&pool=' + pool + (chain && chain !== 'solana' ? '&net=' + chain : '')).then(r => (r.ok ? r.json() : null)).catch(() => null).then(out => {
+    fetch('/api/chart?spark=1&pool=' + pool + (chain === 'bordrless' ? '&venue=bordrless&mint=' + mint : chain && chain !== 'solana' ? '&net=' + chain : '')).then(r => (r.ok ? r.json() : null)).catch(() => null).then(out => {
       if (out) sparks.data[mint] = out.points && out.points.length > 1 ? out.points : null;
       /* upstream busy (rate limit): forget the attempt so the next render a minute on tries again */
       else setTimeout(() => sparks.queued.delete(mint), 60000);
@@ -1478,9 +1601,12 @@ function sparkline(points) {
 /* ---------- coin screen: chart, trades, live feed ---------- */
 const coin = { mint: null, launch: null, tf: '5m', candles: [], trades: [], ws: null, live: false, loading: false, error: null };
 const solUsd = (m) => (m && m.price && m.priceNative ? m.price / m.priceNative : null);
+/* a Bordrless coin has its own trading page (/b/<mint>, api/b.js), opened in this same frame like the games */
+const openBordr = (mint) => { location.href = '/b/' + mint + '?' + MODE; };
 async function openCoin(mint) {
+  let launch = tokens.list.find(l => l.mint === mint) || tokens.bordr.list.find(l => l.mint === mint);
+  if (isBordr(launch)) return openBordr(mint);
   closeLive();
-  let launch = tokens.list.find(l => l.mint === mint);
   Object.assign(coin, { mint, launch, candles: [], trades: [], error: null, allTrades: false, creatorCoins: null });
   Object.assign(posts, { mint, list: [], error: null, loaded: false });
   resetTrade(mint);
@@ -1493,6 +1619,7 @@ async function openCoin(mint) {
       if (!res.ok) throw new Error(out.error || 'HTTP ' + res.status);
       coin.launch = launch = out.launch;
     } catch (err) { coin.error = errText(err); return renderCoin(); }
+    if (isBordr(launch)) return openBordr(mint);
   }
   renderCoin();
   loadProfiles([launch.creator]).then(() => { renderCoinHead(); renderCreator(); });
@@ -2253,16 +2380,17 @@ function renderTrade() {
   ].filter(Boolean));
 }
 
-/* ---------- sharing: every coin's /c/<mint> link plays in a post as its own card (api/card.js + api/card-image.js) ---------- */
-const shareUrlOf = (mint) => location.origin + '/c/' + mint;
+/* ---------- sharing: every coin's /c/<mint> link plays in a post as its own card (api/card.js + api/card-image.js); a Bordrless
+   coin's is its own trading page, /b/<mint> (api/b.js) ---------- */
+const shareUrlOf = (l) => location.origin + (isBordr(l) ? '/b/' : '/c/') + l.mint;
 const shareIntent = (l) => 'https://x.com/intent/post?text=' + encodeURIComponent('$' + l.symbol + ' is live on tweetpad. Trade it right inside this tweet')
-  + '&url=' + encodeURIComponent(shareUrlOf(l.mint));
+  + '&url=' + encodeURIComponent(shareUrlOf(l));
 function shareBox(l, title) {
-  const url = shareUrlOf(l.mint);
+  const url = shareUrlOf(l);
   return h('div', { class: 'share-box' },
     title ? h('b', { class: 'share-title', text: title }) : null,
     h('div', { class: 'share-row' },
-      h('code', { class: 'share-url', title: url, text: url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/c\/(.{4}).*(.{4})$/, '/c/$1…$2') }),
+      h('code', { class: 'share-url', title: url, text: url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/([cb])\/(.{4}).*(.{4})$/, '/$1/$2…$3') }),
       h('button', { class: 'btn sm', onclick: () => copyText(url, 'share link') }, 'Copy'),
       h('a', { class: 'btn sm primary', href: shareIntent(l), target: '_blank', rel: 'noopener' }, 'Post on X')));
 }
@@ -3019,11 +3147,15 @@ function selectTab(name) {
 for (const tab of document.querySelectorAll('.subnav [role="tab"]')) tab.addEventListener('click', () => selectTab(tab.dataset.tab));
 const toggleDebug = () => selectTab($('debug').hidden ? debugTab : mainView);
 for (const tab of document.querySelectorAll('.views [role="tab"]')) tab.addEventListener('click', () => selectTab(tab.dataset.view));
-$('tokens-refresh').addEventListener('click', () => loadTokens());
+$('tokens-refresh').addEventListener('click', () => (tokens.chain === 'bordrless' ? loadBordrList() : loadTokens()));
 $('coin-back').addEventListener('click', () => selectTab('tokens'));
 for (const b of document.querySelectorAll('.tf [data-tf]')) b.addEventListener('click', () => { coin.tf = b.dataset.tf; loadChart(); });
 for (const b of document.querySelectorAll('.sort [data-sort]')) b.addEventListener('click', () => { tokens.sort = b.dataset.sort; renderTokens(); });
-for (const b of document.querySelectorAll('.chain-filter [data-chain]')) b.addEventListener('click', () => { tokens.chain = b.dataset.chain; renderTokens(); });
+for (const b of document.querySelectorAll('.chain-filter [data-chain]')) b.addEventListener('click', () => {
+  /* the Bordrless list opens stacked by market cap */
+  if (b.dataset.chain === 'bordrless' && tokens.chain !== 'bordrless') { tokens.sort = 'mcap'; loadBordrList(); }
+  tokens.chain = b.dataset.chain; renderTokens();
+});
 const toggleFeed = () => { $('feed-lines').hidden = !$('feed-lines').hidden; };
 /* More opens the list; from the list itself it closes back to launch, from profile / games / debug it steps back to the list */
 const toggleMore = () => selectTab(mainView === 'more' && $('debug').hidden ? 'wallets' : 'more');
@@ -3066,6 +3198,8 @@ function closeGame() {
 for (const b of document.querySelectorAll('[data-game]')) b.addEventListener('click', () => openGame(b.dataset.game));
 $('game-back').addEventListener('click', closeGame);
 $('agents-close').addEventListener('click', () => selectTab('more'));
+/* the token scanner is its own page (/scan), opened in this same frame like tweetpad's games; its ‹ comes back here */
+$('scan-go').addEventListener('click', () => { location.href = '/scan?' + MODE; });
 /* ---------- Winamp: its own small window on /winamp (Webamp, tracker classics, skins), so the music plays on wherever you go
    here, and on X too. Sized to Winamp's three windows plus a line of controls; blocked pop-ups get a tab instead ---------- */
 function popWinamp() {
@@ -3170,8 +3304,9 @@ document.addEventListener('keydown', (ev) => {
   else if (k === 'h') toggleFeed();
 });
 /* ---------- skins: '2012' (the default) dresses the app as the old bird app; 'tweetcraft' is the pixel HUD; 'lights' is
-   Lights out, dark like today's X (assets/skin-lights.css, built on the 2012 skin's selectors) ---------- */
-const SKINS = ['2012', 'tweetcraft', 'lights'];
+   Lights out, dark like today's X (assets/skin-lights.css, built on the 2012 skin's selectors); 'bordrless' is Bordrless's
+   grey paper and ink cards (assets/skin-bordrless.css, the same selectors) ---------- */
+const SKINS = ['2012', 'tweetcraft', 'lights', 'bordrless'];
 const SKIN_KEY = 'tweetpad:skin';
 function setSkin(name) {
   if (!SKINS.includes(name)) name = SKINS[0];
@@ -3191,7 +3326,7 @@ function renderOfficial() {
   if (TOKEN_CA) $('official-ca').replaceChildren(caButton());
 }
 renderOfficial();
-const SKIN_NAMES = { 2012: '2012', tweetcraft: 'Tweetcraft' };
+const SKIN_NAMES = { 2012: '2012', tweetcraft: 'Tweetcraft', lights: 'Lights out', bordrless: 'Bordrless' };
 function renderAbout() {
   $('about-ver').textContent = 'Version ' + VERSION + (CLUSTER === 'mainnet' ? '' : ' · ' + CLUSTER);
   $('about-skin').textContent = SKIN_NAMES[document.documentElement.dataset.skin] || document.documentElement.dataset.skin;
@@ -3278,6 +3413,7 @@ for (const b of document.querySelectorAll('[data-venue]')) b.addEventListener('c
   if (launch.busy || launch.venue === b.dataset.venue) return;
   Object.assign(launch, { venue: b.dataset.venue, done: false, result: null, checks: [] });
   if (launch.venue === 'stonk' && !launch.stonkPair) { setStonkDefault(); loadStonkPairs(); }
+  if (launch.venue === 'bordrless') loadBordrInfo();
   renderLaunch();
 });
 for (const b of document.querySelectorAll('[data-smode]')) b.addEventListener('click', () => { stonkOpts.mode = b.dataset.smode; renderLaunch(); });
@@ -3350,7 +3486,11 @@ for (const id of ['tk-name', 'tk-ticker', 'tk-desc', 'tk-buy', ...LINK_IDS]) $(i
   loadCurve();
   loadChat();
   if (isPubkeyLike(qs.get('coin')) || isEvm(qs.get('coin'))) openCoin(qs.get('coin'));   // Solana or Robinhood share links
-  else if (MAIN_VIEWS.includes(qs.get('tab')) && !['coin', 'user', 'thread'].includes(qs.get('tab'))) selectTab(qs.get('tab'));   // ?tab=profile: links from the feature pages
+  else if (MAIN_VIEWS.includes(qs.get('tab')) && !['coin', 'user', 'thread'].includes(qs.get('tab'))) {
+    /* ?list=bordrless: back from a Bordrless coin's page, to the Bordrless list by market cap */
+    if (qs.get('tab') === 'tokens' && qs.get('list') === 'bordrless') { Object.assign(tokens, { chain: 'bordrless', sort: 'mcap' }); loadBordrList(); }
+    selectTab(qs.get('tab'));
+  }   // ?tab=profile: links from the feature pages
   renderWallets();
   for (const delay of [300, 1000, 2500]) setTimeout(discoverLegacy, delay);
   setTimeout(() => {

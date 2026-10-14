@@ -1,0 +1,110 @@
+/* the token scanner (/scan), on top of feature.css, dressed as Bordrless: grey paper, black ink, a condensed headline face,
+   mono labels and numbers, square cards on hard offset shadows, "Fig." tags, an electric blue for the one thing to press. */
+:root {
+  --bg: #e3e3df; --card: #f4f4f2; --line: #d4d4cf; --edge: #111; --text: #111; --dim: #6b6b66; --soft: #3b3b38;
+  --ok: #1f9d47; --warn: #e0731a; --bad: #d92d2d; --accent: #1f3cff; --blue: #1f3cff;
+  --ui: "Space Grotesk", "Helvetica Neue", Arial, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; --head: "Anton", Impact, sans-serif;
+}
+body { font: 13px/1.4 var(--ui); background: var(--bg); }
+a { color: var(--text); }
+.scroll a:not(.btn) { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.scroll a:not(.btn):hover { color: var(--accent); }
+.head a:hover, .brand:hover { text-decoration: none; }
+
+/* the bar: ink, not the 2012 blue */
+.head { background: #111; border-bottom: 2px solid #111; box-shadow: none; }
+.head .word { font-family: var(--head); font-weight: 400; letter-spacing: .01em; text-shadow: none; }
+.head .home:hover { background: rgba(255, 255, 255, .12); }
+.head .title { gap: 7px; padding: 5px 10px; font: 700 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; text-shadow: none; color: #111;
+  background: #f2c230; border: 0; border-radius: 0; }
+.sc-dot { width: 7px; height: 7px; background: #111; animation: sc-blink 1.2s steps(2) infinite; }
+@keyframes sc-blink { 50% { opacity: .2; } }
+
+/* buttons: square, ink, pressed into their shadow */
+button, .btn { font: 700 12px/1 var(--ui); text-shadow: none; color: #111; background: #fff; border: 2px solid #111; border-radius: 0; box-shadow: 3px 3px 0 #111;
+  text-decoration: none; }
+button:hover, .btn:hover { color: #111; background: #fff; transform: translate(1px, 1px); box-shadow: 2px 2px 0 #111; }
+button:active, .btn:active { transform: translate(3px, 3px); box-shadow: none; }
+.btn.primary { color: #fff; background: var(--blue); border-color: #111; }
+.btn.primary:hover { color: #fff; background: var(--blue); }
+
+/* the address field and its Scan button */
+.sc-search { display: flex; gap: 8px; }
+.sc-search input.text { flex: 1; min-width: 0; padding: 9px 10px; font: 12px/1.2 var(--mono); background: #fff; border: 2px solid #111; border-radius: 0; box-shadow: none; }
+.sc-search input.text:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(31, 60, 255, .25); }
+.sc-search .btn { padding: 9px 16px; }
+
+/* the "Fig." chips and the intro */
+.sc-tag { display: inline-block; padding: 3px 6px; color: #111; font: 700 10px/1 var(--mono); background: #cfcfca; }
+.sc-intro { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; background: var(--card); border: 2px solid #111; box-shadow: 4px 4px 0 #111;
+  position: relative; }
+.sc-intro::before, .sc-intro::after { content: ""; position: absolute; width: 10px; height: 10px; border: 2px solid #111; }
+.sc-intro::before { top: 5px; right: 5px; border-left: 0; border-bottom: 0; }
+.sc-intro::after { bottom: 5px; left: 5px; border-right: 0; border-top: 0; }
+.sc-intro h2 { margin: 0; font: 400 30px/1 var(--head); letter-spacing: -.01em; }
+.sc-intro p { margin: 0; color: var(--soft); }
+
+/* the verdict: the coin, then the worst thing its code still allows */
+.sc-verdict { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #fff; border: 2px solid #111; box-shadow: 4px 4px 0 #111; }
+.sc-who { display: flex; align-items: center; gap: 9px; }
+.sc-who img, .sc-ph { width: 40px; height: 40px; flex: none; object-fit: cover; border: 2px solid #111; background: #cfcfca; }
+.sc-ph { display: grid; place-items: center; font: 400 22px/1 var(--head); }
+.sc-who b { display: block; font: 400 21px/1.05 var(--head); letter-spacing: .005em; }
+.sc-who small { display: flex; align-items: center; gap: 6px; margin-top: 3px; font: 11px/1 var(--mono); color: var(--dim); }
+.sc-std { padding: 2px 5px; color: #fff; background: #111; font: 700 9px/1 var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+.sc-risk { display: flex; align-items: flex-start; gap: 8px; padding: 8px; border: 2px solid currentColor; }
+.sc-risk p { margin: 0; color: #111; font-weight: 500; }
+.sc-level { flex: none; padding: 3px 6px; color: #fff; font: 700 10px/1 var(--mono); text-transform: uppercase; }
+.sc-verdict.low .sc-risk { color: var(--ok); }
+.sc-verdict.medium .sc-risk { color: var(--warn); }
+.sc-verdict.high .sc-risk { color: var(--bad); }
+.sc-verdict.low .sc-level { background: var(--ok); }
+.sc-verdict.medium .sc-level { background: var(--warn); }
+.sc-verdict.high .sc-level { background: var(--bad); }
+.sc-reasons { margin: 0; padding: 0 0 0 2px; list-style: none; display: grid; gap: 3px; font-size: 12px; }
+.sc-reasons li::before { content: "■ "; font-size: 9px; vertical-align: 1px; }
+.sc-reasons .high::before { color: var(--bad); }
+.sc-reasons .medium::before { color: var(--warn); }
+.sc-reasons .low::before { color: var(--ok); }
+.sc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sc-actions:empty { display: none; }
+
+/* each part: a "Fig." card with a ruled head and key/value rows */
+.sc-card { display: flex; flex-direction: column; padding: 9px 10px 6px; background: var(--card); border: 2px solid #111; box-shadow: 3px 3px 0 #111; }
+.sc-card-head { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; margin-bottom: 2px; border-bottom: 2px solid #111; }
+.sc-card-head b { font: 400 17px/1 var(--head); letter-spacing: .01em; }
+.sc-kv { display: grid; grid-template-columns: 104px 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 12px; }
+.sc-card-head + .sc-kv { border-top: 0; }
+.sc-kv > span { color: var(--dim); font: 11px/1.4 var(--mono); }
+.sc-kv > b { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.sc-kv.gone > b::before { content: "■ "; color: var(--ok); font-size: 9px; vertical-align: 1px; }
+.sc-kv.held > b::before { content: "■ "; color: var(--warn); font-size: 9px; vertical-align: 1px; }
+.sc-addr { font: 11px/1 var(--mono); }
+.sc-note { margin: 4px 0; color: var(--soft); font-size: 12px; }
+.sc-note.sc-wait { padding: 10px; background: var(--card); border: 2px dashed #111; font-family: var(--mono); }
+.sc-err { margin: 0; padding: 10px; color: var(--bad); font: 12px/1.4 var(--mono); background: #fff; border: 2px solid var(--bad); }
+
+/* the market: four mono numbers, and the curve's progress as a dithered bar */
+.sc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 6px 0; }
+.sc-stats span { display: block; color: var(--dim); font: 10px/1.2 var(--mono); }
+.sc-stats b { display: block; font: 700 15px/1.2 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-bar { position: relative; height: 18px; margin: 2px 0 6px; background: repeating-linear-gradient(45deg, #d4d4cf 0 2px, #e9e9e5 2px 4px); border: 2px solid #111; }
+.sc-bar i { position: absolute; inset: 0 auto 0 0; background: #111; }
+.sc-bar span { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; mix-blend-mode: difference; font: 700 10px/1 var(--mono); }
+
+/* the holders: a share bar under each */
+.sc-holders { margin: 0; padding: 0; list-style: none; counter-reset: h; }
+.sc-holders li { position: relative; display: flex; align-items: center; gap: 8px; padding: 5px 0 5px 20px; border-top: 1px solid var(--line); font-size: 12px; }
+.sc-holders li:first-child { border-top: 0; }
+.sc-holders li::before { counter-increment: h; content: counter(h); position: absolute; left: 0; color: var(--dim); font: 10px/1 var(--mono); }
+.sc-holders li b { margin-left: auto; font: 700 11px/1 var(--mono); }
+.sc-share { position: absolute; left: 20px; right: 0; bottom: 1px; height: 2px; }
+.sc-share i { display: block; height: 100%; background: var(--blue); }
+
+/* the sell test */
+.sc-test { margin: 4px 0; padding: 8px; color: #111; font-size: 12px; background: #fff; border: 2px solid var(--ok); }
+.sc-test.bad { border-color: var(--bad); }
+.sc-test b { font: 400 16px/1 var(--head); }
+.sc-test.ok b { color: var(--ok); }
+.sc-test.bad b { color: var(--bad); }
+.fine { color: var(--dim); font: 10px/1.4 var(--mono); }

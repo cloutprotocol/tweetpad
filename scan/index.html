@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scanner · tweetpad</title>
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/tweetpad-hash-32.png">
+<link rel="apple-touch-icon" href="/assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#111111">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : /[?&]popup\b/.test(location.search) ? 'popup' : 'page';</script>
+
+<!-- posted on X, the scanner runs in the post: the player card loads ?embed. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Token scanner on tweetpad">
+<meta name="twitter:description" content="Paste a Solana token: who can still change it, the rules its token runs, its holders, and a dry-run sell. Bordrless, SPL or Token-2022.">
+<meta name="twitter:player" content="https://www.tweetpad.io/scan?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/scan-card.png?v=1">
+<meta name="twitter:image:alt" content="tweetpad's token scanner: who can change a token, its rules, its holders and a sell test">
+<meta property="og:title" content="Token scanner on tweetpad">
+<meta property="og:description" content="Who can still change a Solana token, the rules it runs, its holders, and a dry-run sell.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/scan-card.png?v=1">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/assets/feature.css">
+<link rel="stylesheet" href="/assets/scan.css">
+</head>
+<body>
+<a class="brand" href="/"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad <span>· Scanner</span></a>
+<main class="frame tall">
+  <div class="head">
+    <a class="home" href="/" title="Back to tweetpad"><span class="back" aria-hidden="true">‹</span><img class="gem" src="/assets/brand/tweetpad-hash-180.png" alt=""><span class="word">tweetpad</span></a>
+    <h1 class="title"><span class="sc-dot" aria-hidden="true"></span>Scanner</h1>
+  </div>
+  <div class="scroll">
+  <!-- the address: pasted, or ?mint= from a coin page -->
+  <form class="sc-search" id="sc-form" autocomplete="off">
+    <input class="text" id="sc-mint" placeholder="Paste a token address" spellcheck="false" aria-label="Token address">
+    <button class="btn primary" type="submit" id="sc-go">Scan</button>
+  </form>
+  <div class="sc-intro" id="sc-intro">
+    <span class="sc-tag">Fig. 1</span>
+    <h2>Who can still change it?</h2>
+    <p>Paste any Solana token. For a <b>Bordrless</b> token: its four authorities, the hook it runs and who can upgrade it, the rules
+      enforced on every trade, its curve, its holders, and a <b>dry-run sell</b> from a real holder. SPL and Token-2022 tokens get their
+      authorities, transfer tax and hook.</p>
+  </div>
+  <!-- the card image only: what a scan reads, without any one coin's numbers -->
+  <section class="sc-card still">
+    <div class="sc-card-head"><span class="sc-tag">A</span><b>Who can change it</b></div>
+    <div class="sc-kv gone"><span>Mint</span><b>Nobody</b></div>
+    <div class="sc-kv gone"><span>Freeze</span><b>Nobody</b></div>
+    <div class="sc-kv held"><span>Hook</span><b>Bordrless's rules kit · holder rewards 1% · burn 0.5%</b></div>
+    <div class="sc-kv gone"><span>Sell test</span><b>Yes: a holder's sell clears in a dry run</b></div>
+  </section>
+  <div id="sc-out" aria-live="polite"></div>
+  <p class="fine">Read from the chain and from <a href="https://bordrless.app" target="_blank" rel="noopener">Bordrless</a>'s indexer when you scan.
+    The sell test is a simulation: nothing is signed or sent. A clean scan is not a promise; it shows what the code allows today.</p>
+  </div>
+</main>
+<script src="/assets/scan.js"></script>
+</body>
+</html>

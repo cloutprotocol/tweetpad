@@ -13,6 +13,7 @@
 <meta name="application-name" content="tweetpad">
 <meta name="apple-mobile-web-app-title" content="tweetpad">
 <meta name="theme-color" content="#1da1f2">
+<meta name="description" content="The launchpad inside a tweet. Launch, trade and claim on Solana, Robinhood, BNB, Base and Ethereum without leaving X.">
 
 <!-- Every URL must be absolute HTTPS. -->
 <meta name="twitter:card" content="player">
@@ -28,63 +29,340 @@
 <meta property="og:description" content="Launch a token without leaving the tweet.">
 <meta property="og:image" content="https://www.tweetpad.io/preview.png?v=6">
 
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap">
 <style>
-  /* dressed like the card's default 2012 skin */
-  body { margin: 0; min-height: 100vh; background: #e6e6e6; color: #333; font: 15px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif;
-         display: grid; place-items: center; padding: 16px; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+  /* the tweetpad Menu: the Wii Menu in the card's 2012 skin, the size of the card in a post (480×480). Every size inside
+     is in 480ths of the frame (--u), so on a phone the whole Menu shrinks as one piece. Channels are links; the script opens
+     each one as a channel screen first (a live preview, Menu and Start), as the Wii did. Icons: assets/menu/*.svg. */
+  :root {
+    --ink: #333; --dim: #7d878e; --clock: #8f9aa1; --bezel: #c9d0d5; --blue: #1da1f2; --link: #0084b4;
+    --round: "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif;
+    --ui: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --stripes: repeating-linear-gradient(#f7f9fa 0 3px, #eef1f3 3px 5px);
+    --ease: cubic-bezier(.45, 0, .2, 1);   /* the Menu's one easing: soft in, soft out */
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: #e6e6e6; color: var(--ink);
+         font: 15px/1.4 var(--ui); -webkit-font-smoothing: antialiased; }
+  /* the page around the card, dressed as before */
   .wrap { width: 100%; max-width: 480px; display: grid; gap: 12px; }
-  h1 { margin: 0; display: flex; align-items: center; gap: 8px; font: 600 34px/1 "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif;
-       letter-spacing: -.02em; color: #333; }
-  h1 .app-icon { width: 48px; height: 48px; flex: none; }
-  p { color: #777; margin: 0; }
-  a { color: #0084b4; text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  .title { margin: 0; display: flex; align-items: center; gap: 8px; font: 600 34px/1 var(--round); letter-spacing: -.02em; color: var(--ink); }
+  .title img { width: 48px; height: 48px; flex: none; }
+  .wrap > p { color: #777; margin: 0; }
+  .wrap > p a { color: var(--link); }
   .official { font-size: 14px; overflow-wrap: anywhere; }
-  .official code { padding: 2px 6px; font: 12px/1.6 Menlo, Monaco, monospace; color: #0084b4; background: #f2f8fc; border: 1px solid #cfe3f1; border-radius: 3px; }
-  #copy-ca { margin-left: 4px; padding: 3px 9px; cursor: pointer; color: #333; font: bold 12px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
-             background: linear-gradient(#fff, #e6e6e6); border: 1px solid #bbb; border-radius: 4px; }
+  .official code, .embed code { padding: 2px 6px; font: 12px/1.6 Menlo, Monaco, monospace; color: var(--link); background: #f2f8fc; border: 1px solid #cfe3f1; border-radius: 3px; }
+  .btn { margin-left: 4px; padding: 3px 9px; color: #333; font: bold 12px/1 var(--ui); background: linear-gradient(#fff, #e6e6e6); border: 1px solid #bbb; border-radius: 4px; }
+  .btn.primary { color: #fff; text-shadow: 0 -1px 0 rgba(0, 0, 0, .25); background: linear-gradient(#33bcef, #019ad2); border-color: #057ed0; }
   .embed { padding: 12px 14px; background: #fff; border: 1px solid #c8c8c8; border-radius: 6px; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
-  .embed h2 { margin: 0 0 6px; font: bold 16px/1.2 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #333; }
+  .embed h2 { margin: 0 0 6px; font: bold 16px/1.2 var(--ui); color: #333; }
   .embed ol { margin: 0; padding-left: 20px; color: #555; }
   .embed li { margin: 4px 0; }
-  .embed code { padding: 2px 6px; font: 13px/1 Menlo, Monaco, monospace; color: #0084b4; background: #f2f8fc; border: 1px solid #cfe3f1; border-radius: 3px; }
-  #copy-link { margin-left: 4px; padding: 3px 9px; cursor: pointer; color: #fff; font: bold 12px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
-               text-shadow: 0 -1px 0 rgba(0, 0, 0, .25); background: linear-gradient(#33bcef, #019ad2); border: 1px solid #057ed0; border-radius: 4px; }
-  iframe { width: 100%; aspect-ratio: 1 / 1; border: 1px solid #c8c8c8; border-radius: 6px; display: block; background: #e6e6e6;
-           box-shadow: 0 1px 3px rgba(0, 0, 0, .15), 0 12px 40px rgba(0, 0, 0, .12); }
+  /* the Wii hand, the same one the promo films point with; its fingertip is the hotspot */
+  @media (pointer: fine) {
+    html, a, button { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='34' viewBox='0 0 22 23'%3E%3Cpath d='M7 1.5c1 0 1.8.8 1.8 1.8V9h.4V7.6c0-1 .8-1.7 1.7-1.7s1.7.7 1.7 1.7v1.8h.4v-.8c0-1 .8-1.6 1.6-1.6.9 0 1.6.7 1.6 1.6v1.2h.3c0-.9.7-1.5 1.5-1.5s1.5.7 1.5 1.5v5.4c0 3.9-2.6 6.8-6.4 6.8H11c-2 0-3.4-.8-4.6-2.4L2.6 14c-.6-.8-.4-1.9.4-2.4.7-.5 1.7-.3 2.3.3l.9 1V3.3C6.2 2.3 6 1.5 7 1.5z' fill='%23fff' stroke='%23333' stroke-width='1.1' stroke-linejoin='round'/%3E%3C/svg%3E") 10 2, pointer; }
+  }
+  a { color: var(--link); text-decoration: none; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+  /* ---------- the frame: the card's size, as the old page's iframe was ---------- */
+  .frame { width: 100%; aspect-ratio: 1; container-type: size; border: 1px solid #c8c8c8; border-radius: 6px; overflow: hidden;
+           background: var(--stripes); box-shadow: 0 1px 3px rgba(0, 0, 0, .15), 0 12px 40px rgba(0, 0, 0, .12); }
+  .tp { --u: calc(100cqw / 480); position: relative; width: 100%; height: 100%; }
+  .home { position: absolute; inset: 0; transform-origin: var(--ox, 50%) var(--oy, 50%); }
+
+
+  /* ---------- the channels ---------- */
+  .menu { position: absolute; left: calc(14 * var(--u)); right: calc(14 * var(--u)); top: calc(16 * var(--u)); margin: 0; padding: 0; list-style: none;
+          display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: calc(102 * var(--u)); gap: calc(10 * var(--u)); }
+  .ch { position: relative; height: 100%; display: grid; place-items: center; align-content: center; gap: calc(5 * var(--u)); color: var(--ink);
+        border-radius: calc(16 * var(--u)); background: linear-gradient(#fff, #f3f6f8); border: calc(2.5 * var(--u)) solid var(--bezel);
+        box-shadow: inset 0 0 0 calc(1.5 * var(--u)) #fff, 0 1px 3px rgba(40, 60, 75, .14);
+        transition: border-color .25s var(--ease), box-shadow .25s var(--ease), transform .25s var(--ease); }
+  .ch:hover, .ch:focus-visible { outline: none; border-color: var(--blue); transform: scale(1.035);
+        box-shadow: inset 0 0 0 calc(1.5 * var(--u)) #fff, 0 0 0 calc(3 * var(--u)) rgba(29, 161, 242, .25), 0 3px 12px rgba(29, 161, 242, .25); }
+  .ch img { width: calc(52 * var(--u)); height: calc(52 * var(--u)); display: block; }
+  /* Bordrless's mark: its ringed sphere, 1-bit art on white, multiplied onto the tile */
+  .ch img.bordr { width: calc(58 * var(--u)); height: calc(58 * var(--u)); object-fit: contain; mix-blend-mode: multiply; }
+  .ch span { font: 600 calc(15 * var(--u))/1 var(--round); }
+  .ch .soon { position: absolute; top: calc(6 * var(--u)); right: calc(6 * var(--u)); padding: calc(2 * var(--u)) calc(6 * var(--u)); border-radius: 99px;
+              font: bold calc(9 * var(--u))/1.2 var(--ui); color: #fff; background: #e8a33c; }
+
+  /* ---------- the dock ---------- */
+  .dock { position: absolute; left: 0; right: 0; bottom: 0; height: calc(114 * var(--u)); }
+  .dock svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .clock { position: absolute; left: 50%; bottom: calc(18 * var(--u)); transform: translateX(-50%); text-align: center; color: var(--clock); white-space: nowrap; }
+  .clock time { display: block; font: 500 calc(34 * var(--u))/1 var(--round); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+  .clock span { display: block; margin-top: calc(4 * var(--u)); font: 500 calc(12 * var(--u))/1 var(--round); }
+  .round { position: absolute; bottom: calc(14 * var(--u)); width: calc(58 * var(--u)); height: calc(58 * var(--u)); border-radius: 50%; display: grid; place-items: center;
+           background: radial-gradient(circle at 50% 30%, #fff, #e9eef1 70%); border: calc(2.5 * var(--u)) solid var(--bezel); color: var(--clock);
+           box-shadow: 0 2px 6px rgba(40, 60, 75, .18); transition: border-color .15s, box-shadow .15s; }
+  .round:hover, .round:focus-visible { outline: none; border-color: var(--blue); box-shadow: 0 0 0 calc(3 * var(--u)) rgba(29, 161, 242, .25), 0 2px 6px rgba(40, 60, 75, .18); }
+  .round.left { left: calc(14 * var(--u)); } .round.right { right: calc(14 * var(--u)); }
+  .round img { width: calc(30 * var(--u)); height: calc(30 * var(--u)); }
+  .round .x { font: 600 calc(26 * var(--u))/1 var(--ui); color: #6b767d; }
+
+  /* ---------- a channel screen, inside the frame ---------- */
+  .screen { position: absolute; inset: 0; z-index: 10; visibility: hidden; background: var(--stripes); }
+  .screen.open { visibility: visible; }
+  /* the channel's banner: its icon and name on the stripes, shown while the zoom runs and the app loads */
+  .banner { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; align-content: center; gap: calc(10 * var(--u));
+            background: var(--stripes); pointer-events: none; transition: opacity .35s var(--ease); }
+  .banner img { width: calc(104 * var(--u)); height: calc(104 * var(--u)); filter: drop-shadow(0 4px 10px rgba(40, 60, 75, .2)); }
+  .banner b { font: 600 calc(22 * var(--u))/1 var(--round); color: var(--ink); }
+  .banner.gone { opacity: 0; }
+  .loading .banner img { animation: breathe 1.6s var(--ease) infinite; }
+  @keyframes breathe { 50% { transform: scale(1.05); } }
+  .tv { position: absolute; left: 0; right: 0; top: 0; bottom: calc(48 * var(--u)); overflow: hidden; background: #e6e6e6;
+        border-bottom: 1px solid var(--bezel); transform-origin: 0 0; display: grid; place-items: center; }
+  /* a channel's own card at its real width (480 CSS px, as in a post), as tall as the screen; on a smaller frame the whole
+     card is scaled down by --k rather than squeezed */
+  .tv .live { position: absolute; left: 0; top: 0; width: 480px; height: var(--h, 432px); transform: scale(var(--k, 1)); transform-origin: 0 0; }
+  .tv .live > * { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; object-fit: cover; object-position: top; background: #e6e6e6; }
+  /* $TP: the contract, posting the card, and About, in one scrolling sheet */
+  .sheet { position: absolute; inset: 0; overflow: auto; padding: calc(16 * var(--u)); display: grid; gap: calc(10 * var(--u)); align-content: start; }
+  .sheet section { padding: calc(12 * var(--u)) calc(14 * var(--u)); background: #fff; border: 1px solid #c8c8c8; border-radius: calc(6 * var(--u)); box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
+  .sheet h3 { margin: 0 0 calc(6 * var(--u)); display: flex; align-items: center; gap: calc(8 * var(--u)); font: 600 calc(16 * var(--u))/1.1 var(--round); }
+  .sheet h3 img { width: calc(26 * var(--u)); height: calc(26 * var(--u)); }
+  .sheet p { margin: 0 0 calc(6 * var(--u)); color: #555; font-size: calc(13 * var(--u)); line-height: 1.4; }
+  .sheet code { padding: calc(2 * var(--u)) calc(6 * var(--u)); font: calc(11.5 * var(--u))/1.6 Menlo, Monaco, monospace; color: var(--link); background: #f2f8fc;
+                border: 1px solid #cfe3f1; border-radius: 3px; overflow-wrap: anywhere; }
+  .sheet .btn { font-size: calc(12 * var(--u)); }
+  .sheet .links { display: flex; flex-wrap: wrap; gap: calc(4 * var(--u)) calc(14 * var(--u)); font-size: calc(13 * var(--u)); }
+  .note { display: grid; justify-items: center; gap: calc(10 * var(--u)); padding: calc(20 * var(--u)); text-align: center; }
+  .note img { width: calc(64 * var(--u)); height: calc(64 * var(--u)); }
+  .note p { margin: 0; max-width: 30ch; color: #555; font-size: calc(14 * var(--u)); }
+  .note code { padding: calc(3 * var(--u)) calc(7 * var(--u)); font: calc(12 * var(--u))/1.5 Menlo, Monaco, monospace; color: var(--link); background: #f2f8fc;
+               border: 1px solid #cfe3f1; border-radius: 4px; overflow-wrap: anywhere; }
+  .note .links { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(6 * var(--u)) calc(14 * var(--u)); font-size: calc(14 * var(--u)); }
+  .tv .menu.sub { position: static; width: 100%; padding: calc(14 * var(--u)); grid-auto-rows: calc(90 * var(--u)); align-self: start; }
+  .tv:has(.sub) { background: var(--stripes); }
+  .bar { position: absolute; left: calc(8 * var(--u)); right: calc(8 * var(--u)); bottom: calc(7 * var(--u)); height: calc(34 * var(--u));
+         display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: calc(10 * var(--u));
+         opacity: 0; transform: translateY(calc(8 * var(--u))); transition: opacity .3s var(--ease), transform .3s var(--ease); }
+  .screen.shown .bar { opacity: 1; transform: none; }
+  .bar h2 { margin: 0; font: 600 calc(16 * var(--u))/1 var(--round); white-space: nowrap; }
+  .pill { height: 100%; display: grid; place-items: center; border-radius: 99px; font: 600 calc(14 * var(--u))/1 var(--round); color: #6b767d;
+          background: linear-gradient(#fff, #eef2f4); border: calc(2 * var(--u)) solid var(--bezel); box-shadow: 0 1px 4px rgba(40, 60, 75, .15); }
+  .pill:hover, .pill:focus-visible { outline: none; color: var(--blue); border-color: var(--blue); box-shadow: 0 0 0 calc(3 * var(--u)) rgba(29, 161, 242, .22); }
+  .pill[hidden] { visibility: hidden; display: grid; }
+  .pill[aria-disabled=true] { opacity: .5; pointer-events: none; }
+
+  @media (prefers-reduced-motion: reduce) { .ch, .round, .pill, .bar, .banner { transition: none; } .ch:hover { transform: none; } .loading .banner img { animation: none; } }
 </style>
 </head>
 <body>
-  <main class="wrap">
-    <h1><img class="app-icon" src="assets/brand/tweetpad-hash-256.png" alt="">tweetpad</h1>
-    <p>Launch a token without leaving the tweet.</p>
-    <iframe src="embed.html" title="tweetpad" allow="clipboard-write"></iframe>
-    <section class="embed">
-      <h2>Embed it in a post on X</h2>
-      <ol>
-        <li>Copy this link: <code id="page-link">this page's address</code> <button id="copy-link" type="button">Copy</button></li>
-        <li>Paste it into a new post on X and post it.</li>
-        <li>Your post shows the card above. Anyone can open it and launch or trade right inside the post.</li>
-      </ol>
-    </section>
-    <p class="official">Official <b>$TP</b> contract: <code id="tp-ca">BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN</code> <button id="copy-ca" type="button">Copy</button></p>
-    <p><a href="embed.html">Open full screen</a> · <a href="https://github.com/cloutprotocol/tweetpad">Source (MIT)</a></p>
-  </main>
+<main class="wrap">
+  <h1 class="title"><img src="assets/brand/tweetpad-hash-256.png" alt="">tweetpad</h1>
+  <p>The launchpad inside a tweet.</p>
+<div class="frame">
+  <div class="tp" id="tp">
+
+    <div class="home" id="home">
+    <!-- each channel is a plain link to the app; data-preview is the card its channel screen plays -->
+    <ul class="menu" id="menu" aria-label="tweetpad channels">
+      <li><a class="ch" href="embed.html" data-preview="embed.html" data-name="Launch"><img src="assets/menu/launch.svg" alt=""><span>Launch</span></a></li>
+      <li><a class="ch" href="embed.html?tab=tokens" data-preview="embed.html?tab=tokens" data-name="Tokens"><img src="assets/menu/tokens.svg" alt=""><span>Tokens</span></a></li>
+      <li><a class="ch" href="embed.html?tab=feed" data-preview="embed.html?tab=feed" data-name="Feed"><img src="assets/menu/feed.svg" alt=""><span>Feed</span></a></li>
+      <li><a class="ch" href="custom" data-preview="custom?embed" data-poster="assets/custom-card.png" data-name="Hooks Launch"><img src="assets/menu/custom.svg" alt=""><span>Hooks Launch</span></a></li>
+      <li><a class="ch" href="games" data-preview="games?embed" data-poster="assets/games-card.png" data-name="Games"><img src="assets/menu/games.svg" alt=""><span>Games</span></a></li>
+      <li><a class="ch" href="embed.html?tab=profile" data-preview="embed.html?tab=profile" data-name="Profile"><img src="assets/menu/profile.svg" alt=""><span>Profile</span></a></li>
+      <li><a class="ch" href="borderless" data-preview="borderless?embed" data-name="Bordrless"><img class="bordr" src="assets/menu/bordrless.png" alt=""><span>Bordrless</span></a></li>
+      <li><a class="ch" href="#tp" data-kind="token" data-name="$TP"><img src="assets/brand/tweetpad-hash-256.png" alt=""><span>$TP</span></a></li>
+      <li><a class="ch" href="#more" data-kind="more" data-name="More"><img src="assets/menu/more.svg" alt=""><span>More</span></a></li>
+    </ul>
+
+    <!-- More's channels: they open from the More screen -->
+    <template id="more">
+      <li><a class="ch" href="embed.html?tab=settings" data-preview="embed.html?tab=settings" data-name="Themes"><img src="assets/menu/themes.svg" alt=""><span>Themes</span></a></li>
+      <li><a class="ch" href="autoclaim" data-preview="autoclaim?embed" data-poster="assets/autoclaim-card.png" data-name="Auto-claim"><img src="assets/menu/autoclaim.svg" alt=""><span>Auto-claim</span></a></li>
+      <li><a class="ch" href="winamp" data-preview="winamp?embed" data-poster="assets/winamp-card.png" data-name="Winamp"><img src="assets/menu/winamp.svg" alt=""><span>Winamp</span></a></li>
+      <li><a class="ch" href="embed.html?tab=agents" data-preview="embed.html?tab=agents" data-name="Agents" data-soon><img src="assets/menu/agents.svg" alt=""><span>Agents</span><b class="soon">Soon</b></a></li>
+      <li><a class="ch" href="#about" data-kind="about" data-name="About"><img src="assets/menu/about.svg" alt=""><span>About</span></a></li>
+    </template>
+
+    <!-- the dock: $TP and About on the left, the clock in the middle, @tweetpad_io on X on the right -->
+    <footer class="dock">
+      <svg viewBox="0 0 480 114" preserveAspectRatio="none" aria-hidden="true">
+        <defs><linearGradient id="dk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfefe"/><stop offset="1" stop-color="#dfe5e9"/></linearGradient></defs>
+        <path d="M0 36H86C116 36 120 10 150 10H330C360 10 364 36 394 36H480V114H0Z" fill="url(#dk)"/>
+        <path d="M0 36H86C116 36 120 10 150 10H330C360 10 364 36 394 36H480" fill="none" stroke="#1da1f2" stroke-width="2"/>
+      </svg>
+      <a class="round left" href="#tp" data-kind="token" data-name="About" aria-label="$TP and about tweetpad"><img src="assets/brand/tweetpad-hash-256.png" alt=""></a>
+      <div class="clock" aria-hidden="true"><time id="time">--:--</time><span id="date"></span></div>
+      <a class="round right" href="https://x.com/tweetpad_io" aria-label="tweetpad on X, @tweetpad_io">
+        <span class="x" aria-hidden="true">𝕏</span></a>
+    </footer>
+    </div>
+
+    <!-- the channel screen -->
+    <div class="screen" id="screen" role="dialog" aria-modal="true" aria-labelledby="screen-name">
+      <div class="tv" id="tv"></div>
+      <div class="bar"><a class="pill" href="#" id="btn-menu">Menu</a><h2 id="screen-name"></h2><a class="pill" id="btn-start" href="#">Start</a></div>
+    </div>
+  </div>
+</div>
+  <section class="embed">
+    <h2>Embed it in a post on X</h2>
+    <ol>
+      <li>Copy this link: <code id="page-link">this page's address</code> <button class="btn primary" id="copy-link" type="button">Copy</button></li>
+      <li>Paste it into a new post on X and post it.</li>
+      <li>Your post shows the card above. Anyone can open it and launch or trade right inside the post.</li>
+    </ol>
+  </section>
+  <p class="official">Official <b>$TP</b> contract: <code id="tp-ca">BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN</code> <button class="btn" id="copy-ca" type="button">Copy</button></p>
+  <p><a href="embed.html">Open full screen</a> · <a href="https://github.com/cloutprotocol/tweetpad">Source (MIT)</a> · <a href="https://x.com/tweetpad_io">@tweetpad_io</a></p>
+</main>
+
 <script>
-  /* show the exact link to paste, and copy it in one click */
+  const $ = (id) => document.getElementById(id);
+  const TP = 'BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN';
   const link = location.origin + '/';
-  document.getElementById('page-link').textContent = link.replace(/^https?:\/\//, '');
-  document.getElementById('copy-ca').addEventListener('click', async (ev) => {
-    try { await navigator.clipboard.writeText(document.getElementById('tp-ca').textContent); ev.target.textContent = 'Copied!'; }
-    catch { getSelection().selectAllChildren(document.getElementById('tp-ca')); ev.target.textContent = 'Press ⌘C'; }
-    setTimeout(() => { ev.target.textContent = 'Copy'; }, 2000);
-  });
-  document.getElementById('copy-link').addEventListener('click', async (ev) => {
-    try { await navigator.clipboard.writeText(link); ev.target.textContent = 'Copied!'; }
-    catch { getSelection().selectAllChildren(document.getElementById('page-link')); ev.target.textContent = 'Press ⌘C'; }
-    setTimeout(() => { ev.target.textContent = 'Copy'; }, 2000);
-  });
+  const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+
+  /* the dock clock, like the Menu's */
+  const tick = () => {
+    const d = new Date();
+    $('time').textContent = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s?[AP]M$/i, '');
+    $('date').textContent = d.toLocaleDateString([], { weekday: 'short' }) + ' ' + (d.getMonth() + 1) + '/' + d.getDate();
+  };
+  tick(); setInterval(tick, 10000);
+
+  const copy = async (text, btn, label) => {
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied!'; }
+    catch { btn.textContent = 'Press ⌘C'; }
+    setTimeout(() => { btn.textContent = label; }, 2000);
+  };
+
+  /* ---------- a channel screen ----------
+     As the Wii did it: the channel's window opens out of its tile (a widening clip, so nothing stretches) while the Menu
+     behind zooms toward you and fades. The window first shows the channel's banner (its icon on the stripes); the app
+     itself loads only once the zoom has finished (a same-origin frame shares this page's thread, so loading it mid-zoom
+     stutters), then fades in. Menu runs it all backwards into the tile. */
+  const screen = $('screen'), tv = $('tv'), start = $('btn-start'), home = $('home');
+  const still = matchMedia('(prefers-reduced-motion: reduce)');
+  const EASE = 'cubic-bezier(.45, 0, .2, 1)', OPEN_MS = 520, CLOSE_MS = 420;
+  let from = null, busy = false;
+  /* the card keeps its real 480 px width; a frame narrower than 480 scales the whole card down to fit */
+  const fit = () => { const k = tv.clientWidth / 480; tv.style.setProperty('--k', k); tv.style.setProperty('--h', tv.clientHeight / k + 'px'); };
+  new ResizeObserver(fit).observe(tv);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  function setStart(label, href, onclick) {
+    start.hidden = !label; start.textContent = label || ''; start.href = href || '#'; start.onclick = onclick || null;
+    start.removeAttribute('aria-disabled');
+  }
+  const iconOf = (ch) => ch.querySelector('img').getAttribute('src');
+  /* what the channel shows; returns a function that starts its app (the frame) once the zoom is done */
+  function show(ch) {
+    const kind = ch.dataset.kind;
+    $('screen-name').textContent = ch.dataset.name;
+    const banner = el('div', { className: 'banner' }, el('img', { src: iconOf(ch), alt: '' }), el('b', { textContent: ch.dataset.name }));
+    tv.replaceChildren(banner);
+    tv.classList.remove('loading');
+    const reveal = () => banner.classList.add('gone');
+    if (kind === 'more') {
+      const sub = el('ul', { className: 'menu sub', ariaLabel: 'More channels' });
+      sub.append($('more').content.cloneNode(true));
+      sub.querySelectorAll('.ch').forEach(bind);
+      tv.append(sub); setStart(null);
+      return reveal;
+    }
+    if (kind === 'token' || kind === 'about') {
+      tv.append(tokenSheet());
+      setStart('Start', 'embed.html?coin=' + TP);   // the $TP coin page in the app
+      return reveal;
+    }
+    const live = el('div', { className: 'live' });
+    tv.append(live);
+    setStart(ch.hasAttribute('data-soon') ? 'Soon' : 'Start', ch.getAttribute('href'));
+    if (ch.hasAttribute('data-soon')) start.setAttribute('aria-disabled', 'true');
+    fit();
+    return () => {
+      tv.classList.add('loading');
+      const frame = el('iframe', { src: ch.dataset.preview, title: ch.dataset.name, allow: 'clipboard-write' });
+      frame.addEventListener('load', () => { tv.classList.remove('loading'); reveal(); }, { once: true });
+      live.append(frame);
+    };
+  }
+  /* $TP, posting the card, and About, in one sheet */
+  function tokenSheet() {
+    const btn = (label, text) => { const b = el('button', { className: 'btn', type: 'button', textContent: label }); b.onclick = () => copy(text, b, label); return b; };
+    return el('div', { className: 'sheet' },
+      el('section', {}, el('h3', {}, el('img', { src: 'assets/brand/tweetpad-hash-256.png', alt: '' }), '$TP'),
+        el('p', { textContent: 'tweetpad’s own coin, launched on tweetpad. The official contract on Solana:' }),
+        el('code', { textContent: TP }), ' ', btn('Copy', TP)),
+      el('section', {}, el('h3', {}, el('img', { src: 'assets/menu/post.svg', alt: '' }), 'Post it on X'),
+        el('p', { textContent: 'Paste this link into a new post. The post plays tweetpad, and anyone can launch or trade right inside it.' }),
+        el('code', { textContent: link.replace(/^https?:\/\//, '') }), ' ', btn('Copy link', link)),
+      el('section', {}, el('h3', {}, el('img', { src: 'assets/menu/about.svg', alt: '' }), 'About'),
+        el('p', { textContent: 'An X player card dressed as the 2012 bird app. Launch, trade and claim without leaving the post. Your wallet signs; tweetpad never holds keys.' }),
+        el('div', { className: 'links' }, el('a', { href: 'https://github.com/cloutprotocol/tweetpad', textContent: 'Source (MIT)' }),
+          el('a', { href: 'https://x.com/tweetpad_io', textContent: '𝕏 @tweetpad_io' }), el('a', { href: 'embed.html?tab=about', textContent: 'About in the app' }))));
+  }
+
+  /* the tile's rect inside the frame, as a clip-path inset */
+  function clipOf(ch) {
+    const a = ch.getBoundingClientRect(), b = screen.getBoundingClientRect(), r = getComputedStyle(ch).borderRadius;
+    return `inset(${a.top - b.top}px ${b.right - a.right}px ${b.bottom - a.bottom}px ${a.left - b.left}px round ${r})`;
+  }
+  async function open(ch) {
+    if (busy) return;
+    if (screen.classList.contains('open')) {   // a More channel, from the More screen: cross-fade inside the window
+      busy = true;
+      await tv.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: EASE, fill: 'forwards' }).finished;
+      const go = show(ch);
+      await tv.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: EASE }).finished;
+      tv.getAnimations().forEach((a) => a.cancel());
+      busy = false; go(); return;
+    }
+    busy = true; from = ch;
+    const go = show(ch);
+    for (const n of $('tp').children) if (n !== screen) n.inert = true;
+    screen.classList.add('open');
+    if (!still.matches) {
+      const a = ch.getBoundingClientRect(), b = home.getBoundingClientRect();
+      home.style.setProperty('--ox', (a.left + a.width / 2 - b.left) + 'px'); home.style.setProperty('--oy', (a.top + a.height / 2 - b.top) + 'px');
+      home.animate([{ transform: 'none', opacity: 1, filter: 'blur(0)' }, { transform: 'scale(1.12)', opacity: 0, filter: 'blur(2px)' }], { duration: OPEN_MS, easing: EASE, fill: 'forwards' });
+      await screen.animate([{ clipPath: clipOf(ch), opacity: 0 }, { opacity: 1, offset: .25 }, { clipPath: 'inset(0 round 0)', opacity: 1 }], { duration: OPEN_MS, easing: EASE }).finished;
+    }
+    screen.classList.add('shown');
+    (start.hidden ? $('btn-menu') : start).focus({ preventScroll: true });
+    busy = false;
+    go();
+  }
+  async function close() {
+    if (busy || !screen.classList.contains('open')) return;
+    busy = true;
+    const back = from && document.contains(from) ? from : null;
+    screen.classList.remove('shown');
+    tv.querySelector('.banner')?.classList.remove('gone');   // the banner covers the app on the way back
+    if (!still.matches && back) {
+      await wait(120);
+      home.getAnimations().forEach((a) => a.reverse());
+      await screen.animate([{ clipPath: 'inset(0 round 0)', opacity: 1 }, { opacity: 1, offset: .7 }, { clipPath: clipOf(back), opacity: 0 }], { duration: CLOSE_MS, easing: EASE, fill: 'forwards' }).finished;
+    }
+    home.getAnimations().forEach((a) => a.cancel());
+    screen.getAnimations().forEach((a) => a.cancel());
+    screen.classList.remove('open'); tv.replaceChildren();
+    for (const n of $('tp').children) n.inert = false;
+    back && back.focus({ preventScroll: true });
+    busy = false;
+  }
+
+  function bind(ch) {
+    ch.addEventListener('click', (ev) => {
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;   // a new tab gets the plain link
+      ev.preventDefault(); open(ch);
+    });
+  }
+  document.querySelectorAll('#menu .ch, .round[data-kind]').forEach(bind);
+  /* outside the card: the link to paste, and the $TP contract */
+  $('page-link').textContent = link.replace(/^https?:\/\//, '');
+  $('copy-link').addEventListener('click', (ev) => copy(link, ev.target, 'Copy'));
+  $('copy-ca').addEventListener('click', (ev) => copy(TP, ev.target, 'Copy'));
+  $('btn-menu').addEventListener('click', (ev) => { ev.preventDefault(); close(); });
+  addEventListener('keydown', (ev) => { if (ev.key === 'Escape') close(); });
 </script>
 </body>
 </html>

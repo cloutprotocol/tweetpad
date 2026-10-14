@@ -804,6 +804,11 @@ li.with-share .tok { flex: 1; min-width: 0; border-top: 0; }
 .chain-filter button[aria-checked="true"] { color: #04200e; background: var(--accent); border-color: var(--accent); text-shadow: none; }
 .chain-filter .net-logo { width: 12px; height: 12px; }
 .chain-filter .n:empty { display: none; }
+/* Bordrless isn't a chain of the list but a list of its own (every Bordrless token): set apart on the right, Ethereum closing the group */
+html[data-skin] .chain-filter button.cf-bordr { margin-left: auto; }
+html:is([data-skin="2012"], [data-skin="lights"]) .chain-filter [data-chain="ethereum"] { border-radius: 0 4px 4px 0; }
+html:is([data-skin="2012"], [data-skin="lights"]) .chain-filter button.cf-bordr { border-radius: 4px; }
+.tok .tag.rank { color: var(--dim); background: transparent; box-shadow: none; }
 
 /* ---------- trading on the coin page, and the Jito bundle option ---------- */
 .jito-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; cursor: pointer; font: 14px/1.2 var(--mono); color: var(--dim); }

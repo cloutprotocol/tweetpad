@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bordrless · tweetpad</title>
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#111111">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : /[?&]popup\b/.test(location.search) ? 'popup' : 'page';</script>
+
+<!-- posted on X, the section plays in the post: the player card loads ?embed. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Bordrless on tweetpad">
+<meta name="twitter:description" content="Every Bordrless token by market cap, tradeable in the post; launch your own with your fee and its rules; the hooks, read from the chain.">
+<meta name="twitter:player" content="https://www.tweetpad.io/borderless?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/bordrless-card.png?v=1">
+<meta name="twitter:image:alt" content="Bordrless on tweetpad: tokens, launch, hooks">
+<meta property="og:title" content="Bordrless on tweetpad">
+<meta property="og:description" content="Every Bordrless token, tradeable in a post. Launch your own. The hooks, read from the chain.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/bordrless-card.png?v=1">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/assets/feature.css">
+<link rel="stylesheet" href="/assets/scan.css">
+<link rel="stylesheet" href="/assets/b.css">
+<link rel="stylesheet" href="/assets/bhub.css">
+</head>
+<body>
+<a class="brand" href="/"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad <span>· Bordrless</span></a>
+<main class="frame tall">
+  <div class="head">
+    <a class="home" href="/" id="bh-home" title="Back to tweetpad"><span class="back" aria-hidden="true">‹</span><img class="gem" src="/assets/brand/tweetpad-hash-180.png" alt=""><span class="word">tweetpad</span></a>
+    <h1 class="title"><img class="bh-mark" src="/assets/menu/bordrless.png" alt="">Bordrless</h1>
+  </div>
+  <!-- the three parts: every token, the launcher, the hooks -->
+  <nav class="bh-tabs" role="tablist" aria-label="Bordrless">
+    <button type="button" role="tab" data-tab="tokens">Tokens</button><button type="button" role="tab" data-tab="launch">Launch</button><button type="button" role="tab" data-tab="hooks">Hooks</button>
+  </nav>
+  <div class="scroll" id="bh-scroll">
+    <!-- the card image only: what the section is, without any one coin's numbers -->
+    <section class="sc-intro still">
+      <span class="sc-tag">Fig. 1</span>
+      <h2>Bordrless, in a post.</h2>
+      <p>Every <b>Bordrless</b> token by market cap, each tradeable right inside a post at <b>tweetpad.io/b/&lt;token CA&gt;</b>. Launch your own with your fee
+        and the rules its token runs. The hooks, read from the chain.</p>
+    </section>
+    <section class="sc-card still">
+      <div class="sc-card-head"><span class="sc-tag">A</span><b>Tokens · Launch · Hooks</b></div>
+      <div class="sc-kv gone"><span>Tokens</span><b>Every Bordrless token by market cap, each tradeable in a post</b></div>
+      <div class="sc-kv gone"><span>Launch</span><b>Your fee, the rules the token runs, an optional dev buy</b></div>
+      <div class="sc-kv held"><span>Hooks</span><b>The rules kit and the Workshop's hooks, read on chain</b></div>
+    </section>
+    <div id="bh-tokens" class="bh-pane" hidden></div>
+    <div id="bh-launch" class="bh-pane" hidden></div>
+    <div id="bh-hooks" class="bh-pane" hidden></div>
+    <p class="fine">Read from the chain with Bordrless's SDK; prices and holders from <a href="https://bordrless.app" target="_blank" rel="noopener">Bordrless</a>'s indexer.
+      Your wallet signs everything; tweetpad takes nothing and holds nothing. Bordrless is named here as the standard these tokens use; it doesn't run or endorse tweetpad.</p>
+  </div>
+</main>
+<script src="/assets/bkit.js"></script>
+<script src="/assets/bhub.js"></script>
+</body>
+</html>

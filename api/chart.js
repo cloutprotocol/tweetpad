@@ -2,6 +2,8 @@
 // rate-limited per IP, so going through here with a short CDN cache keeps every viewer under the limit).
 // GET /api/chart?pool=<pair address>&tf=1m|5m|15m|1h[&net=robinhood|bnb|base|ethereum]   (net: the chain of a v4 pool id)
 // GET /api/chart?pool=<pair address>&spark=1   → { points }: the last day's 15-minute closes, for the token list's row charts
+// &venue=bordrless&mint=<mint>: a Bordrless coin, from Bordrless's own indexer (GeckoTerminal doesn't see its DEX); its candles
+// are 5-minute ones, so 1m shows 5m and 15m/1h are put together here
 const { cors, isPubkey, redis, DEX_SLUG, fail } = require('./_lib');
 const SPARK_TTL = 300;   // seconds a row chart is reused, from Redis, across every region and viewer
 
@@ -17,12 +19,47 @@ async function gecko(path, net) {
   return r.json();
 }
 
+/* 5-minute candles put together n at a time, [time, open, high, low, close, volume], oldest first */
+function regroup(candles, n) {
+  const out = [];
+  for (const k of candles) {
+    const t = Math.floor(k.t / (300 * n)) * 300 * n, last = out[out.length - 1];
+    if (last && last[0] === t) { last[2] = Math.max(last[2], k.h); last[3] = Math.min(last[3], k.l); last[4] = k.c; last[5] += k.v; }
+    else out.push([t, k.o, k.h, k.l, k.c, k.v]);
+  }
+  return out;
+}
+async function bordrChart(mint, tf, spark, res) {
+  const { bordr } = require('./bordrless');
+  if (spark) {
+    let points = null;
+    try { const [hit] = await redis(['GET', 'spark:' + mint]); points = hit ? JSON.parse(hit) : null; } catch { /* go upstream */ }
+    if (!points) {
+      points = regroup((await bordr('/launches/' + mint + '/candles?limit=288')).candles || [], 3).map(c => c[4]);
+      redis(['SET', 'spark:' + mint, JSON.stringify(points), 'EX', SPARK_TTL]).catch(() => {});
+    }
+    res.setHeader('cache-control', 'public, s-maxage=300, stale-while-revalidate=900');
+    return res.status(200).json({ points });
+  }
+  const n = { '1m': 1, '5m': 1, '15m': 3, '1h': 12 }[tf];
+  const [c, t] = await Promise.all([bordr('/launches/' + mint + '/candles?limit=' + 80 * n), bordr('/launches/' + mint + '/trades')]);
+  const trades = ((t && t.trades) || []).slice(0, 40).map(x => ({ kind: x.side, usd: x.priceQuote ? (Number(x.quoteAmount) / 1e9) * (x.priceUsd / x.priceQuote) : null,
+    sol: Number(x.quoteAmount) / 1e9, wallet: x.trader, time: x.ts * 1000, tx: x.signature }));
+  res.setHeader('cache-control', 'public, s-maxage=5, stale-while-revalidate=20');
+  return res.status(200).json({ tf, candles: regroup((c && c.candles) || [], n).slice(-80), trades });
+}
+
 module.exports = async (req, res) => {
   if (cors(req, res, 'GET')) return;
   const q = req.query || {};
   const pool = String(q.pool || '');
   const tf = TIMEFRAMES[q.tf] ? q.tf : '5m';
   const net = String(q.net || 'robinhood');   // which EVM chain a v4 pool id is on
+  if (q.venue === 'bordrless') {
+    if (!isPubkey(String(q.mint || ''))) return fail(res, 400, 'invalid mint');
+    try { return await bordrChart(String(q.mint), tf, !!q.spark, res); }
+    catch (err) { res.setHeader('cache-control', 'public, s-maxage=5'); return fail(res, 502, err.message); }
+  }
   if (!isPubkey(pool) && !isV4Pool(pool)) return fail(res, 400, 'invalid pool');
   const [period, aggregate] = TIMEFRAMES[tf];
   if (q.spark) {

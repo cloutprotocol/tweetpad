@@ -1,14 +1,14 @@
 // The pad's token list.
 // GET ?before=<ms>&limit=<n>: newest launches first, a page at a time (cursor = time of the last row shown).
-// GET ?mint=<mint>: one launch (share links open straight to a coin).
+// GET ?mint=<mint>: one launch (share links open straight to a coin); a Bordrless token launched elsewhere comes back as one too.
 // GET ?creator=<wallet>: the coins a wallet launched here (profiles).
 // GET ?q=<text>: search every coin launched here by name, ticker or contract, highest market cap first (the pair picker;
 //                empty q = every coin, which is also the hotbar's top 9).
 // GET ?pair=<mint>: whether a new coin can be paired with this one ({ ok, symbol } or { error }), before building.
 // GET ?curve=new: a fresh SOL curve's reserves and buy fee, so the form can estimate what a dev buy gets.
 // POST { signature, mint }: list a launch, but only after checking on chain that the transaction succeeded,
-// is a pump.fun create (or a Stonkfun LaunchLab create, api/stonk.js) for that mint, was paid by the wallet that built it here,
-// and was built here (pending).
+// is a pump.fun create (or a Stonkfun LaunchLab create, api/stonk.js, or a Bordrless create_launch, api/bordrless.js) for that
+// mint, was paid by the wallet that built it here, and was built here (pending).
 const { PUMP_PROGRAM, cors, readJson, isPubkey, isEvmAddress, isCoinId, EVM_CHAINS, b58decode, redis, rpc, connection, quoteConfig, pairQuote, marketData, rateLimit, fail } = require('./_lib');
 
 const PAGE = 24;
@@ -19,7 +19,13 @@ async function list(req, res) {
   if (q.mint) {
     if (!isCoinId(q.mint)) return fail(res, 400, 'invalid mint');
     const [row] = await redis(['GET', 'launch:' + canonical(q.mint)]);
-    return row ? res.status(200).json({ launch: JSON.parse(row) }) : fail(res, 404, 'not launched on tweetpad');
+    if (row) return res.status(200).json({ launch: JSON.parse(row) });
+    /* any Bordrless token opens here too (the Tokens page lists them all), traded in the card like tweetpad's own */
+    if (isPubkey(q.mint)) {
+      try { return res.status(200).json({ launch: await require('./bordrless').launchRecord(q.mint) }); }
+      catch { /* not a Bordrless token either */ }
+    }
+    return fail(res, 404, 'not launched on tweetpad');
   }
   if (q.pair != null) {
     res.setHeader('cache-control', 'public, s-maxage=15');
@@ -198,10 +204,11 @@ async function record(req, res) {
   const signers = msg.accountKeys.slice(0, msg.header.numRequiredSignatures);
   if (signers[0] !== pending.creator) return fail(res, 400, 'transaction was not paid by the launching wallet');
   if (!signers.includes(mint)) return fail(res, 400, 'transaction did not create this mint');
-  /* a Stonkfun launch (api/stonk.js) is a LaunchLab create under Stonkfun's platform, with the pool built here */
-  const stonk = pending.venue === 'stonk';
-  const program = stonk ? require('./stonk').LAUNCHLAB : PUMP_PROGRAM;
-  if (!keys.includes(program)) return fail(res, 400, stonk ? 'not a LaunchLab transaction' : 'not a pump.fun transaction');
+  /* a Stonkfun launch (api/stonk.js) is a LaunchLab create under Stonkfun's platform, with the pool built here; a Bordrless
+     launch (api/bordrless.js) is a create_launch on Bordrless's launchpad */
+  const stonk = pending.venue === 'stonk', bordr = pending.venue === 'bordrless';
+  const program = stonk ? require('./stonk').LAUNCHLAB : bordr ? require('./bordrless').LAUNCH : PUMP_PROGRAM;
+  if (!keys.includes(program)) return fail(res, 400, stonk ? 'not a LaunchLab transaction' : bordr ? 'not a Bordrless launch' : 'not a pump.fun transaction');
   if (stonk && (!keys.includes(pending.platform) || !keys.includes(pending.pool))) return fail(res, 400, 'transaction is not the Stonkfun launch built here');
   if (pending.quote && !keys.includes(pending.quote.mint)) return fail(res, 400, 'transaction is not paired with $' + pending.quote.symbol);
   /* the create itself carries name, symbol and uri: they must be what was built here */
@@ -224,9 +231,17 @@ async function record(req, res) {
     }
   }
 
+  /* a Bordrless coin's launch account must hold the creator, creator fee and rules built here (no hook of anyone's own) */
+  let bordrless = null;
+  if (bordr) {
+    try { bordrless = await require('./bordrless').verifyLaunch(mint, pending); }
+    catch (err) { return fail(res, err.status || 502, err.message); }
+  }
+
   const time = tx.blockTime ? tx.blockTime * 1000 : Date.now();
   const launch = { mint, name: pending.name, symbol: pending.symbol, image: pending.image, thumb: pending.thumb || '', uri: pending.uri,
-    creator: pending.creator, devBuy: pending.devBuy, quote: pending.quote || null, signature, time, ...(stonk && { venue: 'stonk', pool: pending.pool, mode: pending.mode || 'standard', taxBps: pending.taxBps || 0, shareBps: pending.shareBps || 0 }) };
+    creator: pending.creator, devBuy: pending.devBuy, quote: pending.quote || null, signature, time, ...(stonk && { venue: 'stonk', pool: pending.pool, mode: pending.mode || 'standard', taxBps: pending.taxBps || 0, shareBps: pending.shareBps || 0 }),
+    ...(bordrless && { venue: 'bordrless', ...bordrless }) };
   await redis(['SET', 'launch:' + mint, JSON.stringify(launch)], ['ZADD', 'launches', time, mint], ['ZADD', 'creator:' + pending.creator, time, mint],
     ['HSET', 'launchidx', mint, JSON.stringify(slim(launch))], ['DEL', 'pending:' + mint]);
   return res.status(200).json({ ok: true, launch });

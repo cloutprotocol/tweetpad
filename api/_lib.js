@@ -192,6 +192,9 @@ async function marketData(mints) {
   /* DexScreener doesn't list LaunchLab curves: Stonkfun coins it misses come from GeckoTerminal (kept 30s, its limit is per IP) */
   try { Object.assign(market, await stonkMarket(mints.filter(m => !market[m] && chains[m] === 'solana'))); }
   catch { /* the rest still stands */ }
+  /* nor Bordrless coins (not SPL tokens at all): those come from Bordrless's own indexer */
+  try { Object.assign(market, await bordrMarket(mints.filter(m => !market[m] && chains[m] === 'solana'))); }
+  catch { /* the rest still stands */ }
   /* only coins launched here are kept, so the hash can't be grown with arbitrary mints */
   try {
     const known = Object.keys(market).filter(k => market[k].mcap);
@@ -199,6 +202,31 @@ async function marketData(mints) {
     const caps = known.filter((k, i) => listed[i]).flatMap(k => [k, String(market[k].mcap)]);
     if (caps.length) await redis(['HSET', 'mcaps', ...caps]);
   } catch { /* a bonus: never fail market data over it */ }
+  return market;
+}
+
+/* Bordrless coins (launched here or not): one read of Bordrless's whole list (kept 15s), and for coins launched here the last
+   hour of their 5-minute candles for the 1h move, kept 15s */
+async function bordrMarket(mints) {
+  if (!mints.length) return {};
+  const { bordr, bordrList } = require('./bordrless');
+  const listed = new Map((await bordrList()).tokens.map(l => [l.mint, l]));
+  const ours = mints.filter(m => listed.has(m));
+  if (!ours.length) return {};
+  const [hits] = await redis(['MGET', ...ours.map(m => 'bmkt:' + m)]);
+  const market = {}, fresh = [];
+  await Promise.all(ours.map(async (mint, i) => {
+    const l = listed.get(mint), hour = hits[i] ? JSON.parse(hits[i]) : null;
+    let change1h = hour ? hour.change1h : null;
+    if (!hour && i < 10) {
+      const c = await bordr('/launches/' + mint + '/candles?limit=13').catch(() => null), candles = (c && c.candles) || [];
+      change1h = candles.length > 1 && l.price ? (l.price / candles[0].o - 1) * 100 : null;
+      fresh.push(['SET', 'bmkt:' + mint, JSON.stringify({ change1h }), 'EX', 15]);
+    }
+    market[mint] = { mcap: l.mcap, price: l.price, priceNative: l.priceNative, change1h, change24h: l.change24h, buys1h: 0, sells1h: 0, volume1h: 0,
+      volume24h: l.volume24h, liquidity: l.liquidity, dex: 'bordrless', pair: l.pool, progress: l.progress, holders: l.holders };
+  }));
+  if (fresh.length) redis(...fresh).catch(() => {});
   return market;
 }
 
