@@ -12,7 +12,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 module.exports = async (req, res) => {
   const q = req.query || {};
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '');
-  const sub = /^([a-z0-9-]{1,20})\.tweetpad\.io$/.exec(host);
+  const sub = /^(?!www\.)([a-z0-9-]{1,20})\.tweetpad\.io$/.exec(host);   // www is the site, not an agent
   const name = String(q.name || (sub && sub[1]) || '').toLowerCase();
   if (name && (!/^[a-z0-9-]{1,20}$/.test(name) || name === 'www')) { res.setHeader('cache-control', 'public, s-maxage=60'); return res.redirect(302, '/a'); }
   let a = null;
