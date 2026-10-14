@@ -19,14 +19,14 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
 <link rel="stylesheet" href="assets/tweetpad.css">
 <link rel="stylesheet" href="assets/skin-2012.css">
-<!-- the Wii skin (the default): the 2012 skin dressed as the front page's Menu -->
+<!-- the Wii skin: the 2012 skin dressed as the front page's Menu -->
 <link rel="stylesheet" href="assets/skin-wii.css">
 <link rel="stylesheet" href="assets/skin-lights.css">
 <!-- the Bordrless skin's faces: Anton headlines, Space Grotesk text, JetBrains Mono labels (fetched only when that skin uses them) -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="assets/skin-bordrless.css">
 <!-- pick the skin before first paint so the default never flashes the other one -->
-<script>try { document.documentElement.dataset.skin = localStorage.getItem('tweetpad:skin') || 'wii'; } catch { document.documentElement.dataset.skin = 'wii'; }</script>
+<script>try { document.documentElement.dataset.skin = localStorage.getItem('tweetpad:skin') || '2012'; } catch { document.documentElement.dataset.skin = '2012'; }</script>
 </head>
 <body>
 <header>
@@ -270,7 +270,7 @@
             <span class="more-main"><b>About</b><small>Version, credits, where to find us</small></span><kbd>A</kbd><span class="chev" aria-hidden="true">›</span></button></li>
           <li><button class="more-row-btn" data-goto="settings"><span class="more-ico" aria-hidden="true">
             <svg viewBox="0 0 8 8"><path d="M3 0h2v1h1v1h1v1h1v2H7v1H6v1H5v1H3V7H2V6H1V5H0V3h1V2h1V1h1zm0 3v2h2V3z" fill="currentColor" fill-rule="evenodd"/></svg></span>
-            <span class="more-main"><b>Settings</b><small>Skins: Wii, 2012, Tweetcraft, Lights out or Bordrless</small></span><kbd>,</kbd><span class="chev" aria-hidden="true">›</span></button></li>
+            <span class="more-main"><b>Settings</b><small>Skins: 2012, Wii, Tweetcraft, Lights out or Bordrless</small></span><kbd>,</kbd><span class="chev" aria-hidden="true">›</span></button></li>
         </ul>
       </div>
     </section>
@@ -376,12 +376,12 @@
         <div class="launch-head"><span>Settings</span><button class="menu-x" id="settings-close" aria-label="Back" title="Back (Esc)">×</button></div>
         <div class="menu-sec">Skins</div>
         <div class="skins" id="skins" role="radiogroup" aria-label="Skin">
-          <button class="skin-opt" role="radio" aria-checked="false" data-skin="wii">
-            <span class="skin-swatch s-wii" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="skin-main"><b>Wii</b><small>Silver bar, glass cards, the home Menu's look</small></span><span class="tag">Default</span></button>
           <button class="skin-opt" role="radio" aria-checked="false" data-skin="2012">
             <span class="skin-swatch s-2012" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="skin-main"><b>2012</b><small>Blue bar, white cards, the old bird app</small></span></button>
+            <span class="skin-main"><b>2012</b><small>Blue bar, white cards, the old bird app</small></span><span class="tag">Default</span></button>
+          <button class="skin-opt" role="radio" aria-checked="false" data-skin="wii">
+            <span class="skin-swatch s-wii" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="skin-main"><b>Wii</b><small>Silver bar, glass cards, the home Menu's look</small></span></button>
           <button class="skin-opt" role="radio" aria-checked="false" data-skin="tweetcraft">
             <span class="skin-swatch s-craft" aria-hidden="true"><i></i><i></i><i></i></span>
             <span class="skin-main"><b>Tweetcraft</b><small>Pixel HUD, night sky, hotbar</small></span></button>

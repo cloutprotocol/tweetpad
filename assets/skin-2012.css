@@ -1,6 +1,6 @@
 /* tweetpad skin "2012": the old bird app. Blue gradient bar, white rounded cards, Helvetica, a dark tab bar at the bottom.
    Everything here is scoped to html[data-skin="2012"] and layered over tweetpad.css, which on its own is the Tweetcraft skin.
-   The Wii skin (the default) is this skin underneath, so every rule also matches [data-skin="wii"]; assets/skin-wii.css dresses it. */
+   The Wii skin is this skin underneath, so every rule also matches [data-skin="wii"]; assets/skin-wii.css dresses it. */
 
 html:is([data-skin="2012"], [data-skin="wii"]) {
   --bg: #e6e6e6; --panel: #fff; --panel-hi: transparent; --panel-lo: #c8c8c8;

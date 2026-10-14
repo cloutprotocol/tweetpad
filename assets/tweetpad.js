@@ -3315,11 +3315,11 @@ document.addEventListener('keydown', (ev) => {
   else if (k >= '1' && k <= '9') selectSlot(Number(k));
   else if (k === 'h') toggleFeed();
 });
-/* ---------- skins: 'wii' (the default) is the 2012 skin dressed as the home Menu (assets/skin-wii.css); '2012' dresses the app
-   as the old bird app; 'tweetcraft' is the pixel HUD; 'lights' is
+/* ---------- skins: '2012' (the default) dresses the app as the old bird app; 'wii' is the 2012 skin dressed as the home Menu
+   (assets/skin-wii.css); 'tweetcraft' is the pixel HUD; 'lights' is
    Lights out, dark like today's X (assets/skin-lights.css, built on the 2012 skin's selectors); 'bordrless' is Bordrless's
    grey paper and ink cards (assets/skin-bordrless.css, the same selectors) ---------- */
-const SKINS = ['wii', '2012', 'tweetcraft', 'lights', 'bordrless'];
+const SKINS = ['2012', 'wii', 'tweetcraft', 'lights', 'bordrless'];
 const SKIN_KEY = 'tweetpad:skin';
 function setSkin(name) {
   if (!SKINS.includes(name)) name = SKINS[0];

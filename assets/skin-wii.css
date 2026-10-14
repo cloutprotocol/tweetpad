@@ -1,4 +1,4 @@
-/* tweetpad skin "wii" (the default): the front page's Menu carried into the app. It is the 2012 skin underneath (skin-2012.css
+/* tweetpad skin "wii": the front page's Menu carried into the app. It is the 2012 skin underneath (skin-2012.css
    matches [data-skin="wii"] too) dressed as the Menu: pinstripes, a silver bar with the blue edge, frosted-glass cards with
    soft bezels, round pill buttons, the dock with its blue line at the bottom, Fredoka for titles, the white hand.
    Everything here is scoped to html[data-skin="wii"]; the swatch at the end is for the skin picker in every skin. */
