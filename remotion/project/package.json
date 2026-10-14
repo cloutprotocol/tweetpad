@@ -28,7 +28,16 @@
     "render:three": "remotion render src/index.ts TweetpadThreeNew ../out/tweetpad-three-new.mp4",
     "stills:three": "node scripts/stills.mjs ../out/stills 0:three-thumb 40:three-gm 80:three-eth 120:three-custom 170:three-autoclaim 192:three-peek 250:three-fee 290:three-reviewing 330:three-approve 380:three-live 420:three-post 450:three-hook 515:three-vest 600:three-agent 690:three-autoclaim-on 760:three-page 880:three-end --comp=TweetpadThreeNew",
     "render:howto": "remotion render src/index.ts TweetpadHowToLaunch ../out/tweetpad-how-to-launch.mp4",
-    "stills:howto": "node scripts/stills.mjs ../out/stills 190:tour 430:connect 1270:approve 1415:launched 1480:share --comp=TweetpadHowToLaunch"
+    "stills:howto": "node scripts/stills.mjs ../out/stills 190:tour 430:connect 1270:approve 1415:launched 1480:share --comp=TweetpadHowToLaunch",
+    "render:stonks": "remotion render src/index.ts TweetpadStonks ../out/tweetpad-stonks.mp4",
+    "stills:stonks": "node scripts/stills.mjs ../out/stills 0:stonks-thumb 70:stonks-swirl 190:stonks-tap 230:stonks-switched 330:stonks-dialog 370:stonks-filter 400:stonks-pick 500:stonks-reward 535:stonks-tax 565:stonks-community 650:stonks-building 690:stonks-approve 760:stonks-live 820:stonks-coin 880:stonks-holders 990:stonks-end --comp=TweetpadStonks",
+    "render:games": "remotion render src/index.ts TweetpadGames ../out/tweetpad-games.mp4",
+    "stills:games": "node scripts/stills.mjs ../out/stills 0:games-thumb 70:games-hook 210:games-hub 330:games-pod-roll 365:games-pod-win 455:games-pod-loss 610:games-mines-gem3 640:games-mines-cash 700:games-mines-boom 775:games-sign 860:games-tiles 990:games-fair 1080:games-gamba 1220:games-end --comp=TweetpadGames",
+    "render:bordrless": "remotion render src/index.ts TweetpadBordrless ../out/tweetpad-bordrless.mp4",
+    "stills:bordrless": "node scripts/stills.mjs ../out/stills 0:bordr-thumb 230:bordr-intro-full 330:bordr-why 470:bordr-share-type 520:bordr-share-card 640:bordr-trade-quote 700:bordr-trade-connect 780:bordr-trade-bought 880:bordr-chain-rules 940:bordr-chain-who 1010:bordr-list 1090:bordr-launch 1260:bordr-howto 1380:bordr-end --comp=TweetpadBordrless",
+    "render:bordrless-home": "remotion render src/index.ts TweetpadBordrlessHome ../out/tweetpad-bordrless-home.mp4",
+    "stills:bordrless-home": "node scripts/stills.mjs ../out/stills 0:bhome-thumb 60:bhome-hover 112:bhome-click 160:bhome-zoom 200:bhome-banner 240:bhome-live 262:bhome-start 380:bhome-fig 470:bhome-launch-form 560:bhome-launch-approve 640:bhome-launch-live 700:bhome-trade-quote 790:bhome-trade-bought 940:bhome-tokens 1100:bhome-end --comp=TweetpadBordrlessHome",
+    "still:bordrless-poster": "remotion still src/index.ts TweetpadBordrlessPoster ../out/stills/bordrless-poster.png --frame=0"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.534",

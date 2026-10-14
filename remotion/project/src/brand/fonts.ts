@@ -9,6 +9,13 @@ const faces: { family: string; file: string; weight?: string }[] = [
   { family: "Pixelify Sans", file: "fonts/PixelifySans-Variable.ttf", weight: "400 700" },
   { family: "VT323", file: "fonts/VT323-Regular.ttf", weight: "400" },
   { family: "Doto", file: "fonts/Doto-Variable.woff2", weight: "100 900" },
+  /* film 14 (Bordrless's look) only: its condensed headline face, its mono and its UI face, as bordrless.app and tweetpad's
+     Bordrless skin load them (all OFL, from Google Fonts) */
+  { family: "Anton", file: "fonts/Anton-Regular.ttf", weight: "400" },
+  { family: "JetBrains Mono", file: "fonts/JetBrainsMono-Regular.ttf", weight: "400" },
+  { family: "JetBrains Mono", file: "fonts/JetBrainsMono-Bold.ttf", weight: "700" },
+  { family: "Space Grotesk", file: "fonts/SpaceGrotesk-Medium.ttf", weight: "500" },
+  { family: "Space Grotesk", file: "fonts/SpaceGrotesk-Bold.ttf", weight: "700" },
 ];
 
 let started = false;

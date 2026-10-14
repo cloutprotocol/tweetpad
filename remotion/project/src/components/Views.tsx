@@ -125,7 +125,9 @@ export const CoinView: React.FC<{ drawT: number; chain?: Net; holders?: number; 
   /** another demo coin than $WOW, its chain badge on the image, and the trade box (renderTrade) that sits right under the chart */
   coin?: DemoCoin; badge?: boolean; trade?: React.ReactNode;
   /** Ethereum only: the creator's fee in % (renderCoinFees' ethereum branch) */
-  feePct?: number }> = ({ drawT, chain = "solana", holders = 30, rewards = "0.00120 ETH", rewardsClaimable = true, coin, badge, trade, feePct = 1 }) => {
+  feePct?: number;
+  /** film 12, a Stonkfun coin: its pair under the head ("⇄ $NVDAx"), the "Stonkfun ↗" link (no LIVE chip) and its fee box (renderStonkFees) */
+  stonk?: { pair: string; fees: React.ReactNode } }> = ({ drawT, chain = "solana", holders = 30, rewards = "0.00120 ETH", rewardsClaimable = true, coin, badge, trade, feePct = 1, stonk }) => {
   const s = useSkin();
   const craft = s.name !== "2012";
   const c = coin ?? DEMO_COINS[0];
@@ -152,6 +154,7 @@ export const CoinView: React.FC<{ drawT: number; chain?: Net; holders?: number; 
             {newHead ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><NetLogo net={chain} c="#999" size={12} />{EVM_NETS[chain as EvmNet].name}</span> : null}
             {c.age || "now"} <span style={{ padding: "2px 6px", color: s.accent, background: craft ? "rgba(111,231,216,.08)" : "#f2f8fc", border: `1px solid ${craft ? "rgba(111,231,216,.3)" : "#cfe3f1"}`, borderRadius: 3 }}>{rh ? "0xxx…xxxx" : "xxxx…xxxx"} ⧉</span>
           </div>
+          {stonk ? <span style={{ font: `12px/1 ${s.px}`, color: s.accent }}>⇄ ${stonk.pair}</span> : null}
         </div>
       </div>
       <svg width={306} height={140} style={{ background: craft ? "rgba(5,12,14,.6)" : "#fff", border: `1px solid ${craft ? s.panelLo : "#e3e3e3"}`, borderRadius: craft ? 0 : 4 }}>
@@ -169,15 +172,15 @@ export const CoinView: React.FC<{ drawT: number; chain?: Net; holders?: number; 
       {trade}
       <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
         {/* the live-trades chip is Solana-only (PumpPortal); Robinhood coins would read OFFLINE, so the film leaves it out */}
-        {rh ? null : <span style={{ padding: "2px 6px", font: `bold 10px/1 ${s.px}`, letterSpacing: ".04em", color: s.ok, border: `1px solid ${craft ? "rgba(125,255,154,.5)" : "#a9dcb5"}`, borderRadius: 3 }}>LIVE</span>}
-        {newHead ? [chip("Uniswap ↗"), chip("Explorer ↗")] : rh ? [chip("Trade on Uniswap ↗"), chip("Explorer ↗")] : chip("Trade on pump.fun ↗")}
+        {rh || stonk ? null : <span style={{ padding: "2px 6px", font: `bold 10px/1 ${s.px}`, letterSpacing: ".04em", color: s.ok, border: `1px solid ${craft ? "rgba(125,255,154,.5)" : "#a9dcb5"}`, borderRadius: 3 }}>LIVE</span>}
+        {stonk ? chip("Stonkfun ↗") : newHead ? [chip("Uniswap ↗"), chip("Explorer ↗")] : rh ? [chip("Trade on Uniswap ↗"), chip("Explorer ↗")] : chip("Trade on pump.fun ↗")}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 10px", background: craft ? "rgba(5,12,14,.45)" : "#f5f8fa", border: `1px solid ${craft ? s.line : "#e1e8ed"}`, borderRadius: craft ? 0 : 5 }}>
         <span style={{ flex: 1, padding: "6px 8px", font: `12px/1.2 ${FONTS.code}`, color: s.accent, background: craft ? "rgba(0,0,0,.35)" : "#fff", border: `1px solid ${craft ? s.line : "#cfe3f1"}`, borderRadius: 4 }}>{rh ? "tweetpad.io/c/0x…" : "tweetpad.io/c/xxxx…"}</span>
         <Btn style={{ padding: "5px 9px", fontSize: 11 }}>Copy</Btn>
         <Btn primary style={{ padding: "5px 9px", fontSize: 11, whiteSpace: "nowrap" }}>Post on X</Btn>
       </div>
-      {chain === "ethereum" ? (
+      {stonk ? stonk.fees : chain === "ethereum" ? (
         // renderCoinFees, Ethereum: the creator's fee from the fixed fee hook (no holder split, no holder rewards)
         <div style={{ font: craft ? `14px/1.2 ${s.mono}` : `12px/1.3 ${s.px}`, color: craft ? s.dim : "#999" }}>
           <b style={{ color: craft ? s.text : "#333" }}>{feePct}% trading fee</b> · to its creator, in ETH and ${c.symbol}

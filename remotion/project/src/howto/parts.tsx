@@ -87,7 +87,7 @@ export const WalletMenu: React.FC<{ t: number; hover?: boolean }> = ({ t, hover 
 };
 
 /* ---------- generic wallet window (film px). Deliberately unbranded. ---------- */
-export const WalletWindow: React.FC<{ t: number; kind: "connect" | "approve"; pressed?: boolean }> = ({ t, kind, pressed }) => (
+export const WalletWindow: React.FC<{ t: number; kind: "connect" | "approve" | "sign"; pressed?: boolean }> = ({ t, kind, pressed }) => (
   <div style={{ position: "absolute", right: 70, top: 250, width: 400, zIndex: 50, background: "#fff", borderRadius: 18, overflow: "hidden", fontFamily: FONTS.ui,
     boxShadow: "0 30px 80px rgba(20,23,26,.35)", border: `1px solid ${BRAND.border}`, opacity: t, transform: `translateY(${(1 - t) * 24}px) scale(${0.96 + 0.04 * t})` }}>
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", background: "#f2f0fb", borderBottom: `1px solid ${BRAND.border}` }}>
@@ -96,13 +96,13 @@ export const WalletWindow: React.FC<{ t: number; kind: "connect" | "approve"; pr
       <span style={{ marginLeft: "auto", font: `500 16px/1 ${FONTS.ui}`, color: BRAND.darkGray }}>wallet</span>
     </div>
     <div style={{ padding: "22px 22px 18px" }}>
-      <div style={{ font: `800 28px/1.15 ${FONTS.ui}`, color: BRAND.ink }}>{kind === "connect" ? "Connect to tweetpad.io?" : "Approve transaction"}</div>
+      <div style={{ font: `800 28px/1.15 ${FONTS.ui}`, color: BRAND.ink }}>{kind === "connect" ? "Connect to tweetpad.io?" : kind === "sign" ? "Sign message" : "Approve transaction"}</div>
       <div style={{ marginTop: 10, font: `500 19px/1.35 ${FONTS.ui}`, color: BRAND.darkGray }}>
-        {kind === "connect" ? "tweetpad.io wants to see your public address." : "tweetpad.io · Solana mainnet. Review what your wallet shows before you approve."}
+        {kind === "connect" ? "tweetpad.io wants to see your public address." : kind === "sign" ? "tweetpad.io asks you to sign a message. It approves no transaction." : "tweetpad.io · Solana mainnet. Review what your wallet shows before you approve."}
       </div>
       <div style={{ marginTop: 22, display: "flex", gap: 12 }}>
         <span style={{ flex: 1, textAlign: "center", padding: "14px 0", borderRadius: 12, background: "#eef1f4", font: `700 20px/1 ${FONTS.ui}`, color: BRAND.ink }}>Cancel</span>
-        <span style={{ flex: 1, textAlign: "center", padding: "14px 0", borderRadius: 12, background: pressed ? "#8a7de0" : "#ab9ff2", font: `700 20px/1 ${FONTS.ui}`, color: "#fff" }}>{kind === "connect" ? "Connect" : "Approve"}</span>
+        <span style={{ flex: 1, textAlign: "center", padding: "14px 0", borderRadius: 12, background: pressed ? "#8a7de0" : "#ab9ff2", font: `700 20px/1 ${FONTS.ui}`, color: "#fff" }}>{kind === "connect" ? "Connect" : kind === "sign" ? "Sign" : "Approve"}</span>
       </div>
       <div style={{ marginTop: 14, font: `500 13px/1.3 ${FONTS.ui}`, color: BRAND.lightGray, textAlign: "center" }}>Illustration. Your wallet's own window looks different.</div>
     </div>

@@ -39,6 +39,24 @@ const SolIco: React.FC<{ s: number }> = ({ s }) => (
   </span>
 );
 
+/** Solana's launchpad (film 12): pump.fun or Stonkfun (renderStonkBox, renderPairPick, renderLaunch). Left out = films 1–11's form. */
+export type StonkMode = "standard" | "reward" | "community";
+export type StonkTapAt = "venue-pump" | "venue-stonk" | "pair" | "mode-standard" | "mode-reward" | "mode-community" | "tax-100" | "tax-300" | "button";
+export type StonkForm = {
+  venue: "pump" | "stonk";
+  /** the Pair chip: a Stonkfun pair (symbol as the app shows it, e.g. "NVDAx"; img a public/ path), null while the pairs load ("…"); left out = SOL */
+  pair?: { symbol: string; img: string; community?: boolean } | null;
+  mode?: StonkMode; taxBps?: number; shareBps?: number;
+  /** a node drawn inside the tapped control (the film's hand + ripple), so no click target needs measuring */
+  tap?: { at: StonkTapAt; node: React.ReactNode } | null;
+  /** the control shown pressed this frame */
+  pressed?: StonkTapAt | null;
+};
+/** renderLaunch #launch-note on Stonkfun */
+export const noteStonk = (pair: string | null, mode: StonkMode, taxBps: number) =>
+  "Launches on Stonkfun" + (pair ? ", paired with " + (pair === "SOL" ? "SOL" : "$" + pair) : "") + " · "
+  + (mode === "standard" ? "your share of the 1% fee forwarded by Stonkfun" : taxBps / 100 + "% holder tax, paid out by Stonkfun") + " · about 0.009 SOL";
+
 /** #evm-wallet: the line under the Launch head on Robinhood (renderEvmWallet) */
 export type EvmLine = { found: number } | { address: string; wallet: string } | "none";
 
@@ -73,9 +91,11 @@ export type LaunchFormProps = {
   ethFee?: number; ethStart?: string; ethPressed?: { fee?: number; start?: string } | null;
   /** highlight ring around a block, for tutorials */
   ring?: "image" | "name" | "ticker" | "desc" | "socials" | "fees" | "devbuy" | "jito" | "button" | "eth" | null;
+  /** Solana only (film 12): the launchpad row at the top, the Pair chip's pick, and Stonkfun's fee box in place of the dev buy */
+  stonk?: StonkForm;
 };
 
-export const LaunchForm: React.FC<LaunchFormProps> = ({ chain, image, imageT = 1, name = "", ticker = "", caret = null, desc = "launched on tweetpad.io", devBuy = 0, button, pressed, buttonPrimary = true, evmLine = { found: 1 }, holders = 0, checks, width = 330, est, socialsOpen, socials = {}, socialCaret = null, descCaret, jito, nets, ethFee = 2, ethStart = "10", ethPressed = null, ring = null }) => {
+export const LaunchForm: React.FC<LaunchFormProps> = ({ chain, image, imageT = 1, name = "", ticker = "", caret = null, desc = "launched on tweetpad.io", devBuy = 0, button, pressed, buttonPrimary = true, evmLine = { found: 1 }, holders = 0, checks, width = 330, est, socialsOpen, socials = {}, socialCaret = null, descCaret, jito, nets, ethFee = 2, ethStart = "10", ethPressed = null, ring = null, stonk }) => {
   const s = useSkin();
   const craft = s.name !== "2012";
   const evm = chain !== "solana";
@@ -88,18 +108,24 @@ export const LaunchForm: React.FC<LaunchFormProps> = ({ chain, image, imageT = 1
   const small = craft ? `14px/1.1 ${s.mono}` : `12px/1.3 ${s.px}`;
   const presets = PRESETS[chain];
   const amount = presets[devBuy];
+  const sk = !evm && stonk ? stonk : null;
+  const stonkOn = !!sk && sk.venue === "stonk";
+  const sPair = stonkOn ? sk!.pair ?? null : null;   // Stonkfun's pick; null while its pairs load
+  const tapAt = (at: StonkTapAt) => (sk?.tap && sk.tap.at === at ? sk.tap.node : null);
   const pair = evm ? null : (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 7px 3px 5px", borderRadius: craft ? 0 : 12, background: craft ? "rgba(5,12,14,.75)" : "linear-gradient(#fff,#f0f0f0)",
-      border: `1px solid ${craft ? s.panelLo : "#ccc"}`, fontWeight: "normal", textShadow: "none" }}>
+    <span style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 7px 3px 5px", borderRadius: craft ? 0 : 12, background: craft ? "rgba(5,12,14,.75)" : "linear-gradient(#fff,#f0f0f0)",
+      border: `1px solid ${craft ? s.panelLo : "#ccc"}`, fontWeight: "normal", textShadow: "none", boxShadow: sk?.pressed === "pair" ? "inset 0 1px 3px rgba(0,0,0,.3)" : undefined }}>
       <small style={{ font: `11px/1 ${s.px}`, color: "#999" }}>Pair</small>
-      <SolIco s={18} />
-      <b style={{ font: `bold 12px/1 ${s.px}`, color: craft ? s.text : "#333" }}>SOL</b>
+      {stonkOn && !sPair ? null : sPair && sPair.symbol !== "SOL" ? <Img src={staticFile(sPair.img)} style={{ width: 18, height: 18, borderRadius: "50%", objectFit: "cover", background: "#fff" }} /> : <SolIco s={18} />}
+      <b style={{ font: `bold 12px/1 ${s.px}`, color: craft ? s.text : "#333" }}>{stonkOn && !sPair ? "…" : sPair && sPair.symbol !== "SOL" ? "$" + sPair.symbol : "SOL"}</b>
       <span style={{ font: `10px/1 ${s.px}`, color: "#999" }}>▾</span>
+      {tapAt("pair")}
     </span>
   );
   return (
     <Panel head="Launch" right={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><NetSeg net={chain} nets={nets} />{pair}</span>} width={width}>
       {evm ? <EvmWallet line={evmLine} /> : null}
+      {sk ? <VenueRow venue={sk.venue} pressed={sk.pressed} tapAt={tapAt} /> : null}
       <div style={{ display: "flex", gap: 10 }}>
         <div style={{ ...R("image"), position: "relative", width: 84, height: 84, flex: "none", display: "grid", placeItems: "center", overflow: "hidden", borderRadius: craft ? 0 : 5,
           background: craft ? "rgba(5,12,14,.7)" : "#f7f7f7", border: image && imageT > 0.5 ? `1px solid ${craft ? s.panelLo : "#ccc"}` : `${craft ? 2 : 1}px dashed ${craft ? "rgba(140,200,210,.45)" : "#bbb"}` }}>
@@ -139,7 +165,8 @@ export const LaunchForm: React.FC<LaunchFormProps> = ({ chain, image, imageT = 1
       </div>
       {en && !custom ? <FeeBox holders={holders} symbol={en.symbol} style={R("fees")} /> : null}
       {custom ? <EthBox fee={ethFee} start={ethStart} pressed={ethPressed} style={R("eth")} /> : null}
-      {custom ? null : <div style={{ ...R("devbuy"), display: "flex", flexDirection: "column", gap: 6, padding: 10, background: craft ? "rgba(5,12,14,.45)" : "#f7f9fa", border: craft ? `1px dashed ${s.line}` : "1px solid #e3e3e3", borderRadius: craft ? 0 : 5 }}>
+      {stonkOn ? <StonkBox mode={sk!.mode ?? "standard"} taxBps={sk!.taxBps ?? 100} shareBps={sk!.shareBps ?? 3300} ticker={ticker} pair={sPair} pressed={sk!.pressed} tapAt={tapAt} /> : null}
+      {custom || stonkOn ? null : <div style={{ ...R("devbuy"), display: "flex", flexDirection: "column", gap: 6, padding: 10, background: craft ? "rgba(5,12,14,.45)" : "#f7f9fa", border: craft ? `1px dashed ${s.line}` : "1px solid #e3e3e3", borderRadius: craft ? 0 : 5 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
           <span style={{ font: craft ? `15px/1 ${s.mono}` : `bold 12px/1 ${s.px}`, color: craft ? s.dim : "#666", textTransform: craft ? "uppercase" : undefined }}>Dev buy</span>
           <span style={{ font: craft ? `13px/1 ${s.mono}` : `11px/1.2 ${s.px}`, color: "#999" }}>optional · bought in the launch transaction</span>
@@ -156,8 +183,13 @@ export const LaunchForm: React.FC<LaunchFormProps> = ({ chain, image, imageT = 1
         </div>
         {jito !== undefined && !evm ? <JitoRow on={jito} style={R("jito")} /> : null}
       </div>}
-      <Btn primary={buttonPrimary} pressed={pressed} style={{ padding: "10px 12px", fontSize: 14, ...R("button") }}>{button}</Btn>
-      {checks && checks.length ? null : <p style={{ margin: "-2px 0 0", textAlign: "center", font: craft ? `14px/1.15 ${s.mono}` : `11px/1.3 ${s.px}`, color: s.dim }}>{custom ? noteEth(ethFee) : evm ? noteEvm(chain as EvmNet) : NOTE_SOLANA}</p>}
+      {tapAt("button") ? (
+        <div style={{ position: "relative", display: "flex", flexDirection: "column" }}>
+          <Btn primary={buttonPrimary} pressed={pressed} style={{ padding: "10px 12px", fontSize: 14, ...R("button") }}>{button}</Btn>{tapAt("button")}
+        </div>
+      ) : <Btn primary={buttonPrimary} pressed={pressed} style={{ padding: "10px 12px", fontSize: 14, ...R("button") }}>{button}</Btn>}
+      {checks && checks.length ? null : <p style={{ margin: "-2px 0 0", textAlign: "center", font: craft ? `14px/1.15 ${s.mono}` : `11px/1.3 ${s.px}`, color: s.dim }}>
+        {custom ? noteEth(ethFee) : evm ? noteEvm(chain as EvmNet) : stonkOn ? noteStonk(sPair ? sPair.symbol : null, sk!.mode ?? "standard", sk!.taxBps ?? 100) : NOTE_SOLANA}</p>}
       {checks && checks.length ? (
         <div style={{ display: "flex", flexDirection: "column" }}>
           {checks.map((c, i) => (
@@ -273,6 +305,72 @@ const EthBox: React.FC<{ fee: number; start: string; pressed?: { fee?: number; s
         <small style={{ fontSize: craft ? 13 : 11, color: craft ? s.dim : "#aaa" }}> Fixed at launch: the fee hook can never be changed.</small>
         <span style={{ display: "block", marginTop: 3, font: craft ? `13px/1.2 ${s.mono}` : `11px/1.3 ${s.px}`, color: craft ? s.dim : "#aaa" }}>
           Reviewed and launched by <span style={{ textDecoration: "underline", textDecorationColor: craft ? "currentColor" : "#ccc", textUnderlineOffset: 2 }}>Launch Party</span> · 0.001 ETH launch fee</span>
+      </div>
+    </div>
+  );
+};
+
+/** .buy-chips in the 2012 skin: the segmented control (pressed = the picked one); a tap node sits inside its button */
+const SegChips: React.FC<{ items: { key: StonkTapAt; label: string; on: boolean; disabled?: boolean }[]; stretch?: boolean; pressed?: StonkTapAt | null; tapAt: (at: StonkTapAt) => React.ReactNode }> =
+  ({ items, stretch, pressed, tapAt }) => {
+    const s = useSkin();
+    const craft = s.name !== "2012";
+    return (
+      <span style={{ display: "flex", flex: stretch ? 1 : undefined }}>
+        {items.map((it, i) => (
+          <span key={it.key} style={{ position: "relative", flex: stretch ? 1 : undefined, textAlign: "center", padding: "5px 10px", marginLeft: i ? -1 : 0, font: craft ? `15px/1 ${s.mono}` : `bold 12px/1 ${s.px}`,
+            zIndex: it.on ? 1 : 0, opacity: it.disabled ? 0.5 : 1,
+            color: it.on ? (craft ? "#04200e" : "#fff") : craft ? s.dim : "#555", textShadow: it.on ? (craft ? "none" : "0 -1px 0 rgba(0,0,0,.25)") : craft ? s.textShadow : "0 1px 0 #fff",
+            background: it.on ? s.segOn : s.segOff, border: `1px solid ${it.on ? (craft ? s.accent : "#1d6aa5") : craft ? s.line : "#bbb"}`,
+            borderRadius: craft ? 0 : i === 0 ? "4px 0 0 4px" : i === items.length - 1 ? "0 4px 4px 0" : 0,
+            boxShadow: (it.on || pressed === it.key) && !craft ? "inset 0 1px 3px rgba(0,0,0,.3)" : undefined }}>{it.label}{tapAt(it.key)}</span>
+        ))}
+      </span>
+    );
+  };
+
+/** #venue-row: "Launchpad [pump.fun | Stonkfun]" at the top of the Solana form */
+const VenueRow: React.FC<{ venue: "pump" | "stonk"; pressed?: StonkTapAt | null; tapAt: (at: StonkTapAt) => React.ReactNode }> = ({ venue, pressed, tapAt }) => {
+  const s = useSkin();
+  const craft = s.name !== "2012";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ flex: "none", font: craft ? `15px/1 ${s.mono}` : `bold 12px/1 ${s.px}`, color: craft ? s.dim : "#666", textTransform: craft ? "uppercase" : undefined }}>Launchpad</span>
+      <SegChips stretch pressed={pressed} tapAt={tapAt} items={[{ key: "venue-pump", label: "pump.fun", on: venue === "pump" }, { key: "venue-stonk", label: "Stonkfun", on: venue === "stonk" }]} />
+    </div>
+  );
+};
+
+/** #stonk-box (renderStonkBox): Stonkfun's fee setup, fixed at launch, in place of the dev buy */
+const StonkBox: React.FC<{ mode: StonkMode; taxBps: number; shareBps: number; ticker: string; pair: { symbol: string; community?: boolean } | null;
+  pressed?: StonkTapAt | null; tapAt: (at: StonkTapAt) => React.ReactNode }> = ({ mode, taxBps, shareBps, ticker, pair, pressed, tapAt }) => {
+  const s = useSkin();
+  const craft = s.name !== "2012";
+  const head = (label: string, hint: string) => (
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+      <span style={{ flex: "none", font: craft ? `15px/1 ${s.mono}` : `bold 12px/1 ${s.px}`, color: craft ? s.dim : "#666", textTransform: craft ? "uppercase" : undefined }}>{label}</span>
+      <span style={{ font: craft ? `13px/1 ${s.mono}` : `11px/1.2 ${s.px}`, color: "#999" }}>{hint}</span>
+    </div>
+  );
+  const coin = ticker ? "$" + ticker : "your coin";
+  const paid = pair ? (pair.symbol === "SOL" ? "SOL" : "$" + pair.symbol) : "the pair";
+  const share = Math.round(shareBps / 100);
+  const b = (t: string) => <b style={{ color: craft ? s.text : "#333" }}>{t}</b>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: craft ? 8 : 10, background: craft ? "rgba(5,12,14,.45)" : "#f7f9fa", border: craft ? `1px dashed ${s.line}` : "1px solid #e3e3e3", borderRadius: craft ? 0 : 5 }}>
+      {head("Fees", "fixed at launch, for the coin's life")}
+      <SegChips stretch pressed={pressed} tapAt={tapAt} items={[{ key: "mode-standard", label: "Creator fees", on: mode === "standard" }, { key: "mode-reward", label: "Holder rewards", on: mode === "reward" },
+        { key: "mode-community", label: "Community", on: mode === "community", disabled: !pair?.community }]} />
+      {mode !== "standard" ? <>
+        {head("Holder tax", "on every transfer, paid to holders")}
+        <SegChips pressed={pressed} tapAt={tapAt} items={[{ key: "tax-100", label: "1%", on: taxBps === 100 }, { key: "tax-300", label: "3%", on: taxBps === 300 }]} />
+      </> : null}
+      <div style={{ font: craft ? `15px/1.15 ${s.mono}` : `12px/1.35 ${s.px}`, color: craft ? s.dim : "#777" }}>
+        {mode === "standard" ? <>Each trade: a 1% curve fee, {b("your share forwarded to your wallet")} by Stonkfun. No transfer tax.</>
+          : <>Every transfer of {coin} is taxed {b(taxBps / 100 + "%")}; Stonkfun pays it out in {paid}: {mode === "community" ? b(100 - share + "% to " + coin + " holders, " + share + "% to " + paid + " holders") : b("all to " + coin + " holders")}. No creator fee.</>}
+        <small style={{ fontSize: craft ? 13 : 11, color: craft ? s.dim : "#aaa" }}> Fixed at launch.</small>
+        <span style={{ display: "block", marginTop: 3, font: craft ? `13px/1.2 ${s.mono}` : `11px/1.3 ${s.px}`, color: craft ? s.dim : "#aaa" }}>
+          On <span style={{ textDecoration: "underline", textDecorationColor: craft ? "currentColor" : "#ccc", textUnderlineOffset: 2 }}>Stonkfun</span> (Raydium LaunchLab) · about 0.009 SOL · no dev buy yet</span>
       </div>
     </div>
   );

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- film 12's demo coin image ($MCHIP, "Moon Chip"): drawn for the film, not a real coin -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9df0b4"/><stop offset="1" stop-color="#2e9e4f"/></linearGradient>
+    <linearGradient id="chip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4250"/><stop offset="1" stop-color="#1c2129"/></linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#bg)"/>
+  <!-- the chip's pins -->
+  <g stroke="#c9a54a" stroke-width="8" stroke-linecap="round">
+    <path d="M92 58v-18M128 58v-18M164 58v-18M92 198v18M128 198v18M164 198v18M58 92h-18M58 128h-18M58 164h-18M198 92h18M198 128h18M198 164h18"/>
+  </g>
+  <rect x="58" y="58" width="140" height="140" rx="18" fill="url(#chip)" stroke="#11151b" stroke-width="4"/>
+  <rect x="72" y="72" width="112" height="112" rx="10" fill="none" stroke="#4d5767" stroke-width="3"/>
+  <!-- a happy face -->
+  <circle cx="106" cy="120" r="10" fill="#fff"/><circle cx="150" cy="120" r="10" fill="#fff"/>
+  <circle cx="108" cy="122" r="5" fill="#11151b"/><circle cx="152" cy="122" r="5" fill="#11151b"/>
+  <path d="M104 148q24 20 48 0" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <!-- the up arrow, off to the moon -->
+  <path d="M150 230 L226 110" stroke="#fff" stroke-width="14" stroke-linecap="round"/>
+  <path d="M190 104 L232 98 L224 140z" fill="#fff"/>
+  <circle cx="214" cy="40" r="20" fill="#fff5c2"/><circle cx="206" cy="34" r="5" fill="#f0dc8a"/><circle cx="222" cy="46" r="3.5" fill="#f0dc8a"/>
+</svg>

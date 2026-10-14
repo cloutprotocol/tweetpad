@@ -13,15 +13,17 @@ of the live app and no iframes. The tweetpad app (`embed.html`, `assets/`, `api/
 remotion/
   SKILL.md                 this file
   project/
-    package.json           pinned deps; scripts: studio, typecheck, render, render:craft, stills, render:/stills: robinhood, howto, trade, multichain, welcome, panel, agents, winamp, ethereum, three
+    package.json           pinned deps; scripts: studio, typecheck, render, render:craft, stills, render:/stills: robinhood, howto, trade, multichain, welcome, panel, agents, winamp, ethereum, three, stonks, games, bordrless
     remotion.config.ts     jpeg q95, concurrency 4, REMOTION_CHROME override
     scripts/stills.mjs     bundle once, render many PNG stills
     scripts/export_wordmark.py  re-exports the wordmark PNGs from banner/banner.py (+ tp/pico.py)
-    public/brand/          # icon, glyphs, wordmarks, token pfps, dex banners, card-preview.png, agent-inu.jpg, solana.svg, bnb.svg (the official mark, copied from assets/), base.svg, ethereum.svg (copied from assets/), ether-cat.svg (film 10's demo coin image, drawn for the film), pfp-cz.jpg, pfp-jesse.jpg (film 6 only)
+    public/brand/          # icon, glyphs, wordmarks, token pfps, dex banners, card-preview.png, agent-inu.jpg, solana.svg, bnb.svg (the official mark, copied from assets/), base.svg, ethereum.svg (copied from assets/), ether-cat.svg (film 10's demo coin image, drawn for the film), moon-chip.svg (film 12's demo coin image, drawn for the film), pfp-cz.jpg, pfp-jesse.jpg (film 6 only)
     public/fonts/          Inter, Fredoka, Gelasio, Pixelify Sans, VT323, Doto (all OFL)
+    public/stonk/          film 12 only: the xStock pair logos as Stonkfun serves them (TSLAx.jpg, NVDAx.jpg, SPYx.png …)
+    public/games/          film 13 only: pumpordump.jpg, mines.jpg (the /games tiles) and gamba.svg (Gamba's shrimp mark), copied from assets/games/
     public/winamp/         film 9 only: space-debris.mp3 (40 s) + skin-01 … skin-10 player stills (275x348 logical at 4x)
     src/
-      index.ts, Root.tsx   compositions TweetpadSquare (2012), TweetpadSquareCraft (Tweetcraft), TweetpadHowToLaunch, TweetpadRobinhoodUpdate, TweetpadTradeUpdate, TweetpadMultichainUpdate, TweetpadWelcomeBnbBase, TweetpadTradePanel, TweetpadAgentsTeaser, TweetpadWinamp, TweetpadEthereum, TweetpadThreeNew
+      index.ts, Root.tsx   compositions TweetpadSquare (2012), TweetpadSquareCraft (Tweetcraft), TweetpadHowToLaunch, TweetpadRobinhoodUpdate, TweetpadTradeUpdate, TweetpadMultichainUpdate, TweetpadWelcomeBnbBase, TweetpadTradePanel, TweetpadAgentsTeaser, TweetpadWinamp, TweetpadEthereum, TweetpadThreeNew, TweetpadStonks, TweetpadGames
       Tweetpad.tsx         the film: Ground + 6 <Sequence>s
       timeline.ts          ALL copy + scene frame ranges + EVM_STATUS flag  <- edit copy here only
       brand/tokens.ts      BRAND palette, FONTS, SKIN_2012 / SKIN_CRAFT (copied from the app CSS)
@@ -33,7 +35,7 @@ remotion/
       components/Film.tsx  Ground, Caption, Fine, Cursor, cursorAt
       scenes/              Hook, Open, Solana, Tokens, Evm, End, layout.ts (APP rect, toFilm, CARD rect)
       howto/               film 2 (HowTo.tsx) + parts.tsx (camera / Stage, wallet menu + window, tab ring)
-      update/              film 3, RobinhoodUpdate.tsx · film 4, TradeUpdate.tsx · film 5, MultichainUpdate.tsx · film 6, WelcomeBnbBase.tsx · film 7, TradePanel.tsx · film 8, AgentsTeaser.tsx · film 9, Winamp.tsx · film 10, EthereumUpdate.tsx · film 11, ThreeNew.tsx
+      update/              film 3, RobinhoodUpdate.tsx · film 4, TradeUpdate.tsx · film 5, MultichainUpdate.tsx · film 6, WelcomeBnbBase.tsx · film 7, TradePanel.tsx · film 8, AgentsTeaser.tsx · film 9, Winamp.tsx · film 10, EthereumUpdate.tsx · film 11, ThreeNew.tsx · film 12, Stonks.tsx · film 13, Games.tsx
   out/                     tweetpad-square.mp4 + stills/*.png
 ```
 
@@ -539,3 +541,117 @@ Shared additions, all defaulting to the old behaviour (films 1–9 render byte-i
 | 4 | End | 816–905 | "Ethereum. Custom launches. Auto-claim. / All inside the tweet.", tweetpad.io, $TP, the diamond waving in the corner, three lines of small type (Solana, Ethereum, the parody line). |
 
 **Render.** `npm run render:three` writes `../out/tweetpad-three-new.mp4`. `npm run stills:three` writes `TweetpadThreeNew-f*.png`; rename them to `three-<frame>-<name>.png`.
+
+## 18. Film 12: `TweetpadStonks` ("Stocks meet memes. Stonkfun, inside the tweet.")
+
+**Purpose.** The update film for Stonkfun launches on Solana (shipped in b6418ac): a coin paired with a tokenized stock, SOL or USDC on Raydium LaunchLab under Stonkfun's platform, with creator fees or holder rewards. 1080x1080, 30 fps, 1025 frames (34.2 s), 2012 skin. Same look as films 10–11 (centred captions, the app at ×1.55, `Stage` close-ups, `CaptionBand`, `Fine`), plus **the stonks**: the xStock logos swirl on tilted rings around the # icon (hook), around the app (every app scene, faint), and around the end card, with faint green candles rising in the hook.
+
+**What it may claim, with sources** (`embed.html` #venue-row / #stonk-box / #pairs-venue, `assets/tweetpad.js` renderStonkBox, renderPairs, renderPairPick, renderLaunch, onLaunch, renderStonkFees, renderTrade, `api/stonk.js`, README "Stonkfun").
+- The Launchpad row at the top of the Solana form: "Launchpad [pump.fun | Stonkfun]". Switching to Stonkfun picks $TSLAx until a pair is picked; the chip reads "Pair … ▾" while the pairs load.
+- "Pair with": "All · pump.fun · Stonkfun", the pump.fun section ("SOL or any coin launched on tweetpad") over the Stonkfun one ("SOL, tokenized stocks or USDC · creator fees or holder rewards"); stock tiles say "Stock", Stonkfun's SOL "Stonkfun"; the note "The pair picks the launchpad: pump.fun, or Stonkfun for stocks, USDC and holder rewards."
+- The fee box: "Fees · fixed at launch, for the coin's life", Creator fees | Holder rewards | Community (Community only on stocks), "Holder tax · on every transfer, paid to holders" 1% | 3%, and the notes verbatim (creator fees: "Each trade: a 1% curve fee, your share forwarded to your wallet by Stonkfun. No transfer tax."; rewards: "… Stonkfun pays it out in $NVDAx: all to $MCHIP holders."; Community: "67% to $MCHIP holders, 33% to $NVDAx holders"), "On Stonkfun (Raydium LaunchLab) · about 0.009 SOL · no dev buy yet". No dev buy box on Stonkfun.
+- The note under the button (`noteStonk`), the button "Launch $MCHIP on Stonkfun", and onLaunch's lines: "Building the Stonkfun transaction…", "Transaction built · mint xxxx…xxxx · paired with $NVDAx · Holder rewards 3%" (the app also appends "· opens at $…", a market cap: the film leaves it out), "Signed by Phantom and the new mint", "Confirmed on mainnet", "$MCHIP is live" [Stonkfun ↗], "Stonkfun picks it up within a minute or two".
+- The coin page: "⇄ $NVDAx" under the head, "Stonkfun ↗" (no LIVE chip), "3% transfer tax · paid to holders in $NVDAx by Stonkfun", "PAID TO HOLDERS · 0.0042 NVDAx · 12 wallets" (**demo amounts**, under "Demo coin, demo amounts"), "Launched on Stonkfun (Raydium LaunchLab)". Trades go through Jupiter (LaunchLab's 1% fee and Jupiter's 0.1%; tweetpad takes nothing).
+
+**Never (this film).**
+- Stock prices, market caps (the $TP tile shows "—"), volumes, % moves, or anything that reads as a forecast; the rising candles are decoration, never with numbers.
+- Affiliation or endorsement: the logos belong to their owners, and Stonkfun is named in words only (no Stonkfun logo). Every scene showing logos carries "Logos belong to their owners. No affiliation with or endorsement by them, or by Stonkfun."
+- Real coins or addresses; audit or safety claims; "free". Holder rewards are "paid out by Stonkfun", never guaranteed.
+
+**Code.** `src/update/Stonks.tsx`. Timing and copy are `STONK` / `STONK_COPY` in `src/timeline.ts`. Taps are ThreeNew's `Tap` (now exported), drawn inside the tapped control through `LaunchForm`'s `stonk.tap` slot, so there are no click targets; the only cursor is on `WalletWindow`'s Approve (`WALLET_OK`). The form is drawn at the shipped 363 px column (`width={363}`). The "Pair with" dialog is rebuilt in the film (`PairDialog`) and passed as `AppFrame`'s `overlay`.
+Shared additions, all optional, so films 1–11 are unchanged: `LaunchForm stonk` (`StonkForm`: the Launchpad row, the Pair chip's pick, `StonkBox` in place of the dev buy, `noteStonk`), and `CoinView stonk` (the pair line, "Stonkfun ↗", and a fee node).
+
+| # | Scene | Frames | What happens |
+|---|---|---|---|
+| 0 | Hook | 0–149 | "NEW · Stocks meet memes. / Stonkfun, inside the tweet." Two rings of xStock logos orbit the # icon in 3D (front and back halves around it), green candles rise, the pill "Launch a coin paired with a stock." Frame 0 is the thumbnail. |
+| 1 | Switch | 150–289 | "1 · LAUNCHPAD · One switch: / pump.fun or Stonkfun." Close on the form's head; Stonkfun is tapped (194): the chip reads "…", then "$TSLAx", and the fee box replaces the dev buy as the camera pulls back. |
+| 2 | Pair | 290–449 | "2 · PAIR · Pair your coin with a stock." The chip is tapped, "Pair with" opens on All, the Stonkfun filter is tapped (346), then $NVDAx (394); the dialog closes and the chip reads $NVDAx. |
+| 3 | Fees | 450–599 | "3 · FEES · Creator fees, / or holder rewards." Holder rewards (480), 3% (514), Community (550); the note follows each tap. |
+| 4 | Launch | 600–779 | "4 · LAUNCH · Hit Launch. / Checked on chain before it's listed." (Holder rewards 3%) The check lines, the generic approve window (Approve at 684), "$MCHIP is live" [Stonkfun ↗], "Stonkfun picks it up within a minute or two", the toast. |
+| 5 | Coin | 780–919 | "5 · HOLDERS · Holders get paid / in the stock." The coin page draws its chart, scrolls to the tax and "PAID TO HOLDERS 0.0042 NVDAx · 12 wallets". |
+| 6 | End | 920–1024 | "Stocks meet memes. / Launch on Stonkfun, inside the tweet.", tweetpad.io, $TP, the logos circling the card (faded before the small type), three lines of small type. |
+
+**Render.** `npm run render:stonks` writes `../out/tweetpad-stonks.mp4`. `npm run stills:stonks` writes `TweetpadStonks-f*.png`; rename them to `stonks-<frame>-<name>.png` (16 already in `out/stills`). Never overwrite an existing file in `out/`.
+
+## 19. Film 13: `TweetpadGames` ("Casino games, inside the tweet. Built on Gamba.")
+
+**Purpose.** The update film for tweetpad's games on Gamba (shipped in 96fafb3): `/games`, Pump or Dump, Mines, ⚡ Instant play and the fairness check. 1080x1080, 30 fps, 1250 frames (41.7 s), 2012 skin. The game pages are rebuilt in the film from `assets/feature.css` + `assets/games.css` (`GameFrame`, `Screen`, `PodChart`, `Board`, `Seg`, `Big`, `Stamp`) at the card's 480 px width, ×1.45 (`GStage`, the films' camera). Game pieces (gem and mine tiles, green and red candles) orbit the # icon in the hook, the app in every scene, and the end card.
+
+**What it may claim, with sources** (`games/*.html`, `assets/gamba-kit.js`, `pumpordump.js`, `mines.js`, `api/gamba.js`, README "Games").
+- Pump or Dump: 2×, 3× or 5×, bets 0.01 / 0.02 / 0.05 / 0.1 SOL, "33% to win", "wins 0.15 SOL", "costs 0.0519 SOL with fees · pays 0.15 SOL on a win"; the stamps TO THE MOON / LIQUIDATED and the status lines verbatim.
+- Mines: 5×5, 3 / 5 / 10 mines, NEXT / RIDING, "💎 Safe · ×1.14 · 0.0568 SOL riding", CASH OUT, "Cashed out … · it's in your game balance", BOOM, "Hit a mine on tile 1"; the multipliers are api/gamba.js minesBet's (×1.1363, ×1.1428, ×1.15 for 3 mines); 3.2% fees a tile.
+- ⚡ Instant play: "Each play asks your wallet." → one signed message (the generic wallet window's "sign" kind: "Sign message … It approves no transaction.") → "⚡ Game balance … Top up · Withdraw · Lock"; up to 1 SOL; withdraws only to that wallet.
+- Provably fair: the box and its four check lines verbatim; the seed hash shown is made up for the film.
+- Gamba: "Built on Gamba", Solana's on-chain casino protocol, the house is its public SOL pool, settled on chain in about a second, seeds committed before you play.
+
+**Never (this film).** Wins without a loss (each game shows one); live numbers (the jackpot, volumes, payouts, player counts); "free", "guaranteed", "risk-free", audit or safety claims; Gamba as a partner or endorser (its mark is shown as "Built on Gamba"; the small type says it doesn't run or endorse tweetpad); a scene with plays and no "18+, and only where betting is legal" in its small type.
+
+| # | Scene | Frames | What happens |
+|---|---|---|---|
+| 0 | Hook | 0–149 | "NEW · Casino games, / inside the tweet." Gems, mines and candles orbit the # icon; the pill "Pump or Dump · Mines" and "Built on Gamba". Frame 0 is the thumbnail. |
+| 1 | /games | 150–249 | "1 · GAMES · Two games. / One tap, in the post." The two tiles and the Gamba card; Pump or Dump is tapped. |
+| 2 | Pump or Dump | 250–489 | 3× is tapped, PUMP (rolling candle, TO THE MOON +0.0981, rockets), then DUMP (LIQUIDATED −0.0519). |
+| 3 | Mines | 490–729 | Three gems (×1.14, ×1.30, ×1.49), CASH OUT 0.0747 SOL, a new round, BOOM −0.05 with the other mines shown. |
+| 4 | Instant play | 730–879 | ⚡ Instant play is tapped, the sign window (Sign at 790), the game balance, three tiles with no pop-ups. |
+| 5 | Provably fair | 880–1019 | Pump or Dump's page scrolls to the seeds; the four checks land one by one. |
+| 6 | Built on Gamba | 1020–1139 | The shrimp mark, three facts. |
+| 7 | End | 1140–1249 | "Casino games, inside the tweet. / Pump or Dump and Mines, built on Gamba.", three lines of small type. |
+
+**Render.** `npm run render:games` writes `../out/tweetpad-games.mp4`. `npm run stills:games` writes `TweetpadGames-f*.png` (14). Never overwrite an existing file in `out/`.
+
+
+## 20. Film 14: `TweetpadBordrless` ("Bordrless tokens. Tradeable in a tweet.")
+
+**Purpose.** The update film for tweetpad's Bordrless integration: every Bordrless token gets a trading page at `tweetpad.io/b/<token CA>` that plays as its own X card, so a posted link is the coin, tradeable in the post; plus the Tokens page's Bordrless list by market cap, the scanner, and Bordrless launches. 1080x1080, 30 fps, 1410 frames (47.0 s). **Its own look**, Bordrless's blended with tweetpad's: paper `#e3e3df`, ink `#111`, Anton headlines (second line white on ink over tweetpad's blue shadow), JetBrains Mono labels and small type, Space Grotesk text, square cards on hard offset shadows, "Fig." tags, corner brackets, and the user's two 1-bit dithered pictures (`public/bordrless/monument.png`, the ringed sphere; `workshop.png`, the sculptor), with tweetpad's # icon. Fonts: `public/fonts/Anton-Regular.ttf`, `JetBrainsMono-{Regular,Bold}.ttf`, `SpaceGrotesk-{Medium,Bold}.ttf` (OFL, from Google Fonts; added to `brand/fonts.ts`, unused by films 1–13).
+
+**What it may claim, with sources** (`api/b.js`, `assets/b.js`, `b.css`, `api/bordrless.js`, `assets/tweetpad.js` renderBordrTokens / renderBordrBox, README "Bordrless", "Bordrless pages", "Tokens").
+- Bordrless tokens live in Bordrless's own token program (not SPL, not Token-2022): wallets don't list them, swap aggregators don't route them (b.js's small print: "your wallet's token list won't show it").
+- `/b/<mint>`: its own X player card (`?embed`) and card image (api/b.js `card()`: "TRADE IN THIS POST", the coin, MARKET CAP · 24H · HOLDERS, the curve bar "% TO GRADUATION", the rule chips); the page: the coin, the chart, Buy/Sell, chips 0.05 · 0.1 · 0.5 · Max, Slippage, the quote "≈ … $RING · min …", "Connect wallet to trade" → "Buy $RING", "Getting the price…" → "Approve in Phantom…" → "Confirming…" → "Bought ≈ … $RING" [Tx ↗], "Yours to claim", Fig. A–C cards verbatim (the risk words are the SDK's label for the rules kit).
+- The Bordrless list: "Every Bordrless token", New · Hot · Mcap, rank, "$SYM · age · N holders", market cap, 24h. The launch box: Launchpad pump.fun | Stonkfun | Bordrless, Creator fee 0.5% / 1% / 2%, Token rules Plain / Diamond hands / Burn / Paid to hold, the note and button verbatim, "about 0.035 SOL".
+- How to: copy the CA → tweetpad.io/b/<token CA> → post on X → anyone taps play and trades; or Tokens → Bordrless → a coin → Post on X. Coins with a hook of their creator's own trade on bordrless.app.
+
+**Never (this film).** Real Bordrless coins, prices, caps or addresses (demo coins $RING, $MONO, $CHSL, $PLTH, $DUST with pictures cropped from the two dithered images; every number under "Demo coin(s), demo numbers"; addresses `xxxx…xxxx`, the link `tweetpad.io/b/RiNG…xxxx`); Bordrless's logo or any partnership/endorsement wording (named in words; the small type says so); "free", "safe", "audited"; a trade scene without the fee line ("tweetpad takes nothing · network fees apply").
+
+**Code.** `src/update/Bordrless.tsx`. Timing and copy are `BORDR` / `BORDR_T` / `BORDR_COPY` in `src/timeline.ts`. The /b page is rebuilt at the card's 480 px (`BPage`, ×1.5); taps are ThreeNew's `Tap`; the only cursor is on the generic `WalletWindow` (connect, then approve). No shared component changed; films 1–13 are untouched.
+
+| # | Scene | Frames | What happens |
+|---|---|---|---|
+| 0 | Intro | 0–239 | "NEW · Bordrless tokens. / Tradeable in a tweet." The ringed sphere floats on its "Fig. 0" plate under a scan line; tweetpad's own post types "gm. Bordrless tokens now trade inside a tweet:" and lights five ghosted lines one by one (buy and sell in a post · tweetpad.io/b/<token CA> · ranked by market cap · scan · launch). Frame 0 (the thumbnail) shows them all as ghosts. |
+| 1 | The problem | 240–389 | "Fig. 1 · THE PROBLEM · Its own token standard. / Hard to trade anywhere else." The workshop; "Your wallet: ✕ No Bordrless tokens listed"; "Swap aggregator: ✕ No route for this token"; the stamp "Until now." |
+| 2 | Share | 390–569 | "1 · SHARE · Paste tweetpad.io/b/<token CA>. / It becomes a card you can trade." A post is typed with the link, Post is tapped, the coin's card unfurls with the play button, play is tapped. |
+| 3 | Trade | 570–809 | "2 · TRADE · Buy and sell in the post. / SOL in, SOL out. Your wallet signs." The page: 0.1 → the quote, connect (wallet window), Buy → approve → "Bought ≈ 214.2K $RING". |
+| 4 | On chain | 810–959 | "3 · ON CHAIN · Its rules, its curve, its risk. / Read from the chain." The page scrolls: Yours to claim (Claim tapped), Fig. A rules, Fig. B the curve, Fig. C who can change it. |
+| 5 | List · Launch | 960–1109 | "4 · EVERY TOKEN · … ranked by market cap." The list (five demo coins, #1–#5); then "5 · LAUNCH · Or launch your own. / Your fee. Its rules.": Bordrless tapped, Burn tapped, "Launch $RING on Bordrless". |
+| 6 | How to | 1110–1289 | "Fig. 2 · HOW TO · Make any Bordrless token / tradeable in a post." Four numbered steps light in turn; step 2 types `<token CA>` after tweetpad.io/b/. |
+| 7 | End | 1290–1409 | The monument; "tweetpad · ON BORDRLESS · Every Bordrless token. / Tradeable in a tweet. · tweetpad.io/b/<token CA>", two lines of small type. |
+
+**Render.** `npm run render:bordrless` writes `../out/tweetpad-bordrless.mp4`. `npm run stills:bordrless` writes `TweetpadBordrless-f*.png` (14) to `../out/stills`. Never overwrite an existing file in `out/`.
+
+## 21. Film 15: `TweetpadBordrlessHome` ("Launch & trade Bordrless tokens (inside a tweet).") and the poster
+
+**Purpose.** The Bordrless channel on tweetpad's new home, then launching and trading Bordrless tokens on Bordrless's DEX inside a post. 1080x1080, 30 fps, 1125 frames (37.5 s). It opens in the home's own look (the Menu, 2012 skin) and turns to Bordrless's (film 14's paper, ink, Anton, mono) once Start is pressed.
+
+**What it may claim, with sources** (`index.html`, `bordrless/index.html`, `assets/bhub.js`, `bhub.css`, `api/bordrless.js`, `api/b.js`, README "Bordrless section").
+- The Menu (`index.html`, rebuilt at its 480 units ×1.6): nine channels (Launch, Tokens, Feed, Custom launch, Games, Profile, **Bordrless** with Bordrless's ringed-sphere mark `public/menu/bordrless.png`, $TP, More), the dock (the # round, the clock "10:53 / Tue 10/13", the 𝕏 round), hover = blue bezel + scale 1.035. The hand is index.html's cursor (the films' `Cursor hand`).
+- The open, as index.html `open()` does it: the home scales ×1.12 toward the tile, fades and blurs 2 px; the screen grows from the tile's inset (radius 16) over 520 ms (16 f) with cubic-bezier(.45, 0, .2, 1); the banner (the channel's icon at 104 + its name, on the stripes) breathes while it loads; the bar "Menu · Bordrless · Start" rises; the banner fades off the section.
+- The section: the bar (‹ # tweetpad · BORDRLESS chip), the tabs Tokens · Launch · Hooks, the Tokens tab ("Search a name, ticker or contract", "N tokens", the note, rows with rank, holders, curve or graduated), the Launch tab (A Your coin, B Your fee, its rules, C Dev buy, the button and its cost line, and bhub.js `check()` lines verbatim; a pending line is replaced by the next).
+- Fig. 2: the sphere cut from Bordrless's own diagram (`public/bordrless/sphere.png`) on a framed plate, with its four nodes called out in our words: the token program, the hook, its answer ("an amount, not a yes or no"), the Bordrless DEX.
+- The trade: film 14's `BPage` (/b/<mint>), 0.1 SOL → "Bought ≈ 214.2K $RING".
+
+**Never (this film).** Real coins, prices or addresses (demo $RING, $MONO, $CHSL, $PLTH, $DUST and their numbers); Bordrless as a partner or endorser (its sphere marks its channel and is the art; the small type says Bordrless doesn't run or endorse tweetpad); "free", "safe", "audited".
+
+**The poster** (`src/update/BordrlessPoster.tsx`, composition `TweetpadBordrlessPoster`, still `../out/stills/bordrless-poster.png` via `npm run still:bordrless-poster`): film 14's end card refined: the monument full bleed falling to ink, three callouts on the sphere (1 The token program · 2 The hook: its rules · 3 The Bordrless DEX), "Launch & trade / Bordrless tokens" with the "(inside a tweet)" sticker, a small post on the panel's edge playing $RING's card, and a ticker of tweetpad.io/borderless · tweetpad.io/b/<token CA>. `BordrlessPosterArt f` animates it in; film 15 ends on it.
+
+**Code.** `src/update/BordrlessHome.tsx`, timing and copy `BHOME` / `BHOME_COPY` in `src/timeline.ts`. It imports film 14's exported parts (`Paper`, `BCap`, `BFine`, `Chip`, `Hash`, `Pic`, `PICS`, `BPage`, the palette and faces); exporting them changed nothing in film 14.
+
+| # | Scene | Frames | What happens |
+|---|---|---|---|
+| 0 | The Menu | 0–149 | "# tweetpad · The launchpad inside a tweet." and the Menu; the hand hovers Launch, then Games, then Bordrless (the NEW · BORDRLESS chip appears) and clicks at 112. |
+| 1 | The channel | 150–284 | The open (16 f), the banner breathing, the bar rising at 170, the section's Tokens tab under the banner from 212; Start is pressed at 254 and the frame zooms toward the viewer into Bordrless's paper. |
+| 2 | Fig. 2 | 285–404 | "TOKENS WITH A BRAIN · Their own token program. / Their own DEX." The framed sphere; four callouts draw in. |
+| 3 | Launch | 405–644 | "1 · LAUNCH · Launch a Bordrless token. / Your fee. Its rules. One approval." The image drops, Ring / RING, Burn, 0.1 SOL (≈ 2.07M $RING), Launch, the approve window, the check lines to "$RING is live · Its page ↗" and "Dev buy confirmed". |
+| 4 | Trade | 645–854 | "2 · TRADE · Trade it on Bordrless's DEX. / Right inside the post." /b/<mint>: 0.1 → the quote, Buy, approve, "Bought ≈ 214.2K $RING". |
+| 5 | Every token | 855–974 | "3 · EVERY TOKEN · Every Bordrless token. / By market cap. Tap one, trade it." The Tokens tab; Ring is tapped. |
+| 6 | The poster | 975–1124 | The poster animates in: the corner marks, the masthead, the callouts, the panel, the sticker, the post, the ticker, the small type. |
+
+**Render.** `npm run render:bordrless-home` writes `../out/tweetpad-bordrless-home.mp4`; `npm run stills:bordrless-home` writes `TweetpadBordrlessHome-f*.png` (15). Never overwrite an existing file in `out/`.

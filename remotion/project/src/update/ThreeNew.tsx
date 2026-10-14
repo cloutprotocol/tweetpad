@@ -284,7 +284,7 @@ const btnBase: React.CSSProperties = { position: "relative", display: "inline-fl
 const primary: React.CSSProperties = { color: "#fff", textShadow: "0 -1px 0 rgba(0,0,0,.25)", background: "linear-gradient(#33bcef, #019ad2)", borderColor: "#057ed0", borderBottomColor: "#0466a8" };
 
 /** a tap: a hand comes in, presses, and a blue ripple spreads from the button's centre (drawn inside the button) */
-const Tap: React.FC<{ f: number; at: number }> = ({ f, at }) => {
+export const Tap: React.FC<{ f: number; at: number }> = ({ f, at }) => {
   const k = f - at;
   if (k < -12 || k > 16) return null;
   const r = ramp(f, at, at + 14);

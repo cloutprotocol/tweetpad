@@ -523,3 +523,216 @@ export const THREE_COPY = {
     ],
   },
 } as const;
+
+/* =====================================================================================================
+ * Film 12: TweetpadStonks, "Stocks meet memes. Stonkfun, inside the tweet." Solana launches on Stonkfun (Raydium LaunchLab)
+ * through tweetpad, shipped b6418ac: the Launchpad switch (pump.fun | Stonkfun), "Pair with" by launchpad (SOL, the
+ * tokenized stocks, USDC), the fee setup (Creator fees · Holder rewards 1% / 3% · Community), the launch, and the coin page
+ * with its tax and what holders were paid. Every in-app string is verbatim from embed.html / assets/tweetpad.js.
+ * The xStock logos are the ones Stonkfun serves for its pairs (public/stonk/); the small type says no affiliation.
+ * Demo coin $MCHIP only (public/brand/moon-chip.svg); reward amounts are demo values; no prices, market caps, volumes,
+ * user or payout counts beyond the demo; xxxx…xxxx addresses; no audit or safety claims; no "free".
+ * ===================================================================================================== */
+export const STONK = {
+  intro: H(0, 150),        // the swirl: xStock logos orbit the # icon
+  switch: H(150, 140),     // 1 · the Launchpad switch: pump.fun → Stonkfun (the pair chip turns to $TSLAx, the fee box shows)
+  pair: H(290, 160),       // 2 · Pair with: the Stonkfun filter, then $NVDAx
+  fees: H(450, 150),       // 3 · Holder rewards → 3% → Community
+  launch: H(600, 180),     // 4 · Launch: the check lines, the approve window, "$MCHIP is live"
+  coin: H(780, 140),       // 5 · the coin page: ⇄ $NVDAx, the 3% tax, paid to holders (demo)
+  end: H(920, 105),        // end card, the swirl around it
+} as const;
+export const STONK_TOTAL = STONK.end.from + STONK.end.dur; // 1025 f = 34.2 s
+
+const STONK_FEE_FINE = "Stonkfun (Raydium LaunchLab): about 0.009 SOL · network fees apply";
+const NO_AFFIL = "Logos belong to their owners. No affiliation with or endorsement by them, or by Stonkfun.";
+export const STONK_COPY = {
+  intro: { tag: "NEW", head: "Stocks meet memes.", head2: "Stonkfun, inside the tweet.", center: "Launch a coin paired with a stock." },
+  switch: { tag: "1 · LAUNCHPAD", head: "One switch:", head2: "pump.fun or Stonkfun." },
+  pair: { tag: "2 · PAIR", head: "Pair your coin with a stock.", sub: "TSLAx, NVDAx, SPYx… or SOL and USDC." },
+  fees: { tag: "3 · FEES", head: "Creator fees,", head2: "or holder rewards." },
+  launch: { tag: "4 · LAUNCH", head: "Hit Launch.", head2: "Checked on chain before it's listed." },
+  coin: { tag: "5 · HOLDERS", head: "Holders get paid", head2: "in the stock." },
+  fine: {
+    intro: "xStocks are tokenized stocks, shown as Stonkfun lists its pairs. " + NO_AFFIL,
+    switch: STONK_FEE_FINE + ".",
+    pair: "Pairs as Stonkfun lists them. " + NO_AFFIL,
+    fees: "A 1% or 3% tax, fixed at launch, paid out to holders by Stonkfun. Network fees apply.",
+    launch: "Demo coin. Launches create real tokens on mainnet and cost real SOL.",
+    coin: "Demo coin, demo amounts. Trades through Jupiter: LaunchLab's 1% fee and Jupiter's 0.1% · tweetpad takes nothing.",
+  },
+  coinName: "Moon Chip", ticker: "MCHIP", wallet: "Phantom",
+  first: "TSLAx", pick: "NVDAx",
+  paid: "0.0042 NVDAx", wallets: "12 wallets",
+  end: {
+    tagline: "Stocks meet memes.",
+    tagline2: "Launch on Stonkfun, inside the tweet.",
+    fine: [
+      "Solana: launches on pump.fun · 0 pad fee · network fees apply.",
+      STONK_FEE_FINE + " · holder rewards paid out by Stonkfun.",
+      NO_AFFIL,
+    ],
+  },
+} as const;
+
+/* =====================================================================================================
+ * Film 13: TweetpadGames, "Casino games, inside the tweet. Built on Gamba." tweetpad's games on Gamba (gamba.so), shipped in
+ * 96fafb3: /games, Pump or Dump (call the next candle at 2×, 3× or 5×), Mines (5×5, 3 / 5 / 10 mines, gems ride, cash out),
+ * ⚡ Instant play (one signature opens a game balance: no pop-ups), provably fair (Gamba's committed seed, checked in the
+ * browser), and Gamba's public SOL pool as the house. Every in-app string is verbatim from games/*.html, assets/gamba-kit.js,
+ * pumpordump.js and mines.js. Demo plays only: the amounts follow from the real odds and fees (0.05 SOL bets), the addresses
+ * are xxxx…xxxx, the jackpot and every live number are left out (no volumes, payouts or player counts). A loss is shown in
+ * each game. Gamba is named in words and by its shrimp mark ("Built on Gamba"), never as a partner or endorser; no "free",
+ * no "guaranteed", no audit or safety claims; 18+ and "only where betting is legal" on every play scene.
+ * ===================================================================================================== */
+export const GAMES = {
+  intro: H(0, 150),        // the hook: gems, bombs and candles orbit the # icon; "Built on Gamba"
+  hub: H(150, 100),        // 1 · /games: two tiles; Pump or Dump is tapped
+  pod: H(250, 240),        // 2 · Pump or Dump: 3×, PUMP → TO THE MOON; DUMP → LIQUIDATED
+  mines: H(490, 240),      // 3 · Mines: three gems, cash out ×1.49; a new round → BOOM
+  instant: H(730, 150),    // 4 · ⚡ Instant play: one signature, the game balance, tiles with no pop-ups
+  fair: H(880, 140),       // 5 · Provably fair: the committed seed, the checks
+  gamba: H(1020, 120),     // 6 · Built on Gamba: the house is its public SOL pool
+  end: H(1140, 110),       // end card
+} as const;
+export const GAMES_TOTAL = GAMES.end.from + GAMES.end.dur; // 1250 f = 41.7 s
+
+const GAMES_LEGAL = "18+, and only where betting is legal. Bet only what you can lose.";
+export const GAMES_COPY = {
+  intro: { tag: "NEW", head: "Casino games,", head2: "inside the tweet.", center: "Pump or Dump · Mines" },
+  hub: { tag: "1 · GAMES", head: "Two games.", head2: "One tap, in the post." },
+  pod: { tag: "2 · PUMP OR DUMP", head: "Call the next candle.", sub: "2×, 3× or 5× · bets up to 0.1 SOL" },
+  mines: { tag: "3 · MINES", head: "Find gems.", head2: "Cash out before a mine." },
+  instant: { tag: "4 · ⚡ INSTANT PLAY", head: "One signature.", head2: "Then no pop-ups." },
+  fair: { tag: "5 · PROVABLY FAIR", head: "Every result,", head2: "checked in your browser." },
+  gamba: { head: "Built on Gamba.", sub: "Solana's on-chain casino protocol" },
+  facts: ["The house is Gamba's public SOL pool", "Every bet settled on chain in about a second", "Seeds committed before you play"],
+  fine: {
+    intro: "Practice uses no money. Real plays: " + GAMES_LEGAL,
+    hub: "Built on Gamba's open protocol. Gamba doesn't run or endorse tweetpad.",
+    pod: "Demo plays. A call costs the bet + 3.8% in fees. 18+, and only where betting is legal.",
+    mines: "Demo plays. Each tile costs 3.2% in fees on what rides. 18+, and only where betting is legal.",
+    instant: "The game balance holds up to 1 SOL in a key your wallet's signature makes; it withdraws only to that wallet.",
+    fair: "Gamba commits to each seed (SHA-256) before the bet; the page recomputes every result from the revealed seed.",
+    gamba: "Gamba's shrimp mark belongs to Gamba. Gamba doesn't run or endorse tweetpad.",
+  },
+  wallet: "Phantom", addr: "xxxx…xxxx",
+  end: {
+    tagline: "Casino games, inside the tweet.",
+    tagline2: "Pump or Dump and Mines, built on Gamba.",
+    fine: [
+      "tweetpad.io/games · Gamba's public SOL pool · bets up to 0.1 SOL · fees on top of each play.",
+      GAMES_LEGAL + " Over time the house wins.",
+      "Gamba doesn't run or endorse tweetpad.",
+    ],
+  },
+} as const;
+
+/* =====================================================================================================
+ * Film 14: TweetpadBordrless, "Bordrless tokens, tradeable in a tweet." Bordrless tokens live in a token standard of their own
+ * (not SPL, not Token-2022): wallets don't list them and swap aggregators don't route them. tweetpad gives every one of them a
+ * trading page at tweetpad.io/b/<token CA> that plays as its own X card, so a posted link is the coin, tradeable in the post;
+ * plus the Tokens page's Bordrless list by market cap, the scanner, and Bordrless launches. Drawn in Bordrless's look (paper,
+ * ink, Anton, JetBrains Mono, hard shadows, "Fig." tags, the 1-bit dithered pictures in public/bordrless/) with tweetpad's
+ * # icon and blue. Demo coin $RING only, demo numbers under "Demo coin, demo numbers."; no real coin, price or address; no
+ * audit or safety claims; no "free"; Bordrless named in words, never as a partner or endorser.
+ * ===================================================================================================== */
+export const BORDR = {
+  intro: H(0, 240),     // tweetpad's own post spells out what's new, line by line, beside the ringed sphere
+  why: H(240, 150),     // Fig. 1: its own token standard; wallets don't list it, aggregators don't route it. Until now.
+  share: H(390, 180),   // 1 · SHARE: tweetpad.io/b/<token CA> typed into a post becomes the coin's card
+  trade: H(570, 240),   // 2 · TRADE: the card opens into /b/<mint>; 0.1 SOL, connect, approve, bought
+  chain: H(810, 150),   // 3 · ON CHAIN: the page scrolls through its rules, curve, who can change it, yours to claim
+  list: H(960, 150),    // 4 · EVERY TOKEN + 5 · LAUNCH: the Bordrless list by market cap, and the launch form's Bordrless setup
+  howto: H(1110, 180),  // Fig. 2: how to make any Bordrless token tradeable in a post, in four steps
+  end: H(1290, 120),    // end card over the monument
+} as const;
+export const BORDR_TOTAL = BORDR.end.from + BORDR.end.dur; // 1410 f = 47.0 s
+
+/** frames inside the intro: [start of each spelled-out line, …] */
+export const BORDR_T = { gm: 10, items: [58, 92, 126, 160, 194] } as const;
+
+const BORDR_NAMED = "Bordrless is named in words; no affiliation with or endorsement by Bordrless.";
+export const BORDR_COPY = {
+  intro: {
+    author: "tweetpad", handle: "@tweetpad_io",
+    gm: "gm. Bordrless tokens now trade inside a tweet:",
+    items: ["Buy and sell any Bordrless token in a post", "Share it: tweetpad.io/b/<token CA>", "Every token, ranked by market cap",
+      "Scan who can still change it", "Launch your own on Bordrless"],
+    tag: "NEW", head: "Bordrless tokens.", head2: "Tradeable in a tweet.",
+  },
+  why: { fig: "Fig. 1", tag: "THE PROBLEM", head: "Its own token standard.", head2: "Hard to trade anywhere else.",
+    wallet: "Your wallet", walletNote: "No Bordrless tokens listed", router: "Swap aggregator", routerNote: "No route for this token",
+    stamp: "Until now." },
+  share: { tag: "1 · SHARE", head: "Paste tweetpad.io/b/<token CA>.", head2: "It becomes a card you can trade.",
+    post: "$RING trades right inside this post", link: "tweetpad.io/b/RiNG…xxxx" },
+  trade: { tag: "2 · TRADE", head: "Buy and sell in the post.", head2: "SOL in, SOL out. Your wallet signs." },
+  chain: { tag: "3 · ON CHAIN", head: "Its rules, its curve, its risk.", head2: "Read from the chain." },
+  list: { tag: "4 · EVERY TOKEN", head: "Every Bordrless token,", head2: "ranked by market cap." },
+  launch: { tag: "5 · LAUNCH", head: "Or launch your own.", head2: "Your fee. Its rules." },
+  howto: {
+    fig: "Fig. 2", tag: "HOW TO", head: "Make any Bordrless token", head2: "tradeable in a post.",
+    steps: [
+      ["Copy the token's contract address", "from bordrless.app, a chart, anywhere"],
+      ["Put it after tweetpad.io/b/", "tweetpad.io/b/<token CA>"],
+      ["Post the link on X", "it unfurls into the coin's own card"],
+      ["Anyone taps play and trades", "buy and sell right inside the post"],
+    ],
+    or: "Or: tweetpad → Tokens → Bordrless → pick a coin → Post on X",
+  },
+  coin: { name: "Ring", ticker: "RING", cap: "$48.2K", change: "+12.4% 24h", holders: "96", curve: 0.46, raised: "48.3", grad: "105",
+    quote: "214.2K", min: "203.5K", balance: "1.24", fee: "1%", wallet: "Phantom", addr: "xxxx…xxxx" },
+  fine: {
+    intro: BORDR_NAMED,
+    why: "A Bordrless holding is an account of Bordrless's own token program, not an SPL token account.",
+    trade: "Demo coin, demo numbers. Trades run on Bordrless's DEX: its LP fee and each coin's own rules apply · tweetpad takes nothing · network fees apply.",
+    chain: "Demo coin, demo numbers. Read with Bordrless's SDK; candles and trades from Bordrless's indexer. A scan is not an audit.",
+    list: "Demo coins. The live list is every Bordrless token, launched on tweetpad or not.",
+    launch: "Bordrless launch: 0.01 SOL launch fee + rent, about 0.035 SOL · creator fee 0.5–2% · tweetpad takes nothing.",
+    howto: "Works for any Bordrless token on Bordrless's launchpad. Coins with a hook of their creator's own trade on bordrless.app.",
+  },
+  end: {
+    tagline: "Every Bordrless token.", tagline2: "Tradeable in a tweet.", link: "tweetpad.io/b/<token CA>",
+    fine: ["Trades run on Bordrless's DEX · its LP fee and each coin's rules apply · tweetpad takes nothing · network fees apply.", BORDR_NAMED],
+  },
+} as const;
+
+/* =====================================================================================================
+ * Film 15: TweetpadBordrlessHome, "Launch & trade Bordrless tokens (inside a tweet)." It starts on tweetpad's new home, the Menu
+ * (index.html: nine channels in the card's 2012 skin, the dock and its clock), where the Wii hand picks the Bordrless channel:
+ * the home opens it as the Menu does (the tile grows into the screen, the channel's banner centred while it loads, Menu |
+ * Bordrless | Start), then Start. Then Bordrless's look: the sphere read as Bordrless reads it (token program, hook, DEX), a launch
+ * on /borderless, a trade on Bordrless's DEX in the post (/b/<mint>), every token by market cap, and the poster. Demo coin $RING
+ * and demo numbers only; Bordrless named in words, its sphere as the channel's mark and the art; never a partner or endorser.
+ * ===================================================================================================== */
+export const BHOME = {
+  home: H(0, 150),      // the Menu; the hand visits Launch and Games, then picks Bordrless
+  open: H(150, 135),    // the channel opens: the zoom, the banner, the section behind it, Start
+  fig: H(285, 120),     // the sphere, read: the token program, the hook, the Bordrless DEX
+  launch: H(405, 240),  // 1 · LAUNCH on /borderless: image, name, ticker, Burn, 0.1 SOL, one approval, live
+  trade: H(645, 210),   // 2 · TRADE on Bordrless's DEX, in the post (/b/<mint>)
+  tokens: H(855, 120),  // 3 · EVERY TOKEN, by market cap
+  end: H(975, 150),     // the poster
+} as const;
+export const BHOME_TOTAL = BHOME.end.from + BHOME.end.dur; // 1125 f = 37.5 s
+
+export const BHOME_COPY = {
+  home: { tag: "NEW", head: "A new channel on tweetpad." },
+  fig: { fig: "Fig. 2", tag: "TOKENS WITH A BRAIN", head: "Their own token program.", head2: "Their own DEX.",
+    callouts: [
+      ["1", "Upper ring", "The token program", "Calls the token's hook on every transfer, mint and burn."],
+      ["2", "The band", "The hook", "The token's own rules: a fee, a burn, rewards."],
+      ["3", "The ribs", "Its answer", "An amount, not a yes or no."],
+      ["4", "Lower ring", "The Bordrless DEX", "Every swap runs through it, rules and all."],
+    ] },
+  launch: { tag: "1 · LAUNCH", head: "Launch a Bordrless token.", head2: "Your fee. Its rules. One approval." },
+  trade: { tag: "2 · TRADE", head: "Trade it on Bordrless's DEX.", head2: "Right inside the post." },
+  tokens: { tag: "3 · EVERY TOKEN", head: "Every Bordrless token.", head2: "By market cap. Tap one, trade it." },
+  fine: {
+    home: "tweetpad.io · Bordrless's sphere marks its channel; Bordrless doesn't run or endorse tweetpad.",
+    fig: "Bordrless's token program, hooks and DEX; tweetpad builds on its open SDK.",
+    launch: "Demo coin. Bordrless launch: 0.01 SOL launch fee + rent, about 0.035 SOL · creator fee 0.5–2% · tweetpad takes nothing.",
+    trade: "Demo coin, demo numbers. Trades run on Bordrless's DEX: its LP fee and each coin's rules apply · tweetpad takes nothing · network fees apply.",
+    tokens: "Demo coins. The live list is every Bordrless token, launched on tweetpad or not.",
+  },
+} as const;

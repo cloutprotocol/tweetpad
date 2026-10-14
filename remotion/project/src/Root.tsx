@@ -1,7 +1,7 @@
 import React from "react";
 import { Composition } from "remotion";
 import { VIDEO } from "./brand/tokens";
-import { HOWTO_TOTAL, MULTI_TOTAL, ROBINHOOD_TOTAL, TOTAL, TRADE_TOTAL, WELCOME_TOTAL, PANEL_TOTAL, AGENTS_TOTAL, WINAMP_TOTAL, ETH_TOTAL, THREE_TOTAL } from "./timeline";
+import { HOWTO_TOTAL, MULTI_TOTAL, ROBINHOOD_TOTAL, TOTAL, TRADE_TOTAL, WELCOME_TOTAL, PANEL_TOTAL, AGENTS_TOTAL, WINAMP_TOTAL, ETH_TOTAL, THREE_TOTAL, STONK_TOTAL, GAMES_TOTAL, BORDR_TOTAL, BHOME_TOTAL } from "./timeline";
 import { TweetpadHowToLaunch } from "./howto/HowTo";
 import { Tweetpad, TweetpadProps } from "./Tweetpad";
 import { TweetpadRobinhoodUpdate } from "./update/RobinhoodUpdate";
@@ -13,6 +13,11 @@ import { TweetpadAgentsTeaser } from "./update/AgentsTeaser";
 import { TweetpadWinamp } from "./update/Winamp";
 import { TweetpadEthereum } from "./update/EthereumUpdate";
 import { TweetpadThreeNew } from "./update/ThreeNew";
+import { TweetpadStonks } from "./update/Stonks";
+import { TweetpadGames } from "./update/Games";
+import { TweetpadBordrless } from "./update/Bordrless";
+import { TweetpadBordrlessPoster } from "./update/BordrlessPoster";
+import { TweetpadBordrlessHome } from "./update/BordrlessHome";
 
 export const Root: React.FC = () => (
   <>
@@ -49,5 +54,17 @@ export const Root: React.FC = () => (
     {/* film 11: "Three new things on tweetpad." (a parody diamond spells out Ethereum, custom launches and Auto-claim) */}
     <Composition id="TweetpadThreeNew" component={TweetpadThreeNew} durationInFrames={THREE_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height}
       defaultProps={{ skin: "2012" as const }} />
+    {/* film 12: "Stocks meet memes. Stonkfun, inside the tweet." (Stonkfun launches: the switch, stock pairs, holder rewards) */}
+    <Composition id="TweetpadStonks" component={TweetpadStonks} durationInFrames={STONK_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height}
+      defaultProps={{ skin: "2012" as const }} />
+    {/* film 13: "Casino games, inside the tweet. Built on Gamba." (Pump or Dump, Mines, Instant play, provably fair) */}
+    <Composition id="TweetpadGames" component={TweetpadGames} durationInFrames={GAMES_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height}
+      defaultProps={{ skin: "2012" as const }} />
+    {/* film 14: "Bordrless tokens. Tradeable in a tweet." (tweetpad.io/b/<token CA>, in Bordrless's look blended with tweetpad's) */}
+    <Composition id="TweetpadBordrless" component={TweetpadBordrless} durationInFrames={BORDR_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    {/* the Bordrless poster: "Launch & trade Bordrless tokens (inside a tweet)", a still, and film 15's end card */}
+    <Composition id="TweetpadBordrlessPoster" component={TweetpadBordrlessPoster} durationInFrames={120} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    {/* film 15: "Launch & trade Bordrless tokens (inside a tweet)." (from the new home's Menu: the Bordrless channel, then launch and trade) */}
+    <Composition id="TweetpadBordrlessHome" component={TweetpadBordrlessHome} durationInFrames={BHOME_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
   </>
 );
