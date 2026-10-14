@@ -24,8 +24,8 @@ import { TOUR as R, TOUR_COPY as C } from "../timeline";
 import { ChainDisc } from "./WelcomeBnbBase";
 
 const ROUND = FONTS.round;
-const TPB = "#1DA1F2", BEZEL = "#d2d9de";
-const STRIPES = "repeating-linear-gradient(#f7f9fa 0 3px, #eef1f3 3px 5px)";
+export const TPB = "#1DA1F2", BEZEL = "#d2d9de";
+export const STRIPES = "repeating-linear-gradient(#f7f9fa 0 3px, #eef1f3 3px 5px)";
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 const inWin = (f: number, a: number, b: number) => f >= a && f < b;
 /** index.html's one easing, cubic-bezier(.45, 0, .2, 1) */
@@ -41,7 +41,7 @@ const ease = (x: number) => {
  * ========================================================================================= */
 const FS = 1.75, FX = (1080 - 480 * FS) / 2, FY = 196;
 const toFilm = (ux: number, uy: number) => ({ x: FX + ux * FS, y: FY + uy * FS });
-type TileDef = { name: string; icon: string; bordr?: boolean };
+export type TileDef = { name: string; icon: string; bordr?: boolean };
 const TILES: TileDef[] = [
   { name: "Launch", icon: "menu/launch.svg" }, { name: "Tokens", icon: "menu/tokens.svg" }, { name: "Feed", icon: "menu/feed.svg" },
   { name: "Hooks Launch", icon: "menu/custom.svg" }, { name: "Games", icon: "menu/games.svg" }, { name: "Profile", icon: "menu/profile.svg" },
@@ -49,11 +49,11 @@ const TILES: TileDef[] = [
 ];
 const T = { launch: 0, tokens: 1, feed: 2, hooks: 3, games: 4, profile: 5, bordrless: 6, tp: 7, more: 8 } as const;
 /* .menu: 14 units in from each side, three 144-unit columns 10 apart, 106-unit rows 10 apart, from 16 down */
-const tileRect = (i: number) => ({ x: 14 + (i % 3) * 154, y: 16 + Math.floor(i / 3) * 116, w: 144, h: 106 });
+export const tileRect = (i: number) => ({ x: 14 + (i % 3) * 154, y: 16 + Math.floor(i / 3) * 116, w: 144, h: 106 });
 const tileCentre = (i: number) => { const r = tileRect(i); return toFilm(r.x + r.w / 2, r.y + r.h / 2); };
 
 const GLASS = "linear-gradient(162deg, rgba(255,255,255,.95) 0 34%, rgba(255,255,255,0) 34.4%), linear-gradient(#fbfcfd, #e8edf0)";
-const Tile: React.FC<{ t: TileDef; r: { x: number; y: number; w: number; h: number }; hover: number; arrive?: number; small?: boolean }> = ({ t, r, hover, arrive = 1, small }) => (
+export const Tile: React.FC<{ t: TileDef; r: { x: number; y: number; w: number; h: number }; hover: number; arrive?: number; small?: boolean }> = ({ t, r, hover, arrive = 1, small }) => (
   <div style={{ position: "absolute", left: r.x, top: r.y, width: r.w, height: r.h, boxSizing: "border-box", display: "grid", placeItems: "center", alignContent: "center", gap: 7,
     borderRadius: 16, background: GLASS, border: `2.5px solid ${hover > 0.5 ? TPB : BEZEL}`, opacity: Math.min(1, arrive * 1.4),
     transform: `scale(${(0.86 + 0.14 * arrive) * (1 + 0.035 * hover)})`,
@@ -64,7 +64,7 @@ const Tile: React.FC<{ t: TileDef; r: { x: number; y: number; w: number; h: numb
     <span style={{ position: "relative", font: `600 ${small ? 15 : 16}px/1 ${ROUND}`, color: "#3b4146", textShadow: "0 1px 0 #fff" }}>{t.name}</span>
   </div>
 );
-const Dock: React.FC<{ rise?: number }> = ({ rise = 1 }) => (
+export const Dock: React.FC<{ rise?: number }> = ({ rise = 1 }) => (
   <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 114, transform: `translateY(${(1 - rise) * 120}px)` }}>
     <svg viewBox="0 0 480 114" width={480} height={114} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
       <defs>

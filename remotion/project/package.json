@@ -13,6 +13,8 @@
     "render:shill": "remotion render src/index.ts TweetpadShill ../out/tweetpad-shill.mp4",
     "stills:shill": "node scripts/stills.mjs ../out/stills 50:sh-hook 120:sh-typing 200:sh-old-post 340:sh-card 390:sh-bought 680:sh-eth 790:sh-launch 1000:sh-how 1160:sh-end --comp=TweetpadShill",
     "render:walk": "remotion render src/index.ts TweetpadWalkthrough ../out/tweetpad-walkthrough.mp4",
+    "render:agents-launch": "remotion render src/index.ts TweetpadAgentsLaunch ../out/tweetpad-agents-launch.mp4",
+    "stills:agents-launch": "node scripts/stills.mjs ../out/stills 40:al-menu 80:al-hover 100:al-open 170:al-title 330:al-claim 450:al-claim2 700:al-build 950:al-review 1150:al-dot 1380:al-topup 1480:al-case 1650:al-code 1800:al-checks 1950:al-page 2110:al-post 2330:al-end --comp=TweetpadAgentsLaunch",
     "render:agents-walk": "remotion render src/index.ts TweetpadAgentsWalkthrough ../out/tweetpad-agents-walkthrough.mp4",
     "stills:agents-walk": "node scripts/stills.mjs ../out/stills 45:aw-title 200:aw-landing 350:aw-claim 700:aw-dot 1000:aw-topup 1250:aw-build 1650:aw-review 1950:aw-bauls 2200:aw-post 2180:aw-end --comp=TweetpadAgentsWalkthrough",
     "stills:walk": "node scripts/stills.mjs ../out/stills 40:wk-title 130:wk-menu 250:wk-rh 345:wk-eth 520:wk-hooks-fee 560:wk-hooks-start 720:wk-bordr 915:wk-games 1100:wk-feed-tag 1160:wk-feed-posted 1310:wk-profile-claim 1340:wk-profile-done 1420:wk-outro 1530:wk-end --comp=TweetpadWalkthrough",

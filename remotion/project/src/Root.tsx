@@ -23,6 +23,7 @@ import { TweetpadShill } from "./update/Shill";
 import { TweetpadWalkthrough } from "./update/Walkthrough";
 import { DEX_BANNER, TweetpadDexBanner } from "./update/DexBanner";
 import { AGENTS_WALK_TOTAL, TweetpadAgentsWalkthrough } from "./update/AgentsWalkthrough";
+import { AGENTS_LAUNCH_TOTAL, TweetpadAgentsLaunch } from "./update/AgentsLaunch";
 
 export const Root: React.FC = () => (
   <>
@@ -82,5 +83,6 @@ export const Root: React.FC = () => (
     {/* the DexScreener header, animated: 1500x500, a 7 s loop (GIF and animated WebP) */}
     <Composition id="TweetpadDexBanner" component={TweetpadDexBanner} durationInFrames={DEX_BANNER.frames} fps={VIDEO.fps} width={DEX_BANNER.width} height={DEX_BANNER.height} />
     <Composition id="TweetpadAgentsWalkthrough" component={TweetpadAgentsWalkthrough} durationInFrames={AGENTS_WALK_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    <Composition id="TweetpadAgentsLaunch" component={TweetpadAgentsLaunch} durationInFrames={AGENTS_LAUNCH_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
   </>
 );
