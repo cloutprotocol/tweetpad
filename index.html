@@ -20,14 +20,16 @@
 <meta name="twitter:site" content="@tweetpad_io">
 <meta name="twitter:title" content="tweetpad">
 <meta name="twitter:description" content="Launch a token without leaving the tweet.">
-<meta name="twitter:player" content="https://www.tweetpad.io/embed.html">
+<meta name="twitter:player" content="https://www.tweetpad.io/?embed">
 <meta name="twitter:player:width" content="480">
 <meta name="twitter:player:height" content="480">
-<meta name="twitter:image" content="https://www.tweetpad.io/preview.png?v=6">
-<meta name="twitter:image:alt" content="tweetpad">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/home-card.png?v=1">
+<meta name="twitter:image:alt" content="tweetpad's Menu: Launch, Tokens, Feed, Hooks Launch, Games, Profile, Bordrless, $TP, More">
+<!-- posted on X, the card plays the Menu itself (?embed: the frame alone, filling the card) -->
+<script>if (/[?&]embed\b/.test(location.search)) document.documentElement.dataset.mode = 'embed';</script>
 <meta property="og:title" content="tweetpad">
 <meta property="og:description" content="Launch a token without leaving the tweet.">
-<meta property="og:image" content="https://www.tweetpad.io/preview.png?v=6">
+<meta property="og:image" content="https://www.tweetpad.io/assets/home-card.png?v=1">
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap">
 <style>
@@ -147,6 +149,12 @@
   .pill:hover, .pill:focus-visible { outline: none; color: var(--blue); border-color: var(--blue); box-shadow: 0 0 0 calc(3 * var(--u)) rgba(29, 161, 242, .22); }
   .pill[hidden] { visibility: hidden; display: grid; }
   .pill[aria-disabled=true] { opacity: .5; pointer-events: none; }
+
+  /* ?embed, X's player card: the Menu alone, filling the card (480×480), nothing around it */
+  html[data-mode="embed"] body { display: block; min-height: 0; padding: 0; background: var(--stripes); overflow: hidden; }
+  html[data-mode="embed"] .wrap { max-width: none; display: block; }
+  html[data-mode="embed"] .wrap > :not(.frame) { display: none; }
+  html[data-mode="embed"] .frame { width: 100vw; height: 100vh; aspect-ratio: auto; border: 0; border-radius: 0; box-shadow: none; }
 
   @media (prefers-reduced-motion: reduce) { .ch, .round, .pill, .bar, .banner { transition: none; } .ch:hover { transform: none; } .loading .banner img { animation: none; } }
 </style>
@@ -357,6 +365,8 @@
     });
   }
   document.querySelectorAll('#menu .ch, .round[data-kind]').forEach(bind);
+  /* in X's card, links off the site (the 𝕏 round, the source) open their own tab: X won't load them inside a card */
+  if (document.documentElement.dataset.mode === 'embed') for (const a of document.querySelectorAll('a[href^="http"]')) { a.target = '_blank'; a.rel = 'noopener'; }
   /* outside the card: the link to paste, and the $TP contract */
   $('page-link').textContent = link.replace(/^https?:\/\//, '');
   $('copy-link').addEventListener('click', (ev) => copy(link, ev.target, 'Copy'));
