@@ -3,11 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Dot · tweetpad</title>
+<title>tweetpad tokenized agents preview</title>
 <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/tweetpad-hash-32.png">
 <meta name="theme-color" content="#0b0b0c">
-<meta name="description" content="Dot, tweetpad's little white friend. Say something.">
+<meta name="description" content="Meet Dot, a preview of tokenized agents on tweetpad: talk to it, and watch it research tokens live in its own browser.">
+<!-- posted on X, /dot plays in the post (?embed); its image is Dot with the title (?card, shot to assets/dot-card.png). Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="tweetpad tokenized agents preview">
+<meta name="twitter:description" content="Meet Dot. Talk to it, and watch it research tokens live in its own browser.">
+<meta name="twitter:player" content="https://www.tweetpad.io/dot?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/dot-card.png?v=1">
+<meta name="twitter:image:alt" content="Dot, a glossy white ball with two black eyes: tweetpad tokenized agents preview">
+<meta property="og:title" content="tweetpad tokenized agents preview">
+<meta property="og:description" content="Meet Dot. Talk to it, and watch it research tokens live in its own browser.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/dot-card.png?v=1">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : 'page';</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap">
 <style>
   /* /dot: one glossy white character in a dark room (three.js), and a message box to talk to it. Dot follows the pointer, blinks,
@@ -79,6 +93,16 @@
   .notes p { margin: 0; font-size: 13px; color: var(--ink); animation: rise .3s ease-out both; }
   .notes p b { font-weight: 700; } .up { color: #3ccf6e; } .dn { color: #ff6b6b; }
   @media (max-width: 760px) { .browser { display: none; } }
+  /* ?card: the share image, shot at 1080×1080: Dot still, the title over it, nothing to press */
+  html[data-mode="card"] :is(form, .log, .bubble, .browser, .home) { display: none !important; }
+  .cardtitle { display: none; }
+  html[data-mode="card"] .cardtitle { display: grid; position: fixed; left: 0; right: 0; top: 7%; z-index: 2; justify-items: center; gap: 18px; text-align: center; }
+  .cardtitle .mark { display: flex; align-items: center; gap: 16px; font: 600 64px/1 var(--round); letter-spacing: -.02em; color: var(--ink); }
+  .cardtitle .mark img { width: 72px; height: 72px; }
+  .cardtitle h1 { margin: 0; font: 600 76px/1.05 var(--round); letter-spacing: -.02em; color: #fff; }
+  .cardtitle .chip { padding: 10px 22px; border-radius: 99px; font: 600 28px/1 var(--round); color: #111; background: #fff; }
+  .cardfoot { display: none; }
+  html[data-mode="card"] .cardfoot { display: block; position: fixed; left: 0; right: 0; bottom: 6%; z-index: 2; text-align: center; font: 500 30px/1.3 var(--ui); color: var(--dim); }
   @media (prefers-reduced-motion: reduce) { .bubble, .log span, .dots i, .live::before, .view .cursor { transition: none; animation: none; } }
 </style>
 <script type="importmap">{ "imports": {
@@ -96,6 +120,8 @@
   <button type="submit">Send</button>
 </form>
 
+<div class="cardtitle" aria-hidden="true"><div class="mark"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad</div><h1>Tokenized agents</h1><span class="chip">Preview · meet Dot</span></div>
+<div class="cardfoot" aria-hidden="true">Talk to it. Watch it research tokens live.</div>
 <aside class="browser" aria-label="Dot's browser">
   <div class="chrome"><i></i><i></i><i></i><b><span class="mini" aria-hidden="true"></span>Dot's browser</b><span class="live">LIVE</span></div>
   <div class="url" id="b-url">tweetpad.io</div>
@@ -109,7 +135,8 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const card = document.documentElement.dataset.mode === 'card';
+const still = card || matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canvas = document.getElementById('stage');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -170,7 +197,8 @@ function fit() {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
-  camera.position.z = w / h < 0.8 ? 7.8 : 6.2;            // phones: step back so Dot fits between the bubble and the box
+  camera.position.z = card ? 7.2 : w / h < 0.8 ? 7.8 : 6.2;   // phones: step back so Dot fits between the bubble and the box
+  if (card) camera.position.y = 0.62;                      // the card: Dot lower, under the title
   camera.updateProjectionMatrix();
 }
 addEventListener('resize', fit); fit();
@@ -184,7 +212,8 @@ const mood = { bounce: 0, squint: 0, blinkAt: 1.5, blink: 0, lid: 1 };
 const clock = new THREE.Clock();
 function frame() {
   const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
-  if (performance.now() - look.last > 3000) { look.tx = Math.sin(t * 0.4) * 0.35; look.ty = Math.sin(t * 0.27) * 0.15; }
+  if (card) { look.tx = 0.35; look.ty = 0.25; }
+  else if (performance.now() - look.last > 3000) { look.tx = Math.sin(t * 0.4) * 0.35; look.ty = Math.sin(t * 0.27) * 0.15; }
   look.x += (look.tx - look.x) * 0.06; look.y += (look.ty - look.y) * 0.06;
   face.rotation.y = look.x * 0.5; face.rotation.x = -look.y * 0.35;
   dot.rotation.y = look.x * 0.12; dot.rotation.x = -look.y * 0.08;
@@ -198,7 +227,7 @@ function frame() {
   shadow.scale.setScalar(0.9 - (bob + hop) * 0.25); shadow.material.opacity = 0.45 - (bob + hop) * 0.3;
 
   // blink every few seconds; squint (short, flat eyes) while pleased
-  if (t > mood.blinkAt) { mood.blink = 1; mood.blinkAt = t + 2.5 + Math.random() * 3; }
+  if (t > mood.blinkAt && !card) { mood.blink = 1; mood.blinkAt = t + 2.5 + Math.random() * 3; }
   mood.blink = Math.max(0, mood.blink - dt * 7);
   mood.squint = Math.max(0, mood.squint - dt * 0.6);
   const open = 1 - Math.sin(mood.blink * Math.PI) * 0.9;
@@ -301,7 +330,7 @@ async function research(task) {
   await read(4500);
   return t;
 }
-(async function loop() {
+if (!card) (async function loop() {
   for (;;) {
     const task = queue.shift() || TOUR[tourAt++ % TOUR.length];
     const t = await research(task).catch(() => null);
@@ -345,7 +374,7 @@ form.addEventListener('submit', (e) => {
   }
   setTimeout(() => { const r = replyTo(text); say(r, /☺️|❤|☀️|👋|!/.test(r)); busy = false; send.disabled = false; input.focus(); }, 650 + Math.random() * 500);
 });
-setTimeout(() => say("hi, I'm Dot. say something!", true), 600);
+if (!card) setTimeout(() => say("hi, I'm Dot. say something!", true), 600);
 </script>
 </body>
 </html>
