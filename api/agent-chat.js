@@ -32,8 +32,8 @@ const text = (s, max) => String(s || '').replace(CONTROL, ' ').trim().slice(0, m
 const BRIEF = 220;
 function brief(s) {
   let t = String(s || '').replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim();
-  const sentences = t.match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g) || [t];
-  t = sentences.slice(0, 2).join(' ').replace(/\s+/g, ' ').trim();
+  // a sentence ends at . ! or ? followed by a space and a capital (so 2.1B and bordrless.app stay whole)
+  t = t.split(/(?<=[.!?]["')\]]?)\s+(?=[A-Z0-9$"'(])/).slice(0, 2).join(' ').trim();
   if (t.length > BRIEF) { t = t.slice(0, BRIEF); t = t.slice(0, Math.max(t.lastIndexOf(' '), BRIEF - 40)).replace(/[,;:\s]+$/, '') + '…'; }
   return t;
 }
