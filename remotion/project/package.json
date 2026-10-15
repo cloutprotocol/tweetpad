@@ -13,6 +13,8 @@
     "render:shill": "remotion render src/index.ts TweetpadShill ../out/tweetpad-shill.mp4",
     "stills:shill": "node scripts/stills.mjs ../out/stills 50:sh-hook 120:sh-typing 200:sh-old-post 340:sh-card 390:sh-bought 680:sh-eth 790:sh-launch 1000:sh-how 1160:sh-end --comp=TweetpadShill",
     "render:walk": "remotion render src/index.ts TweetpadWalkthrough ../out/tweetpad-walkthrough.mp4",
+    "render:agents-code": "remotion render src/index.ts TweetpadAgentsCode ../out/tweetpad-agents-code.mp4 --concurrency=2",
+    "stills:agents-code": "node scripts/stills.mjs ../out/stills 70:ac-hook 118:ac-pixel-name 218:ac-pixel 313:ac-pixel-post 446:ac-moss 526:ac-moss2 576:ac-moss-post 616:ac-montage 670:ac-idea1 802:ac-idea4 860:ac-howto 986:ac-key 1234:ac-prompt 1398:ac-code 1587:ac-check 1636:ac-review 1716:ac-live 1830:ac-end --comp=TweetpadAgentsCode",
     "render:agents-launch": "remotion render src/index.ts TweetpadAgentsLaunch ../out/tweetpad-agents-launch.mp4",
     "stills:agents-launch": "node scripts/stills.mjs ../out/stills 40:al-menu 80:al-hover 100:al-open 170:al-title 330:al-claim 450:al-claim2 700:al-build 950:al-review 1150:al-dot 1380:al-topup 1480:al-case 1650:al-code 1800:al-checks 1950:al-page 2110:al-post 2330:al-end --comp=TweetpadAgentsLaunch",
     "render:agents-walk": "remotion render src/index.ts TweetpadAgentsWalkthrough ../out/tweetpad-agents-walkthrough.mp4",

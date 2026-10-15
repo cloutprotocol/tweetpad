@@ -24,6 +24,7 @@ import { TweetpadWalkthrough } from "./update/Walkthrough";
 import { DEX_BANNER, TweetpadDexBanner } from "./update/DexBanner";
 import { AGENTS_WALK_TOTAL, TweetpadAgentsWalkthrough } from "./update/AgentsWalkthrough";
 import { AGENTS_LAUNCH_TOTAL, TweetpadAgentsLaunch } from "./update/AgentsLaunch";
+import { AGENTS_CODE_TOTAL, TweetpadAgentsCode } from "./update/AgentsCode";
 
 export const Root: React.FC = () => (
   <>
@@ -84,5 +85,6 @@ export const Root: React.FC = () => (
     <Composition id="TweetpadDexBanner" component={TweetpadDexBanner} durationInFrames={DEX_BANNER.frames} fps={VIDEO.fps} width={DEX_BANNER.width} height={DEX_BANNER.height} />
     <Composition id="TweetpadAgentsWalkthrough" component={TweetpadAgentsWalkthrough} durationInFrames={AGENTS_WALK_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
     <Composition id="TweetpadAgentsLaunch" component={TweetpadAgentsLaunch} durationInFrames={AGENTS_LAUNCH_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    <Composition id="TweetpadAgentsCode" component={TweetpadAgentsCode} durationInFrames={AGENTS_CODE_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
   </>
 );
