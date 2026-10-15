@@ -70,7 +70,8 @@
 
   .bubble { position: fixed; left: 50%; top: 12vh; z-index: 4; max-width: min(420px, 86vw); padding: 14px 18px; border-radius: 22px; color: #111;
             font: 500 19px/1.35 var(--round); background: #fff; box-shadow: 0 12px 40px rgba(0, 0, 0, .45); transform: translateX(-50%) scale(var(--s, 1));
-            transform-origin: 50% 100%; transition: transform .25s cubic-bezier(.45, 0, .2, 1), opacity .25s; text-align: center; }
+            transform-origin: 50% 100%; transition: transform .25s cubic-bezier(.45, 0, .2, 1), opacity .25s; text-align: center;
+            pointer-events: none; }   /* taps go through it, to the agent underneath */
   .bubble::after { content: ""; position: absolute; left: 50%; bottom: -9px; width: 18px; height: 18px; margin-left: -9px; background: #fff; transform: rotate(45deg); border-radius: 3px; }
   .bubble.gone { opacity: 0; --s: .9; }
   .bubble .dots i { display: inline-block; width: 8px; height: 8px; margin: 0 3px; border-radius: 50%; background: #111; animation: hop 1s infinite; }
@@ -299,11 +300,17 @@ function placeBubble() {
   Object.assign(bubble.style, { left: x + 'px', top: 'auto', bottom: (1 - anchor.y) * innerHeight + 'px' });
 }
 addEventListener('resize', placeBubble);
+/* over an agent's own code (a game, a scene), a line fades once it's had time to be read, and goes as soon as the visitor taps into
+   the agent, so the bubble never sits on top of what they're playing */
+let fade = 0;
 function say(text, happy = false) {
   bubble.textContent = text; bubble.classList.remove('gone'); placeBubble();
   stage.talk(); if (happy) stage.pleased();
+  clearTimeout(fade);
+  if (frame) fade = setTimeout(() => bubble.classList.add('gone'), Math.min(10000, Math.max(4500, 3500 + String(text).length * 60)));
 }
-function thinking() { bubble.replaceChildren(el('span', { className: 'dots', innerHTML: '<i></i><i></i><i></i>' })); bubble.classList.remove('gone'); }
+function thinking() { clearTimeout(fade); bubble.replaceChildren(el('span', { className: 'dots', innerHTML: '<i></i><i></i><i></i>' })); bubble.classList.remove('gone'); }
+addEventListener('blur', () => { setTimeout(() => { if (frame && document.activeElement === frame && !bubble.querySelector('.dots')) bubble.classList.add('gone'); }); });
 
 /* ---------- who it is ---------- */
 function renderWho() {
