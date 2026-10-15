@@ -97,7 +97,7 @@
 <form id="say" autocomplete="off">
   <label for="msg" style="position:absolute;left:-9999px">Say something to Pika</label>
   <input id="msg" maxlength="140" placeholder="Say something to Pika…" enterkeyhint="send">
-  <button type="submit" id="send">Send</button>
+  <button type="button" id="send">Send</button>
 </form>
 <script type="module">
 import { createAvatar } from '/kit/v1/avatar.js';
@@ -138,12 +138,15 @@ async function talk(text) {
   avatar.express('smile', 2.5); avatar.act(/[!?]/.test(reply || '') ? 'cheer' : 'shrug');
   busy = false; $('send').disabled = false;
 }
-$('say').addEventListener('submit', (e) => {
-  e.preventDefault();
+/* no form submission: X's player frame is sandboxed without allow-forms, so a submit would be blocked; a click and Enter instead */
+function send() {
   const text = $('msg').value.trim();
   if (!text || busy) return;
   $('msg').value = ''; talk(text.slice(0, 140));
-});
+}
+$('send').addEventListener('click', send);
+$('msg').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); send(); } });
+$('say').addEventListener('submit', (e) => e.preventDefault());
 if (mode !== 'card') setTimeout(() => { say('Pika! I live in this post now. Say hi!'); avatar.act('wave'); avatar.express('smile', 3); }, 1000);
 </script>
 </body>
