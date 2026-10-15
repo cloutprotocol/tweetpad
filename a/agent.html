@@ -160,7 +160,12 @@
   body.has-code .who .by, body.has-code .who .by a { color: #c9cdd2; }
   body.has-code .pill { background: rgba(17, 17, 17, .82); } body.has-code .say { background: rgba(17, 17, 17, .86); }
   body.has-code .runs { padding: 3px 7px; border-radius: 99px; color: #c9cdd2; background: rgba(17, 17, 17, .7); }
-  html[data-mode="embed"] body.has-code .who { top: 44px; padding: 6px 9px; border-radius: 10px; }
+  /* over an agent's own code in X's card, its name sits in the top bar (right of Top up), on one line, so the agent's area below stays clear */
+  html[data-mode="embed"] body.has-code .who { top: 10px; left: auto; right: 10px; max-width: calc(100% - 170px); height: 30px; padding: 0 11px; border-radius: 99px;
+    display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; }
+  html[data-mode="embed"] body.has-code .who h1 { min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+  html[data-mode="embed"] body.has-code .who h1 img { width: 18px; height: 18px; border-radius: 5px; }
+  html[data-mode="embed"] body.has-code .who .by { margin: 0; flex: none; font-size: 11px; }
   .banner { position: fixed; top: 14px; left: 50%; z-index: 5; transform: translateX(-50%); padding: 7px 14px; border-radius: 99px; font: 600 13px/1.2 var(--round);
             color: #111; background: #f5c518; }
 
