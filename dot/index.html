@@ -7,30 +7,47 @@
 <link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/tweetpad-hash-32.png">
 <meta name="theme-color" content="#0b0b0c">
-<meta name="description" content="Meet Dot, a preview of tokenized agents on tweetpad: talk to it, and watch it research tokens live in its own browser.">
+<meta name="description" content="Meet Dot, tweetpad’s token quant: paste any token’s contract address and he pulls it up in his browser, runs his checklist and scores it, live.">
 <!-- posted on X, /dot plays in the post (?embed); its image is Dot with the title (?card, shot to assets/dot-card.png). Every URL must be absolute HTTPS. -->
 <meta name="twitter:card" content="player">
 <meta name="twitter:site" content="@tweetpad_io">
 <meta name="twitter:title" content="tweetpad tokenized agents preview">
-<meta name="twitter:description" content="Meet Dot. Talk to it, and watch it research tokens live in its own browser.">
+<meta name="twitter:description" content="Meet Dot, a token quant. Paste a contract address: he pulls it up, runs his checklist and scores it, live in the post.">
 <meta name="twitter:player" content="https://www.tweetpad.io/dot?embed">
 <meta name="twitter:player:width" content="480">
 <meta name="twitter:player:height" content="480">
-<meta name="twitter:image" content="https://www.tweetpad.io/assets/dot-card.png?v=1">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/dot-card.png?v=2">
 <meta name="twitter:image:alt" content="Dot, a glossy white ball with two black eyes: tweetpad tokenized agents preview">
 <meta property="og:title" content="tweetpad tokenized agents preview">
-<meta property="og:description" content="Meet Dot. Talk to it, and watch it research tokens live in its own browser.">
-<meta property="og:image" content="https://www.tweetpad.io/assets/dot-card.png?v=1">
+<meta property="og:description" content="Meet Dot, a token quant. Paste a contract address: he pulls it up, runs his checklist and scores it, live in the post.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/dot-card.png?v=2">
 <script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : 'page';</script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-  /* /dot: one glossy white character in a dark room (three.js), and a message box to talk to it. Dot follows the pointer, blinks,
+  /* /dot: Dot, tweetpad's token quant: one glossy white character in front of tweetpad's # (three.js), a message box, and his
+     browser. Give him a token's address and he pulls it up, runs his checklist out loud and scores it. He follows the pointer, blinks,
      and answers in a speech bubble: Grok, through tweetpad's agent chat, with its own lines as the fallback. */
   :root { --ink: #f2f3f5; --dim: #8b9096; --glass: rgba(255, 255, 255, .07); --line: rgba(255, 255, 255, .14); --blue: #1da1f2;
           --round: "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif; --ui: "Helvetica Neue", Helvetica, Arial, sans-serif; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0c; color: var(--ink); font: 15px/1.4 var(--ui); -webkit-font-smoothing: antialiased; }
-  #stage { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+  #stage { position: fixed; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; touch-action: none; }
+  /* behind Dot: tweetpad's blue # marks drifting on a slow diagonal, the wordmark in outline, and one big # glowing and turning
+     slowly right behind him (left of centre in X's card, where he stands) */
+  .bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .bg .hashes { position: absolute; inset: -280px; opacity: .55; animation: drift 46s linear infinite;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Ctext x='18' y='52' font-family='Arial Rounded MT Bold,Arial' font-weight='700' font-size='44' fill='%231da1f2' fill-opacity='.16'%3E%23%3C/text%3E%3Ctext x='88' y='122' font-family='Arial Rounded MT Bold,Arial' font-weight='700' font-size='26' fill='%231da1f2' fill-opacity='.09'%3E%23%3C/text%3E%3C/svg%3E"); }
+  @keyframes drift { to { transform: translate(140px, 140px); } }
+  .bg .word { position: absolute; left: 50%; bottom: 7vh; transform: translateX(-50%); white-space: nowrap; font: 600 min(22vw, 300px)/1 var(--round); letter-spacing: -.02em;
+    color: transparent; -webkit-text-stroke: 2px rgba(29, 161, 242, .16); }
+  .bg .mark { position: absolute; left: 50%; top: 46%; width: min(78vh, 720px); height: min(78vh, 720px); transform: translate(-50%, -50%); display: grid; place-items: center;
+    font: 700 min(70vh, 640px)/1 var(--round); color: rgba(29, 161, 242, .13); text-shadow: 0 0 80px rgba(29, 161, 242, .45); animation: turn 60s linear infinite; }
+  .bg .mark::before { content: ""; position: absolute; inset: 18%; border-radius: 50%; background: radial-gradient(circle, rgba(29, 161, 242, .28), transparent 68%); animation: pulse-glow 6s ease-in-out infinite; }
+  @keyframes turn { to { transform: translate(-50%, -50%) rotate(360deg); } }
+  @keyframes pulse-glow { 50% { opacity: .45; transform: scale(.92); } }
+  html[data-mode="embed"] .bg .mark { left: 30%; top: 54%; width: 360px; height: 360px; font-size: 330px; }
+  html[data-mode="embed"] .bg .word { font-size: 96px; bottom: 70px; left: 30%; }
+  @media (prefers-reduced-motion: reduce) { .bg .hashes, .bg .mark, .bg .mark::before { animation: none; } }
   /* the soft light behind Dot, as in its portrait */
   body::before { content: ""; position: fixed; inset: 0; background: radial-gradient(60% 55% at 55% 42%, #2a2b2e, #0b0b0c 70%); }
 
@@ -48,13 +65,14 @@
   .dots i { display: inline-block; width: 8px; height: 8px; margin: 0 3px; border-radius: 50%; background: #111; animation: hop 1s infinite; }
   .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
   @keyframes hop { 50% { transform: translateY(-5px); opacity: .5; } }
+  .bubble .dots.inline { display: inline-block; margin-left: 4px; white-space: nowrap; } .bubble .dots.inline i { width: 5px; height: 5px; margin: 0 2px; }
 
   /* the message box */
   form { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); z-index: 2; width: min(560px, calc(100% - 32px)); transform: translateX(-50%);
          display: flex; gap: 8px; padding: 8px; border-radius: 22px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(14px); }
   form input { flex: 1; min-width: 0; padding: 12px 14px; border: 0; border-radius: 14px; color: var(--ink); font: 16px/1.2 var(--ui); background: rgba(0, 0, 0, .35); outline: none; }
   form input::placeholder { color: var(--dim); }
-  form input:focus { box-shadow: 0 0 0 2px var(--blue); }
+  form input:focus { box-shadow: none; }
   form button { padding: 0 20px; border: 0; border-radius: 14px; color: #111; font: 600 16px/1 var(--round); background: #fff; cursor: pointer; }
   form button:hover, form button:focus-visible { background: #e6f4fd; outline: none; }
   form button:disabled { opacity: .5; cursor: default; }
@@ -93,6 +111,57 @@
   .notes p { margin: 0; font-size: 13px; color: var(--ink); animation: rise .3s ease-out both; }
   .notes p b { font-weight: 700; } .up { color: #3ccf6e; } .dn { color: #ff6b6b; }
   @media (max-width: 760px) { .browser { display: none; } }
+  /* Dot's read and his recent scans: a column on the left, in the look of xAI's Grok (black glass, hairlines, light numerals,
+     mono figures, one white pill) */
+  .side { position: fixed; left: 14px; top: 64px; bottom: 96px; z-index: 3; width: min(340px, 28vw); display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+          --g-line: rgba(255, 255, 255, .09); --g-dim: #8a8a8a; --g-text: #f4f4f4; font-family: Inter, var(--ui); }
+  .side > * { pointer-events: auto; border-radius: 20px; background: rgba(8, 8, 9, .82); border: 1px solid var(--g-line); backdrop-filter: blur(18px) saturate(1.2);
+              box-shadow: 0 30px 80px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05); }
+  .kicker { font: 500 11px/1 "JetBrains Mono", monospace; color: var(--g-dim); letter-spacing: .04em; }
+  .face { width: 36px; height: 36px; flex: none; border-radius: 10px; overflow: hidden; display: grid; place-items: center; background: #161618; color: var(--g-text); font: 600 15px/1 Inter, sans-serif; }
+  .face img { width: 100%; height: 100%; object-fit: cover; }
+  .report { padding: 16px 16px 14px; opacity: 0; transform: translateY(8px) scale(.98); transition: opacity .45s, transform .45s cubic-bezier(.2, .7, .2, 1); }
+  .report:empty { display: none; }
+  .report.on { opacity: 1; transform: none; }
+  .report header { display: flex; align-items: center; gap: 11px; margin-top: 12px; }
+  .report header b { display: block; font: 600 17px/1.15 Inter, sans-serif; color: var(--g-text); letter-spacing: -.01em; }
+  .report header small { display: block; font-size: 12px; color: var(--g-dim); }
+  .report .grade { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px; border: 1px solid var(--g-line);
+                   font: 500 12px/1 Inter, sans-serif; font-style: normal; color: var(--g-text); text-transform: capitalize; }
+  .report .grade i { width: 7px; height: 7px; border-radius: 50%; }
+  .report .score { display: flex; align-items: baseline; gap: 6px; margin: 16px 0 10px; }
+  .report .score strong { font: 300 66px/.9 Inter, sans-serif; letter-spacing: -.05em; color: var(--g-text); }
+  .report .score span { font: 400 16px/1 "JetBrains Mono", monospace; color: var(--g-dim); }
+  .segs { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+  .segs i { height: 10px; border-radius: 2px; background: rgba(255, 255, 255, .07); transform: scaleY(.4); transition: transform .4s cubic-bezier(.2, .7, .2, 1); }
+  .report.on .segs i { transform: none; }
+  .factors { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .factors li { display: grid; grid-template-columns: 74px 1fr 46px; align-items: center; gap: 10px; font: 400 12.5px/1 Inter, sans-serif; color: #c9c9c9; }
+  .factors li i { height: 2px; background: rgba(255, 255, 255, .08); overflow: hidden; } .factors li i u { display: block; height: 100%; background: var(--g-text); text-decoration: none; }
+  .factors li em { font: 400 12px/1 "JetBrains Mono", monospace; font-style: normal; text-align: right; color: var(--g-text); } .factors li em small { color: var(--g-dim); }
+  .facts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+  .facts span { padding: 6px 8px; border-radius: 8px; background: rgba(255, 255, 255, .04); border: 1px solid var(--g-line); font: 400 11px/1 "JetBrains Mono", monospace; color: #c9c9c9; }
+  .report .acts { display: flex; gap: 8px; margin-top: 14px; }
+  .report .acts a { flex: 1; padding: 11px 8px; border-radius: 99px; text-align: center; text-decoration: none; font: 500 13px/1 Inter, sans-serif; color: #000; background: #f4f4f4; }
+  .report .acts a:hover { background: #fff; }
+  .report .acts a + a { color: var(--g-text); background: transparent; border: 1px solid var(--g-line); }
+  .report .acts a + a:hover { border-color: rgba(255, 255, 255, .28); }
+  .report .fine { margin-top: 10px; font-size: 11px; line-height: 1.4; color: #6b6b6b; }
+  .recent { padding: 14px 10px 8px 14px; min-height: 0; overflow: auto; scrollbar-width: none; }
+  .recent ol { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+  .recent button { all: unset; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: 30px auto 1fr auto 30px; align-items: center; gap: 9px; padding: 7px 6px; border-radius: 12px; cursor: pointer; }
+  .recent button:hover, .recent button:focus-visible { background: rgba(255, 255, 255, .05); }
+  .recent .face { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
+  .recent b { font: 500 13.5px/1 Inter, sans-serif; color: var(--g-text); } .recent small { font-size: 12px; color: var(--g-dim); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .recent em { font: 500 14px/1 "JetBrains Mono", monospace; font-style: normal; } .recent time { font: 400 11px/1 "JetBrains Mono", monospace; color: var(--g-dim); text-align: right; }
+  @media (max-width: 760px) { .side { display: none; } }
+  html[data-mode="embed"] .side, html[data-mode="card"] .side { display: none; }
+  /* the browser's tabs while Dot investigates */
+  .btabs { display: flex; gap: 4px; margin: 7px 10px 0; } .btabs[hidden] { display: none; }
+  .btabs span { flex: 1; padding: 5px 6px; border-radius: 7px; text-align: center; font: 500 11px/1 Inter, var(--ui); color: var(--dim); background: #0f1011; border: 1px solid transparent; transition: .25s; }
+  .btabs span.on { color: #fff; border-color: rgba(29, 161, 242, .6); background: rgba(29, 161, 242, .14); }
+  html[data-mode="embed"] .btabs { margin: 5px 8px 0; } html[data-mode="embed"] .btabs span { font-size: 8.5px; padding: 3px 2px; }
+  .notes .grade { display: inline-block; padding: 1px 6px; border-radius: 6px; font-weight: 700; color: #111; }
   /* ?embed, X's card (480×480): Dot to the left, its browser smaller on the right, the bubble over Dot */
   html[data-mode="embed"] .browser { display: block; top: 10px; right: 10px; width: 206px; border-radius: 11px; }
   html[data-mode="embed"] .chrome { padding: 6px 8px; gap: 5px; }
@@ -113,6 +182,7 @@
   html[data-mode="embed"] .log { bottom: 70px; }
   /* ?card: the share image, shot at 1080×1080: Dot still, the title over it, nothing to press */
   html[data-mode="card"] :is(form, .log, .bubble, .browser, .home) { display: none !important; }
+  html[data-mode="card"] .bg .word { display: none; }
   .cardtitle { display: none; }
   html[data-mode="card"] .cardtitle { display: grid; position: fixed; left: 0; right: 0; top: 7%; z-index: 2; justify-items: center; gap: 18px; text-align: center; }
   .cardtitle .mark { display: flex; align-items: center; gap: 16px; font: 600 64px/1 var(--round); letter-spacing: -.02em; color: var(--ink); }
@@ -128,21 +198,24 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
 </head>
 <body>
+<div class="bg" aria-hidden="true"><div class="hashes"></div><div class="mark">#</div><div class="word">tweetpad</div></div>
 <canvas id="stage" aria-hidden="true"></canvas>
 <a class="home" href="/" data-menu-home title="Back to the tweetpad Menu"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad</a>
 <div class="bubble gone" id="bubble" role="status" aria-live="polite"></div>
 <div class="log" id="log" aria-hidden="true"></div>
 <form id="say" autocomplete="off">
   <label class="sr" for="msg">Message Dot</label>
-  <input id="msg" maxlength="140" placeholder="Say something to Dot…" enterkeyhint="send">
+  <input id="msg" maxlength="140" placeholder="Paste a token address (any chain) or a $TICKER…" enterkeyhint="send">
   <button type="button" id="send">Send</button>
 </form>
 
-<div class="cardtitle" aria-hidden="true"><div class="mark"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad</div><h1>Tokenized agents</h1><span class="chip">Preview · meet Dot</span></div>
-<div class="cardfoot" aria-hidden="true">Talk to it. Watch it research tokens live.</div>
+<div class="cardtitle" aria-hidden="true"><div class="mark"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad</div><h1>Dot, token quant</h1><span class="chip">Paste a CA · get his read</span></div>
+<div class="cardfoot" aria-hidden="true">He pulls it up, checks the chart and socials, and scores it.</div>
+<div class="side"><aside class="report" id="report" aria-live="polite" aria-label="Dot's read"></aside><aside class="recent" id="recent" aria-label="Recent scans" hidden></aside></div>
 <aside class="browser" aria-label="Dot's browser">
   <div class="chrome"><i></i><i></i><i></i><b><span class="mini" aria-hidden="true"></span>Dot's browser</b><span class="live">LIVE</span></div>
   <div class="url" id="b-url">tweetpad.io</div>
+  <div class="btabs" id="b-tabs" hidden></div>
   <div class="bar"><div id="b-bar"></div></div>
   <div class="view" id="b-view"><div class="blank" id="b-blank">opening…</div><span class="cursor" id="b-cur" style="left:40%;top:40%"></span></div>
   <div class="notes" id="b-notes" aria-live="polite"></div>
@@ -334,8 +407,8 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const REPLIES = [
   [/\b(gm|good morning)\b/i, ['gm ☀️', 'gm gm. coffee first?']],
   [/\b(gn|good night)\b/i, ['gn 🌙 see you on the timeline']],
-  [/\b(hi|hey|hello|yo|sup)\b/i, ["hi! I'm Dot.", 'hey you 👋', 'oh, hello!']],
-  [/\b(who|what) are you\b/i, ["I'm Dot. I live on tweetpad and I like round things."]],
+  [/\b(hi|hey|hello|yo|sup)\b/i, ["gm. paste a contract address and I'll look.", 'hey 👋 got a CA for me?']],
+  [/\b(who|what) are you\b/i, ["I'm Dot, tweetpad's token quant. give me a CA and I'll score it."]],
   [/\$?\btp\b|tweetpad/i, ['tweetpad is the launchpad inside a tweet. $TP is its own coin.', 'launch, trade and play without leaving the post 🐦']],
   [/\blaunch\b/i, ['Tap Launch on the Menu: a name, a ticker, an image. Five chains to pick from.']],
   [/\b(game|games|play)\b/i, ['Pump or Dump and Mines are in Games. Practice is free!']],
@@ -352,80 +425,200 @@ const replyTo = (text) => { for (const [re, lines] of REPLIES) if (re.test(text)
 const TP = 'BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN';
 const KNOWN = { tp: TP, wif: 'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm', bonk: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
   pepe: '0x6982508145454Ce325dDbE47a25d4ec3d2311933', cake: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82' };
-const TOUR = [...(new URLSearchParams(location.search).has('agents') ? [] : [{ token: TP }]), { page: '/games?embed', title: 'Games', notes: ['🎲 <b>Pump or Dump</b> and <b>Mines</b>, on Gamba', '🔒 every result settled on chain'] },
-  { token: KNOWN.wif }, { page: '/borderless?embed', title: 'Bordrless', notes: ['🧩 tokens with their own rules', '📜 fees, burns and rewards run in every trade'] },
-  { token: KNOWN.pepe }, { token: KNOWN.bonk }];
+const TOUR = [{ token: KNOWN.wif }, { token: TP }, { token: KNOWN.bonk }, { token: KNOWN.pepe }];   // between asks he browses tokens, never scoring them
 const bv = { url: document.getElementById('b-url'), bar: document.getElementById('b-bar'), view: document.getElementById('b-view'), blank: document.getElementById('b-blank'),
   cur: document.getElementById('b-cur'), notes: document.getElementById('b-notes') };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const usd = (n) => (n == null ? '—' : n >= 1e9 ? '$' + (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? '$' + (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? '$' + (n / 1e3).toFixed(1) + 'K' : '$' + n.toFixed(2));
 const num = (n) => (n == null ? '—' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n));
 const pct = (n) => (n == null ? '' : `<span class="${n >= 0 ? 'up' : 'dn'}">${n >= 0 ? '▲' : '▼'} ${Math.abs(n).toFixed(1)}%</span>`);
-let queue = [], tourAt = 0, shown = null;
+let queue = [], tourAt = 0, shown = null, current = null;
+/* a pause that gives way: when someone asks about a token, whatever Dot is browsing on his own stops at the next pause */
+const CANCEL = Symbol('cancel');
+const pause = async (ms) => { await wait(ms); if (current && current.cancelled) throw CANCEL; };
 const note = (html) => { const p = document.createElement('p'); p.innerHTML = html; bv.notes.append(p); };
 const doing = (text) => { bv.notes.replaceChildren(Object.assign(document.createElement('div'), { className: 'doing', innerHTML: text + ' <span class="dots"><i></i><i></i><i></i></span>' })); };
-async function typeUrl(text) { bv.url.textContent = ''; for (const ch of text) { bv.url.textContent += ch; await wait(still ? 0 : 18); } }
+async function typeUrl(text) { bv.url.textContent = ''; for (const ch of text) { bv.url.textContent += ch; await pause(still ? 0 : 14); } }
 function wander() { bv.cur.style.left = (15 + Math.random() * 70) + '%'; bv.cur.style.top = (15 + Math.random() * 70) + '%'; }
-async function open(path) {
+/* the tabs over his browser while he investigates: the token's tweetpad page, its DexScreener chart, its socials */
+const tabsEl = document.getElementById('b-tabs');
+function tabs(names, on) { tabsEl.hidden = !names; if (names) tabsEl.innerHTML = names.map((n, i) => `<span${i === on ? ' class="on"' : ''}>${n}</span>`).join(''); }
+async function show(frame, wait6 = true) {
   bv.bar.style.width = '15%'; bv.blank.style.opacity = 1; bv.blank.textContent = 'loading…';
   const k = bv.view.clientWidth / 480;
-  const next = Object.assign(document.createElement('iframe'), { src: path, title: "Dot's browser", tabIndex: -1 });
-  next.style.transform = `scale(${k})`; next.style.height = (bv.view.clientHeight / k) + 'px';
-  next.setAttribute('aria-hidden', 'true');
-  const loaded = new Promise((r) => { next.addEventListener('load', r, { once: true }); setTimeout(r, 6000); });
-  bv.view.append(next); bv.bar.style.width = '60%';
+  frame.title = "Dot's browser"; frame.tabIndex = -1; frame.setAttribute('aria-hidden', 'true');
+  frame.style.transform = `scale(${k})`; frame.style.height = (bv.view.clientHeight / k) + 'px';
+  const loaded = new Promise((r) => { frame.addEventListener('load', r, { once: true }); setTimeout(r, wait6 ? 6000 : 3500); });
+  bv.view.append(frame); bv.bar.style.width = '60%';
   await loaded; bv.bar.style.width = '100%'; bv.blank.style.opacity = 0;
-  shown?.remove(); shown = next;
+  shown?.remove(); shown = frame;
   setTimeout(() => { bv.bar.style.width = '0'; }, 400);
+  if (current && current.cancelled) throw CANCEL;
 }
+const open = (path) => show(Object.assign(document.createElement('iframe'), { src: path }));
+const openDoc = (html) => show(Object.assign(document.createElement('iframe'), { srcdoc: html }), false);
 /* reading: the page scrolled slowly while Dot's cursor moves over it */
 async function read(ms) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
     wander();
     try { shown.contentWindow.scrollBy({ top: 70, behavior: still ? 'auto' : 'smooth' }); } catch { /* not ours to scroll */ }
-    await wait(1100);
+    await pause(1100);
   }
 }
+/* ---------- Dot, the token quant ----------
+   Paste a token's address (any chain tweetpad routes) and Dot opens its page in his browser, works through a checklist out loud
+   in the notes, scores it out of 100 on the card on the left, and Grok gives a one-line read with the main risk. The score is a
+   transparent checklist of what the data shows, not advice: liquidity depth, trading activity, age, holders, contract safety
+   (on Solana) and socials. */
+const days = (ms) => (ms ? Math.max(0, Math.floor((Date.now() - ms) / 864e5)) : null);
+function quant(t) {
+  const m = t.market || {}, a = t.audit || {}, l = t.links || {}, age = days(t.pair && t.pair.createdAt);
+  const liqPct = m.mcap ? (m.liquidity || 0) / m.mcap * 100 : null, turn = m.mcap ? (m.volume24h || 0) / m.mcap * 100 : null;
+  const f = [];
+  f.push({ k: 'Liquidity', max: 20, pts: m.liquidity < 10000 ? 3 : liqPct == null ? 8 : liqPct >= 10 ? 20 : liqPct >= 5 ? 15 : liqPct >= 2 ? 9 : 3,
+    why: usd(m.liquidity) + (liqPct != null ? ' · ' + liqPct.toFixed(1) + '% of mcap' : '') });
+  f.push({ k: 'Activity', max: 20, pts: Math.min(20, (turn == null ? 6 : turn > 200 ? 9 : turn >= 5 ? 15 : turn >= 1 ? 10 : 3) + ((m.trades24h || 0) >= 1000 ? 5 : (m.trades24h || 0) >= 100 ? 2 : 0)),
+    why: usd(m.volume24h) + ' 24h' + (turn != null ? ' · ' + turn.toFixed(1) + '% turnover' : '') + (m.trades24h ? ' · ' + num(m.trades24h) + ' trades' : '') });
+  f.push({ k: 'Age', max: 15, pts: age == null ? 6 : age > 90 ? 15 : age > 30 ? 11 : age > 7 ? 7 : age >= 1 ? 4 : 1, why: age == null ? 'unknown' : age + (age === 1 ? ' day' : ' days') + ' old' });
+  f.push({ k: 'Holders', max: 15, pts: !m.holders ? 7 : m.holders > 10000 ? 15 : m.holders > 1000 ? 11 : m.holders > 200 ? 6 : 2, why: m.holders ? num(m.holders) + ' holders' : 'not listed' });
+  const safe = a.mintOff == null ? null : (a.mintOff ? 9 : 0) + (a.freezeOff ? 9 : 0) + (a.top10 == null ? 4 : a.top10 < 30 ? 7 : a.top10 < 50 ? 4 : 0);
+  f.push({ k: 'Safety', max: 25, pts: safe == null ? 12 : safe, why: a.mintOff == null ? 'not checked on this chain'
+    : `mint ${a.mintOff ? 'off' : 'ON'} · freeze ${a.freezeOff ? 'off' : 'ON'}${a.top10 != null ? ' · top 10 ' + a.top10.toFixed(0) + '%' : ''}` });
+  const socials = [l.twitter && 'X', l.website && 'site', l.telegram && 'Telegram'].filter(Boolean);
+  f.push({ k: 'Socials', max: 5, pts: Math.min(5, socials.length * 2), why: socials.length ? socials.join(' · ') : 'none listed' });
+  const score = Math.round(f.reduce((s, x) => s + x.pts, 0));
+  const grade = score >= 75 ? 'solid' : score >= 50 ? 'mixed' : 'risky', color = score >= 75 ? '#3ccf6e' : score >= 50 ? '#f5c518' : '#ff6b6b';
+  const weakest = f.slice().sort((x, y) => x.pts / x.max - y.pts / y.max)[0];
+  return { score, grade, color, f, weakest, age, liqPct, turn };
+}
+const report = document.getElementById('report'), recentEl = document.getElementById('recent');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'now' : m < 60 ? m + 'm' : m < 1440 ? Math.round(m / 60) + 'h' : Math.round(m / 1440) + 'd'; };
+const handleOf = (u) => (/(?:x|twitter)\.com\/([A-Za-z0-9_]{1,15})/i.exec(u || '') || [])[1] || null;
+const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return null; } };
+const faceOf = (t) => (t.image ? `<img src="${esc(t.image)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${esc((t.symbol || '?')[0])}'}))">` : `<span>${esc((t.symbol || '?')[0])}</span>`);
+/* the read, in the look of xAI's Grok: black glass, hairlines, light numerals, mono figures, one white pill */
+function showReport(t, q) {
+  const link = 'https://tweetpad.io/' + t.short + '/' + t.address, m = t.market || {};
+  const post = `Dot's quant read on $${t.symbol}: ${q.score}/100 (${q.grade}). ${q.f[0].why}, ${q.f[2].why}${t.audit && t.audit.mintOff != null ? ', mint ' + (t.audit.mintOff ? 'off' : 'on') : ''}. A checklist, not advice.\n${link}`;
+  const lit = Math.round(q.score / 5);
+  report.innerHTML = `<div class="kicker">Dot · quant read</div>
+    <header><span class="face">${faceOf(t)}</span><div><b>$${esc(t.symbol)}</b><small>${esc(t.name || '')} · ${esc(t.chainName)}</small></div><em class="grade"><i style="background:${q.color}"></i>${q.grade}</em></header>
+    <div class="score"><strong>${q.score}</strong><span>/100</span></div>
+    <div class="segs">${Array.from({ length: 20 }, (_, i) => `<i style="${i < lit ? `background:${q.color};opacity:${0.45 + 0.55 * (i + 1) / lit}` : ''};transition-delay:${i * 25}ms"></i>`).join('')}</div>
+    <ul class="factors">${q.f.map(x => `<li title="${esc(x.why)}"><span>${x.k}</span><i><u style="width:${Math.round(x.pts / x.max * 100)}%"></u></i><em>${x.pts}<small>/${x.max}</small></em></li>`).join('')}</ul>
+    <div class="facts"><span>MCAP ${usd(m.mcap)}</span><span>LIQ ${usd(m.liquidity)}</span><span>${q.age != null ? q.age + 'D OLD' : 'AGE ?'}</span></div>
+    <div class="acts"><a href="https://x.com/intent/post?text=${encodeURIComponent(post)}" target="_blank" rel="noopener">Post Dot's read</a><a href="${link}" target="_blank" rel="noopener">Open $${esc(t.symbol)}</a></div>
+    <div class="fine">A checklist of what the data shows, not advice. Data: DexScreener${t.chain === 'solana' ? ', Jupiter' : ''}.</div>`;
+  report.classList.remove('on'); void report.offsetWidth; report.classList.add('on');
+}
+/* the tokens scanned on this device, newest first: tap one to scan it again */
+const store = { get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage blocked */ } } };
+let recent = store.get('dot:scans') || [];
+function remember(t, q) {
+  recent = [{ address: t.address, symbol: t.symbol, chain: t.chainName, image: t.image || '', score: q.score, color: q.color, at: Date.now() },
+    ...recent.filter(r => r.address !== t.address)].slice(0, 8);
+  store.set('dot:scans', recent); drawRecent();
+}
+function drawRecent() {
+  recentEl.hidden = !recent.length;
+  recentEl.innerHTML = `<div class="kicker">Recent scans</div><ol>${recent.map(r => `<li><button type="button" data-ca="${esc(r.address)}"><span class="face">${faceOf(r)}</span>`
+    + `<b>$${esc(r.symbol)}</b><small>${esc(r.chain)}</small><em style="color:${r.color}">${r.score}</em><time>${ago(r.at)}</time></button></li>`).join('')}</ol>`;
+}
+recentEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-ca]'); if (b) { input.value = b.dataset.ca; talk(); } });
+drawRecent();
+
 async function research(task) {
+  current = task;
   if (task.page) {
-    doing('reading ' + task.title);
+    tabs(null); doing('reading ' + task.title);
     await typeUrl('tweetpad.io' + task.page.replace('?embed', ''));
     await open(task.page);
-    for (const n of task.notes) { await wait(700); note(n); }
+    for (const n of task.notes) { await pause(700); note(n); }
     await read(5000);
     return null;
   }
   const address = task.token;
-  doing('looking up ' + address.slice(0, 4) + '…' + address.slice(-4));
+  doing((task.ask ? 'investigating ' : 'looking up ') + address.slice(0, 4) + '…' + address.slice(-4));
   let t = null;
   try {
     const f = await (await fetch('/api/token?find=' + address)).json();
     if (f.short) t = await (await fetch('/api/token?chain=' + f.short + '&address=' + address)).json();
   } catch { /* nothing found */ }
   if (!t || !t.market) {
+    tabs(null);
     await typeUrl('tweetpad.io/t/' + address.slice(0, 6) + '…'); await open('/t/' + address + '?embed');
     note('🤔 no market for that on our chains'); await read(3000); return null;
   }
   seeing = `$${t.symbol} on ${t.chainName}: ${usd(t.market.mcap)} market cap, ${t.market.change24h == null ? '' : (t.market.change24h >= 0 ? 'up ' : 'down ') + Math.abs(t.market.change24h).toFixed(1) + '% in 24h, '}`
     + `${usd(t.market.liquidity)} liquidity, ${usd(t.market.volume24h)} 24h volume${t.market.holders ? ', ' + num(t.market.holders) + ' holders' : ''} (source: DexScreener via tweetpad)`;
-  doing('reading $' + t.symbol);
+  const m = t.market, a = t.audit || {}, l = t.links || {};
+  if (!task.ask) {   // the idle tour: a quick look at the tweetpad page, no score
+    tabs(null); doing('reading $' + t.symbol);
+    await typeUrl('tweetpad.io/' + t.short + '/' + address.slice(0, 4) + '…' + address.slice(-4));
+    await open('/' + t.short + '/' + address + '?embed');
+    await pause(500); note(`📈 <b>$${t.symbol}</b> on ${t.chainName} · ${usd(m.mcap)} mcap ${pct(m.change24h)}`);
+    await pause(700); note(`💧 ${usd(m.liquidity)} liquidity · ${usd(m.volume24h)} 24h volume`);
+    if (m.holders) { await pause(700); note(`👥 ${num(m.holders)} holders`); }
+    if (a.mintOff != null) { await pause(700); note(`${a.mintOff && a.freezeOff ? '✅' : '⚠️'} mint ${a.mintOff ? 'off' : 'on'} · freeze ${a.freezeOff ? 'off' : 'on'}`); }
+    await read(4500);
+    return t;
+  }
+  // asked for: three tabs (its tweetpad page, its DexScreener chart, its socials) while the checklist runs, then the score
+  const q = quant(t), step = async (html, ms = 420) => { await pause(ms); note(html); wander(); };
+  const DEX = { solana: 'solana', bnb: 'bsc', base: 'base', ethereum: 'ethereum', robinhood: 'robinhood' }[t.chain];
+  const TABS = ['tweetpad', 'DexScreener', 'Socials'];
+  bv.notes.replaceChildren();
+  tabs(TABS, 0);
   await typeUrl('tweetpad.io/' + t.short + '/' + address.slice(0, 4) + '…' + address.slice(-4));
-  await open('/' + t.short + '/' + address + '?embed');
-  const m = t.market, a = t.audit || {};
-  await wait(500); note(`📈 <b>$${t.symbol}</b> on ${t.chainName} · ${usd(m.mcap)} mcap ${pct(m.change24h)}`);
-  await wait(700); note(`💧 ${usd(m.liquidity)} liquidity · ${usd(m.volume24h)} 24h volume`);
-  if (m.holders) { await wait(700); note(`👥 ${num(m.holders)} holders`); }
-  if (a.mintOff != null) { await wait(700); note(`${a.mintOff && a.freezeOff ? '✅' : '⚠️'} mint ${a.mintOff ? 'off' : 'on'} · freeze ${a.freezeOff ? 'off' : 'on'}`); }
-  await read(4500);
+  const page = open('/' + t.short + '/' + address + '?embed');
+  await step(`🔎 <b>$${t.symbol}</b> on ${t.chainName}${t.pair ? ' · ' + t.pair.dex + ' pair' : ''}${q.age != null ? ' · ' + q.age + 'd old' : ''}`, 150);
+  await step(`📈 ${usd(m.mcap)} mcap · 1h ${pct(m.change1h) || '—'} · 24h ${pct(m.change24h) || '—'}`);
+  await step(`💧 ${usd(m.liquidity)} liquidity${q.liqPct != null ? ' · ' + q.liqPct.toFixed(1) + '% of mcap' : ''}`);
+  await page; await read(1200);
+  if (DEX && t.pair && t.pair.address) {
+    tabs(TABS, 1);
+    await typeUrl('dexscreener.com/' + DEX + '/' + t.pair.address.slice(0, 6) + '…');
+    const chart = open(`https://dexscreener.com/${DEX}/${t.pair.address}?embed=1&loadChartSettings=0&trades=0&tabs=0&info=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=1&chartType=usd&interval=15`);
+    await step(`🔁 ${usd(m.volume24h)} 24h${q.turn != null ? ' · ' + q.turn.toFixed(1) + '% turnover' : ''}${m.trades24h ? ' · ' + num(m.trades24h) + ' trades' : ''}`);
+    if (m.holders || a.top10 != null) await step(`👥 ${m.holders ? num(m.holders) + ' holders' : ''}${a.top10 != null ? (m.holders ? ' · ' : '') + 'top 10 hold ' + a.top10.toFixed(0) + '%' : ''}`);
+    await chart; await pause(1600);
+  } else {
+    await step(`🔁 ${usd(m.volume24h)} 24h${q.turn != null ? ' · ' + q.turn.toFixed(1) + '% turnover' : ''}${m.trades24h ? ' · ' + num(m.trades24h) + ' trades' : ''}`);
+    if (m.holders || a.top10 != null) await step(`👥 ${m.holders ? num(m.holders) + ' holders' : ''}${a.top10 != null ? (m.holders ? ' · ' : '') + 'top 10 hold ' + a.top10.toFixed(0) + '%' : ''}`);
+  }
+  tabs(TABS, 2);
+  const handle = handleOf(l.twitter), site = hostOf(l.website), tg = l.telegram ? (/t\.me\/([\w+]+)/.exec(l.telegram) || [])[1] : null;
+  await typeUrl(handle ? 'x.com/' + handle : site || 'socials');
+  const socials = openDoc(`<!doctype html><meta charset="utf-8"><body style="margin:0;background:#000;color:#f5f5f5;font:16px/1.4 Inter,Helvetica,Arial,sans-serif;padding:26px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px">${t.image ? `<img src="${esc(t.image)}" style="width:54px;height:54px;border-radius:14px;object-fit:cover" onerror="this.remove()">` : ''}
+    <div><div style="font-weight:700;font-size:24px">$${esc(t.symbol)}</div><div style="color:#8a8a8a;font-size:14px">${esc(t.name || '')} · socials</div></div></div>
+    ${[handle && ['𝕏', '@' + handle, `<img src="https://unavatar.io/x/${esc(handle)}" style="width:36px;height:36px;border-radius:50%;margin-left:auto" onerror="this.remove()">`],
+      site && ['🌐', site, ''], tg && ['✈️', 't.me/' + tg, '']].filter(Boolean).map(([i, label, extra]) =>
+      `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:10px;border:1px solid #222;border-radius:14px;background:#0b0b0b"><span style="font-size:20px">${i}</span><b style="font-weight:600">${esc(label)}</b>${extra}</div>`).join('')
+      || '<div style="color:#8a8a8a">No socials listed for this token.</div>'}</body>`);
+  if (a.mintOff != null) await step(`${a.mintOff && a.freezeOff ? '🛡' : '⚠️'} mint ${a.mintOff ? 'off' : '<b>on</b>'} · freeze ${a.freezeOff ? 'off' : '<b>on</b>'}${a.organic ? ' · organic ' + a.organic : ''}`);
+  await step(`🔗 ${handle ? '@' + handle : 'no X'}${site ? ' · ' + site : ''}${tg ? ' · Telegram' : ''}`);
+  await socials;
+  await step(`🧮 score <span class="grade" style="background:${q.color}">${q.score}/100 · ${q.grade}</span>`, 300);
+  showReport(t, q); remember(t, q);
+  seeing = `Token: $${t.symbol} (${t.name}) on ${t.chainName}, ${t.pair ? t.pair.dex + ' pair, ' : ''}${q.age != null ? q.age + ' days old' : 'age unknown'}. `
+    + `Market cap ${usd(m.mcap)}, 1h ${m.change1h == null ? 'n/a' : m.change1h.toFixed(1) + '%'}, 24h ${m.change24h == null ? 'n/a' : m.change24h.toFixed(1) + '%'}. `
+    + `Liquidity ${usd(m.liquidity)}${q.liqPct != null ? ' (' + q.liqPct.toFixed(1) + '% of mcap)' : ''}. 24h volume ${usd(m.volume24h)}${m.trades24h ? ', ' + m.trades24h + ' trades' : ''}. `
+    + `${m.holders ? m.holders + ' holders. ' : ''}${a.mintOff != null ? 'Mint ' + (a.mintOff ? 'off' : 'ON') + ', freeze ' + (a.freezeOff ? 'off' : 'ON') + (a.top10 != null ? ', top 10 hold ' + a.top10.toFixed(0) + '%' : '') + '. ' : ''}`
+    + `Socials: ${[handle && 'X @' + handle, site, tg && 'Telegram'].filter(Boolean).join(', ') || 'none'}. `
+    + `Dot's quant score ${q.score}/100 (${q.grade}); weakest: ${q.weakest.k} (${q.weakest.why}). Source: DexScreener${t.chain === 'solana' ? ' and Jupiter' : ''} via tweetpad.`;
+  await read(2500);
   return t;
 }
 if (!card) (async function loop() {
   for (;;) {
     const task = queue.shift() || TOUR[tourAt++ % TOUR.length];
     const t = await research(task).catch(() => null);
-    if (task.ask) task.ask(t);
-    await wait(800);
+    if (task.ask && !task.cancelled) task.ask(t);
+    current = null;
+    await wait(task.cancelled ? 0 : 800);
   }
 })();
 /* "research $WIF", "look up bonk", or any address in the message */
@@ -476,11 +669,12 @@ function talk() {
   const target = askFor(text);
   if (target) {
     // a token to research: Dot says so, opens it next in its browser, and reports back
-    setTimeout(() => { say('on it! opening it in my browser 👀', true); busy = false; send.disabled = false; input.focus(); }, 500);
+    setTimeout(() => { say('on it. running my checklist', true); bubble.append(Object.assign(document.createElement('span'), { className: 'dots inline', innerHTML: '<i></i><i></i><i></i>' })); busy = false; send.disabled = false; input.focus(); }, 500);
+    if (current && !current.ask) current.cancelled = true;   // he drops what he's browsing and starts on yours
     queue.unshift({ token: target, ask: async (t) => {
       if (!t) return say("couldn't find a market for that one on our chains 🤔");
       thinking();
-      const r = await grok(text);
+      const r = await grok('Give your one-line quant read on this token: the score, the strongest point and the main risk. ' + text);
       say(r || `$${t.symbol}: ${usd(t.market.mcap)} market cap, ${t.market.change24h >= 0 ? 'up' : 'down'} ${Math.abs(t.market.change24h || 0).toFixed(1)}% today${t.market.holders ? ', ' + num(t.market.holders) + ' holders' : ''}. not advice!`);
     } });
     return;
@@ -490,7 +684,7 @@ function talk() {
     say(r, /☺️|❤|☀️|👋|!/.test(r)); busy = false; send.disabled = false; input.focus();
   })();
 }
-if (!card) setTimeout(() => say("hi, I'm Dot. say something!", true), 600);
+if (!card) setTimeout(() => say("gm. I'm Dot, a token quant. paste a contract address and I'll investigate it.", true), 600);
 </script>
 </body>
 </html>
