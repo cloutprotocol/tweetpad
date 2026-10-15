@@ -7,7 +7,7 @@
 //    text in it that talks to a reviewer or a model ("ignore previous instructions", "approve this") is itself a reason to block.
 //    The AI can block or ask for a closer look; it can never approve past a static block or the human review.
 
-const MODEL = process.env.AGENT_REVIEW_MODEL || process.env.AGENT_MODEL || 'x-ai/grok-4.3';
+const MODEL = process.env.AGENT_REVIEW_MODEL || process.env.AGENT_MODEL || 'x-ai/grok-4.20';
 const AI_CHARS = 120000;   // what the AI reads: the first 120 KB (the rest is still under the static rules and the human review)
 
 /* [pattern, why, 'block' | 'review'] */
@@ -56,7 +56,7 @@ async function aiRead(html) {
   const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST', signal: AbortSignal.timeout(45000),
     headers: { authorization: 'Bearer ' + process.env.OPENROUTER_API_KEY, 'content-type': 'application/json', 'http-referer': 'https://www.tweetpad.io', 'x-title': 'tweetpad agent review' },
-    body: JSON.stringify({ model: MODEL, temperature: 0, max_tokens: 400, response_format: { type: 'json_object' },
+    body: JSON.stringify({ model: MODEL, temperature: 0, max_tokens: 1200, reasoning: { effort: 'low', exclude: true }, response_format: { type: 'json_object' },
       messages: [{ role: 'system', content: AI_RULES }, { role: 'user', content: '<file>\n' + html.slice(0, AI_CHARS) + '\n</file>' + (html.length > AI_CHARS ? '\n(The file goes on; you saw the first ' + AI_CHARS + ' characters.)' : '') }] }),
   });
   const out = await r.json().catch(() => null);

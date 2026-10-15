@@ -8,8 +8,10 @@
 const { cors, readJson, redis, rateLimit, fail } = require('./_lib');
 const { MARKUP, CREDIT, loadAgent, reserve, settle } = require('./_agents');
 
-const MODEL = process.env.AGENT_MODEL || 'x-ai/grok-4.3';
-const MAX_OUT = 220;                 // tokens: a quick reply fits the bubble
+const MODEL = process.env.AGENT_MODEL || 'x-ai/grok-4.20';   // Grok's fastest, strict about instructions; $1.25/M in, $2.50/M out
+/* Grok thinks before it answers and that counts against max_tokens, so it gets room, at low effort and hidden: the reply itself
+   stays bubble-sized because the rules ask for 3 sentences. Worst case ~4k in + 600 out ≈ $0.0065 × MARKUP, inside WORST. */
+const MAX_OUT = 600;
 const WORST = 20 * CREDIT;           // held for one call: far over a quick reply's cost
 const TURNS = 8, TURN_LEN = 500;
 
@@ -43,7 +45,7 @@ async function ask(a, messages, seeing) {
   const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST', signal: AbortSignal.timeout(25000),
     headers: { authorization: 'Bearer ' + process.env.OPENROUTER_API_KEY, 'content-type': 'application/json', 'http-referer': 'https://www.tweetpad.io', 'x-title': 'tweetpad agents' },
-    body: JSON.stringify({ model: MODEL, max_tokens: MAX_OUT, temperature: 0.7, usage: { include: true }, user: 'agent:' + a.name,
+    body: JSON.stringify({ model: MODEL, max_tokens: MAX_OUT, temperature: 0.7, reasoning: { effort: 'low', exclude: true }, usage: { include: true }, user: 'agent:' + a.name,
       messages: [{ role: 'system', content: system }, ...context, ...messages] }),
   });
   const out = await r.json().catch(() => null);
