@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap">
 <style>
   /* /dot: one glossy white character in a dark room (three.js), and a message box to talk to it. Dot follows the pointer, blinks,
-     and answers in a speech bubble; its replies are written here (no model behind it yet). */
+     and answers in a speech bubble: Grok, through tweetpad's agent chat, with its own lines as the fallback. */
   :root { --ink: #f2f3f5; --dim: #8b9096; --glass: rgba(255, 255, 255, .07); --line: rgba(255, 255, 255, .14); --blue: #1da1f2;
           --round: "Fredoka", "Varela Round", "Arial Rounded MT Bold", sans-serif; --ui: "Helvetica Neue", Helvetica, Arial, sans-serif; }
   * { box-sizing: border-box; }
@@ -152,6 +152,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const card = document.documentElement.dataset.mode === 'card', embed = document.documentElement.dataset.mode === 'embed';
 const still = card || matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -208,6 +209,64 @@ const eyes = [-1, 1].map((side) => {
   lay(1);
   return { lay };
 });
+/* ---------- ?agents: a showcase of agent looks in Dot's place, one at a time, each turning slowly, then a slow half-turn to
+   the next: shapes and colours from the agents sheet (ball, oval, rounded square, tilted square, marshmallow), matte rather
+   than glossy, and only two accessories, a sombrero and glasses ---------- */
+const AGENTS = new URLSearchParams(location.search).has('agents');
+const looks = [];
+if (AGENTS) {
+  body.visible = false; face.visible = false;
+  const matte = (color) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.55, clearcoat: 0.15, clearcoatRoughness: 0.5, sheen: 0.25 });
+  const whiteEye = eyeMat.clone(); whiteEye.color.set(0xffffff); whiteEye.roughness = 0.6;
+  /* an eye: the same pill as Dot's, a flat patch laid on the surface at a point, facing along its normal */
+  const eye = (g, p, n, mat, tilt = 0.32) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(EYE.w, EYE.h), mat);
+    const h = new THREE.Group(); h.position.copy(p).addScaledVector(n, 0.006); h.lookAt(h.position.clone().add(n)); m.rotation.z = tilt; h.add(m); g.add(h);
+    return m;
+  };
+  const onEllipsoid = (a, b, c, x, y) => { const z = c * Math.sqrt(Math.max(0, 1 - (x / a) ** 2 - (y / b) ** 2)); return [new THREE.Vector3(x, y, z), new THREE.Vector3(x / a ** 2, y / b ** 2, z / c ** 2).normalize()]; };
+  const glasses = () => {
+    const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.45 });
+    for (const x of [-0.26, 0.26]) { const rim = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.028, 12, 40), m); rim.position.x = x; g.add(rim); }
+    const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.15, 8), m); bridge.rotation.z = Math.PI / 2; bridge.position.y = 0.03; g.add(bridge);
+    return g;
+  };
+  /* the sombrero, sized to sit on a ball of radius 1: the crown's opening matches the head where it meets it (y 0.71, radius
+     0.73), so the head fills the crown and the brim rests round it */
+  const sombrero = () => {
+    const g = new THREE.Group(), straw = new THREE.MeshStandardMaterial({ color: 0xc9a24f, roughness: 0.85, side: THREE.DoubleSide });
+    const pts = [[0, 1.3], [0.24, 1.27], [0.44, 1.13], [0.58, 0.92], [0.7, 0.74], [0.75, 0.71], [1.0, 0.67], [1.2, 0.7], [1.31, 0.78], [1.34, 0.85], [1.29, 0.81], [1.17, 0.73], [0.98, 0.72], [0.78, 0.76], [0.73, 0.76]]
+      .map(([x, y]) => new THREE.Vector2(x, y));
+    g.add(new THREE.Mesh(new THREE.LatheGeometry(pts, 72), straw));
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.69, 0.04, 10, 56), new THREE.MeshStandardMaterial({ color: 0xc8343b, roughness: 0.6 }));
+    band.rotation.x = Math.PI / 2; band.position.y = 0.8; g.add(band);
+    g.rotation.z = 0.08; g.rotation.x = -0.06;
+    return g;
+  };
+  const make = (shape, color, extra = {}) => {
+    const g = new THREE.Group(), mat = matte(color), em = color === 0xf4f4f4 ? eyeMat : whiteEye, e = [];
+    let front = 1;
+    if (shape === 'ball') { g.add(new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), mat)); for (const x of [-0.26, 0.26]) e.push(eye(g, ...onEllipsoid(1, 1, 1, x, 0.06), em)); }
+    if (shape === 'oval') { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), mat); m.scale.set(1.15, 0.88, 1); g.add(m); for (const x of [-0.3, 0.3]) e.push(eye(g, ...onEllipsoid(1.15, 0.88, 1, x, 0.05), em, 0.4)); }
+    if (shape === 'box' || shape === 'tilted') {
+      const inner = new THREE.Group(); inner.add(new THREE.Mesh(new RoundedBoxGeometry(1.75, 1.75, 1.35, 8, 0.48), mat)); g.add(inner);
+      for (const x of [-0.27, 0.27]) e.push(eye(inner, new THREE.Vector3(x, 0.08, 0.675), new THREE.Vector3(0, 0, 1), em, 0.12));
+      if (shape === 'tilted') inner.rotation.z = 0.5;
+      front = 0.68;
+    }
+    if (shape === 'mallow') {
+      const inner = new THREE.Group(); inner.add(new THREE.Mesh(new THREE.CapsuleGeometry(0.85, 0.42, 16, 48), mat)); inner.rotation.z = -0.32; g.add(inner);
+      for (const x of [-0.27, 0.27]) e.push(eye(inner, ...onEllipsoid(0.85, 0.85, 0.85, x, 0.12), em, 0.05));
+    }
+    if (extra.specs) { const sp = glasses(); sp.position.set(0, 0.1, front + 0.04); g.add(sp); }
+    if (extra.hat) g.add(sombrero());
+    g.visible = false; dot.add(g);
+    return { g, eyes: e };
+  };
+  looks.push(make('ball', 0xf4f4f4, { hat: true }), make('oval', 0xff6a1a), make('box', 0x14b8a6, { specs: true }), make('tilted', 0x9a5cf5),
+    make('mallow', 0x1f87ff), make('ball', 0x1a1a1a, { specs: true }), make('ball', 0x98663e));
+}
+const LOOK_EACH = 5.5, TURN = 0.9;
 const shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 }));
 shadow.rotation.x = -Math.PI / 2; shadow.position.y = -1.55; shadow.scale.set(0.9, 0.9, 1); scene.add(shadow);
 
@@ -251,7 +310,17 @@ function frame() {
   mood.squint = Math.max(0, mood.squint - dt * 0.6);
   const open = 1 - Math.sin(mood.blink * Math.PI) * 0.9;
   const lid = Math.max(0.12, open * (1 - 0.55 * Math.min(1, mood.squint)));
-  if (lid !== mood.lid) { for (const e of eyes) e.lay(lid); mood.lid = lid; }
+  if (lid !== mood.lid) { for (const e of eyes) e.lay(lid); for (const l of looks) for (const e of l.eyes) e.scale.y = lid; mood.lid = lid; }
+  // ?agents: the look on show turns slowly; at its end it turns away half a turn as the next turns in
+  if (AGENTS) {
+    const n = Math.floor(t / LOOK_EACH), u = t - n * LOOK_EACH, cur = n % looks.length, nxt = (n + 1) % looks.length;
+    const swap = Math.max(0, (u - (LOOK_EACH - TURN)) / TURN), ez = swap * swap * (3 - 2 * swap);
+    looks.forEach((l, i) => { l.g.visible = i === cur || (swap > 0 && i === nxt); });
+    const sway = Math.sin(t * 0.55) * 0.42;
+    const a = looks[cur].g, b = looks[nxt].g;
+    a.rotation.y = sway + ez * Math.PI; a.scale.setScalar(1 - 0.25 * ez);
+    if (swap > 0) { b.visible = ez > 0.5; b.rotation.y = sway - (1 - ez) * Math.PI; b.scale.setScalar(0.75 + 0.25 * ez); if (ez > 0.5) a.visible = false; }
+  }
 
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
@@ -283,7 +352,7 @@ const replyTo = (text) => { for (const [re, lines] of REPLIES) if (re.test(text)
 const TP = 'BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN';
 const KNOWN = { tp: TP, wif: 'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm', bonk: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
   pepe: '0x6982508145454Ce325dDbE47a25d4ec3d2311933', cake: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82' };
-const TOUR = [{ token: TP }, { page: '/games?embed', title: 'Games', notes: ['🎲 <b>Pump or Dump</b> and <b>Mines</b>, on Gamba', '🔒 every result settled on chain'] },
+const TOUR = [...(new URLSearchParams(location.search).has('agents') ? [] : [{ token: TP }]), { page: '/games?embed', title: 'Games', notes: ['🎲 <b>Pump or Dump</b> and <b>Mines</b>, on Gamba', '🔒 every result settled on chain'] },
   { token: KNOWN.wif }, { page: '/borderless?embed', title: 'Bordrless', notes: ['🧩 tokens with their own rules', '📜 fees, burns and rewards run in every trade'] },
   { token: KNOWN.pepe }, { token: KNOWN.bonk }];
 const bv = { url: document.getElementById('b-url'), bar: document.getElementById('b-bar'), view: document.getElementById('b-view'), blank: document.getElementById('b-blank'),
@@ -338,6 +407,8 @@ async function research(task) {
     await typeUrl('tweetpad.io/t/' + address.slice(0, 6) + '…'); await open('/t/' + address + '?embed');
     note('🤔 no market for that on our chains'); await read(3000); return null;
   }
+  seeing = `$${t.symbol} on ${t.chainName}: ${usd(t.market.mcap)} market cap, ${t.market.change24h == null ? '' : (t.market.change24h >= 0 ? 'up ' : 'down ') + Math.abs(t.market.change24h).toFixed(1) + '% in 24h, '}`
+    + `${usd(t.market.liquidity)} liquidity, ${usd(t.market.volume24h)} 24h volume${t.market.holders ? ', ' + num(t.market.holders) + ' holders' : ''} (source: DexScreener via tweetpad)`;
   doing('reading $' + t.symbol);
   await typeUrl('tweetpad.io/' + t.short + '/' + address.slice(0, 4) + '…' + address.slice(-4));
   await open('/' + t.short + '/' + address + '?embed');
@@ -366,6 +437,21 @@ function askFor(text) {
   return sym && KNOWN[sym[1].toLowerCase()] || null;
 }
 
+/* Dot's replies come from Grok, through tweetpad's agent chat (Dot is an agent there, /a/dot: same rules, same credits, kept
+   short); what its browser is reading goes along as data. Its own lines stand in whenever that can't answer. */
+const history = [];
+let seeing = '';
+async function grok(text) {
+  history.push({ role: 'user', content: text });
+  try {
+    const r = await fetch('/api/agent-chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'dot', messages: history.slice(-8), seeing }) });
+    const out = await r.json();
+    if (out.reply) { history.push({ role: 'assistant', content: out.reply }); return out.reply; }
+  } catch { /* its own lines, below */ }
+  history.pop();
+  return null;
+}
+
 let busy = false;
 function say(text, happy = false) {
   bubble.textContent = text;
@@ -391,10 +477,18 @@ function talk() {
   if (target) {
     // a token to research: Dot says so, opens it next in its browser, and reports back
     setTimeout(() => { say('on it! opening it in my browser 👀', true); busy = false; send.disabled = false; input.focus(); }, 500);
-    queue.unshift({ token: target, ask: (t) => say(t ? `$${t.symbol}: ${usd(t.market.mcap)} market cap, ${t.market.change24h >= 0 ? 'up' : 'down'} ${Math.abs(t.market.change24h || 0).toFixed(1)}% today${t.market.holders ? ', ' + num(t.market.holders) + ' holders' : ''}. not advice!` : "couldn't find a market for that one on our chains 🤔") });
+    queue.unshift({ token: target, ask: async (t) => {
+      if (!t) return say("couldn't find a market for that one on our chains 🤔");
+      thinking();
+      const r = await grok(text);
+      say(r || `$${t.symbol}: ${usd(t.market.mcap)} market cap, ${t.market.change24h >= 0 ? 'up' : 'down'} ${Math.abs(t.market.change24h || 0).toFixed(1)}% today${t.market.holders ? ', ' + num(t.market.holders) + ' holders' : ''}. not advice!`);
+    } });
     return;
   }
-  setTimeout(() => { const r = replyTo(text); say(r, /☺️|❤|☀️|👋|!/.test(r)); busy = false; send.disabled = false; input.focus(); }, 650 + Math.random() * 500);
+  (async () => {
+    const r = (await grok(text)) || replyTo(text);
+    say(r, /☺️|❤|☀️|👋|!/.test(r)); busy = false; send.disabled = false; input.focus();
+  })();
 }
 if (!card) setTimeout(() => say("hi, I'm Dot. say something!", true), 600);
 </script>
