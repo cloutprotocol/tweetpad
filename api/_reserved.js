@@ -13,7 +13,7 @@ const EXACT = [
   // crypto brands
   'solana', 'phantom', 'pump', 'pumpfun', 'pumpswap', 'coinbase', 'binance', 'jupiter', 'jup', 'raydium', 'metamask', 'uniswap', 'gamba', 'dexscreener', 'bitcoin', 'btc', 'ethereum', 'vitalik', 'satoshi', 'trump', 'melania',
   // our own
-  'tweetpad', 'tweetpadio', 'tp', 'dot', 'agent', 'agents', 'a', 'games', 'scan', 'bordrless', 'borderless', 'custom', 'autoclaim', 'kit', 'official', 'team', 'staff', 'mod', 'mods', 'moderator',
+  'tweetpad', 'tweetpadio', 'tp', 'dot', 'pika', 'agent', 'agents', 'a', 'games', 'scan', 'bordrless', 'borderless', 'custom', 'autoclaim', 'kit', 'official', 'team', 'staff', 'mod', 'mods', 'moderator',
   // chains we route
   'sol', 'eth', 'base', 'bnb', 'bsc', 'rh', 'robinhood',
   // infrastructure

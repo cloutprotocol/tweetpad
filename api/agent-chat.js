@@ -7,7 +7,7 @@
 // Answers with { state } and no reply when the agent can't talk: 'paused', 'sleeping' (out of credits or over its daily cap), or
 // 'offline' (no OPENROUTER_API_KEY yet); the page then falls back to its own lines.
 const { cors, readJson, redis, rateLimit, fail } = require('./_lib');
-const { MARKUP, CREDIT, loadAgent, reserve, settle } = require('./_agents');
+const { MARKUP, CREDIT, loadAgent, reserve, settle, creditKey } = require('./_agents');
 
 const MODEL = process.env.AGENT_MODEL || 'x-ai/grok-4.20';   // Grok's fastest, strict about instructions; $1.25/M in, $2.50/M out
 /* Grok thinks before it answers and that counts against max_tokens, so it gets room, at low effort and hidden: the reply itself
@@ -92,7 +92,7 @@ module.exports = async (req, res) => {
     const charge = Math.min(WORST, Math.max(CREDIT, Math.ceil(cost * 1e6 * MARKUP)));
     await settle(a, WORST, charge, { model: MODEL, in: got.usage.prompt_tokens || 0, out: got.usage.completion_tokens || 0,
       cached: (got.usage.prompt_tokens_details || {}).cached_tokens || 0, cost });
-    const [left] = await redis(['GET', 'credits:' + a.name]);
+    const [left] = await redis(['GET', creditKey(a)]);
     return res.status(200).json({ reply: got.reply || '…', credits: Math.floor((Number(left) || 0) / CREDIT) });
   } catch (err) {
     return fail(res, err.status || 502, err.message);

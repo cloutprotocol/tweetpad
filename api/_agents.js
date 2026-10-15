@@ -47,9 +47,24 @@ const DOT = {
 <rules> Never invent a metric; say "I couldn't find that". Social buzz is not evidence. A score is a checklist of what the data shows, not a call: never tell anyone to buy or sell. This is research, not advice. </rules>`,
 };
 
+/* Pika is ours too: tweetpad's VRChat avatar example (/pika), a fan-made Pikachu avatar on the kit's avatar.js. It isn't claimed (its
+   name is reserved) and it answers from Dot's credits (pool), so tweetpad's examples share one budget */
+const PIKA = {
+  name: 'pika', owner: null, handle: 'tweetpad_io', xId: null, display: 'Pika', links: ['https://x.com/tweetpad_io'], picture: '',
+  bio: "tweetpad's VRChat avatar example: say hi and I talk back, right in the post.", look: { shape: 'ball', color: '#f2c230', hat: 'none', glasses: false },
+  state: 'live', cap: 0, browser: false, tweet: null, createdAt: Date.UTC(2026, 9, 15), pool: 'dot',
+  persona: `<role> You are Pika, a cheerful little electric-yellow creature standing in tall grass inside an X post on tweetpad. You're tweetpad's example of a VRChat avatar agent: anyone can bring their own avatar to tweetpad and it talks back, like you. </role>
+<voice> Bright, playful and short. You often start with "Pika!" but always answer in plain words too. At most one emoji. </voice>
+<rules> You're an AI agent made by fans of the character, not an official Pokémon product. If someone asks how to get an agent like you, say: bring your VRChat avatar to tweetpad.io/agents. </rules>`,
+};
+const BUILT_IN = { dot: DOT, pika: PIKA };
+/* where an agent's credits live: its own, or its pool's (tweetpad's examples share Dot's) */
+const creditKey = (a) => 'credits:' + (a.pool || a.name);
+
 async function loadAgent(name) {
-  const [raw, credits] = await redis(['GET', 'agent:' + name], ['GET', 'credits:' + name]);
-  if (!raw && name === 'dot') return { ...DOT, balance: Number(credits) || 0 };
+  const pool = !BUILT_IN[name] || !BUILT_IN[name].pool ? name : BUILT_IN[name].pool;
+  const [raw, credits] = await redis(['GET', 'agent:' + name], ['GET', 'credits:' + pool]);
+  if (!raw && BUILT_IN[name]) return { ...BUILT_IN[name], balance: Number(credits) || 0 };
   if (!raw) return null;
   const a = JSON.parse(raw);
   a.balance = Number(credits) || 0;
@@ -74,18 +89,18 @@ const day = () => new Date().toISOString().slice(0, 10);
 
 /* take `worst` µ$ before a model call; false (and nothing taken) when the agent can't cover it or its daily cap is reached */
 async function reserve(a, worst) {
-  const [left] = await redis(['DECRBY', 'credits:' + a.name, worst]);
-  if (left < 0) { await redis(['INCRBY', 'credits:' + a.name, worst]); return false; }
+  const [left] = await redis(['DECRBY', creditKey(a), worst]);
+  if (left < 0) { await redis(['INCRBY', creditKey(a), worst]); return false; }
   if (a.cap) {
     const [spent] = await redis(['GET', 'spent:' + a.name + ':' + day()]);
-    if ((Number(spent) || 0) + worst > a.cap * CREDIT) { await redis(['INCRBY', 'credits:' + a.name, worst]); return false; }
+    if ((Number(spent) || 0) + worst > a.cap * CREDIT) { await redis(['INCRBY', creditKey(a), worst]); return false; }
   }
   return true;
 }
 /* after the call: charge what it cost, give the rest back, and write it down */
 async function settle(a, worst, charge, entry) {
   const key = 'spent:' + a.name + ':' + day();
-  await redis(['INCRBY', 'credits:' + a.name, worst - charge], ['INCRBY', key, charge], ['EXPIRE', key, 3 * 86400],
+  await redis(['INCRBY', creditKey(a), worst - charge], ['INCRBY', key, charge], ['EXPIRE', key, 3 * 86400],
     ['XADD', 'ledger:' + a.name, 'MAXLEN', '~', '5000', '*', 'kind', 'charge', 'usd', String(charge / 1e6), ...Object.entries(entry).flatMap(([k, v]) => [k, String(v)])]);
 }
 /* a top-up: credit it once per transaction signature */
@@ -111,4 +126,4 @@ async function isOwner(a, b) {
   return !!s.wallet && s.wallet === a.owner && (a.walletProof || 'signed') === 'signed';
 }
 
-module.exports = { isOwner, statusOf, MARKUP, CREDIT, STARTER, PER_HANDLE, SITE, agentUrl, DEFAULT_LOOK, cleanLook, loadAgent, saveAgent, publicAgent, reserve, settle, credit };
+module.exports = { isOwner, statusOf, creditKey, MARKUP, CREDIT, STARTER, PER_HANDLE, SITE, agentUrl, DEFAULT_LOOK, cleanLook, loadAgent, saveAgent, publicAgent, reserve, settle, credit };
