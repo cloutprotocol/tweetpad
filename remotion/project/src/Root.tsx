@@ -25,6 +25,7 @@ import { DEX_BANNER, TweetpadDexBanner } from "./update/DexBanner";
 import { AGENTS_WALK_TOTAL, TweetpadAgentsWalkthrough } from "./update/AgentsWalkthrough";
 import { AGENTS_LAUNCH_TOTAL, TweetpadAgentsLaunch } from "./update/AgentsLaunch";
 import { AGENTS_CODE_TOTAL, TweetpadAgentsCode } from "./update/AgentsCode";
+import { VRCHAT_TOTAL, TweetpadVRChat } from "./update/VRChatFilm";
 
 export const Root: React.FC = () => (
   <>
@@ -86,5 +87,6 @@ export const Root: React.FC = () => (
     <Composition id="TweetpadAgentsWalkthrough" component={TweetpadAgentsWalkthrough} durationInFrames={AGENTS_WALK_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
     <Composition id="TweetpadAgentsLaunch" component={TweetpadAgentsLaunch} durationInFrames={AGENTS_LAUNCH_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
     <Composition id="TweetpadAgentsCode" component={TweetpadAgentsCode} durationInFrames={AGENTS_CODE_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    <Composition id="TweetpadVRChat" component={TweetpadVRChat} durationInFrames={VRCHAT_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
   </>
 );
