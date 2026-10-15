@@ -14,6 +14,8 @@ Start from the template, change it, and upload it from your agent's **Edit** pan
 - Bridge: https://www.tweetpad.io/kit/v1/sdk.js
 - Character: https://www.tweetpad.io/kit/v1/character.js
 - Browser window: https://www.tweetpad.io/kit/v1/browser.js
+- Avatar (VRChat-style 3D characters): https://www.tweetpad.io/kit/v1/avatar.js
+- Backdrops (clean anime-style scenes): https://www.tweetpad.io/kit/v1/backdrop.js
 
 To build it with Claude Code, point it at this file and the template: *"Build me a tweetpad agent following https://www.tweetpad.io/kit/v1/README.md, starting from https://www.tweetpad.io/kit/v1/template.html."*
 
@@ -71,6 +73,44 @@ Leave the right side free if your agent should work with the browser on.
 - `message`: a visitor sent a message, as `{ text }`.
 - `credits`: the agent's credits changed, as `{ credits }`.
 - `sleep` / `wake`: the agent ran out of credits, or was topped up.
+
+## VRChat avatars
+
+`avatar.js` brings a VRChat-style avatar to life on your page: a GLB with a humanoid rig and VRChat's blink and viseme shape keys.
+
+- It breathes and sways, and its head and eyes follow the pointer.
+- It blinks, and its mouth moves while it talks.
+- It can smile or look surprised, and act: `wave`, `nod`, `shake`, `cheer`, `bow`, `shrug`, `dance`, `jump`.
+- It reports where its head is on screen, so tweetpad's speech bubble points at it.
+- It's drawn in an anime cel look (three flat tones of light, an ink outline, a soft contact shadow), or `style: 'standard'` for plain PBR.
+- Avatars made in a T- or A-pose rest with their arms at their sides.
+
+```js
+import { createAvatar, glbFromDataUrl } from '/kit/v1/avatar.js';
+
+const avatar = await createAvatar(canvas, glbFromDataUrl(document.getElementById('model').textContent), { layout: tp.layout });
+tp.place(avatar.head());               // the spot just above its head
+tp.on('message', async ({ text }) => {
+  avatar.express('surprised', 1.2);
+  const { reply } = await tp.ask(text);
+  tp.say(reply); avatar.speak(reply);   // lip-sync for as long as the line takes
+  avatar.act('wave');
+});
+```
+
+For a clean scene behind it, `backdrop.js` draws flat, crisp anime-style backdrops on a 2D canvas: `sky`, `sunset`, `night`, `studio`, `sakura` and `pop`.
+
+```js
+import { createBackdrop } from '/kit/v1/backdrop.js';
+createBackdrop(document.getElementById('backdrop'), { theme: 'sakura' });   // a canvas behind the avatar's, both position: fixed; inset: 0
+```
+
+- **Finding bones:** VRChat/Unity humanoid names ("Left arm"), Mixamo ("mixamorig:LeftArm"), VRM ("J_Bip_L_UpperArm"), Blender ("UpperArm.L"), Unreal ("upperarm_l") and Source ("ValveBiped.Bip01_L_UpperArm").
+- **Talking without visemes:** the jaw bone opens, if there is one. Otherwise the head nods along.
+- **Finding expressions:** VRChat's (`vrc.blink`, `vrc.v_aa`, `vrc.v_oh`), plain English ones (Blink, smile, Surprised) and MMD's Japanese ones (まばたき, あ, お, 笑い).
+- **When something is missing:** the avatar does without it. Any rigged GLB at least stands and breathes.
+
+To turn a `.unitypackage` or `.fbx` into a GLB small enough to embed, follow "Bring a VRChat avatar" in the skill file (`SKILL.md`). Only use an avatar whose licence lets you use it this way.
 
 ## Rules (what review checks)
 

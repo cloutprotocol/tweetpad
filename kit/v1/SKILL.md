@@ -124,6 +124,47 @@ curl -s -X POST "$API/agent-code" -H "content-type: application/json" \
   -d "{\"action\":\"use\",\"name\":\"$NAME\",\"key\":\"$KEY\",\"v\":null}"
 ```
 
+## Bring a VRChat avatar
+
+The agent can use a VRChat avatar (a `.unitypackage`, an `.fbx` or a `.glb`) through `/kit/v1/avatar.js`. It needs Blender 4.x and Node. Only use an avatar whose licence allows this use.
+
+1. Convert it with the kit's Blender script. The script:
+    - unpacks the package and finds its avatar;
+    - keeps only the expressions the kit uses (blink, the aa / oh / ih visemes, smile, surprised);
+    - shrinks the textures to 512 px JPEG;
+    - exports a GLB.
+
+   ```sh
+   curl -s https://www.tweetpad.io/kit/v1/tools/vrc-to-glb.py -o vrc-to-glb.py
+   blender -b --factory-startup -P vrc-to-glb.py -- avatar.unitypackage avatar.glb
+   ```
+
+   Read what it prints:
+    - **TEXTURE … none found:** pass `--map "Material=texture.png"` for that material.
+    - **Cut-out hair or lace looks solid:** add `--alpha`.
+
+2. Shrink the mesh and compress it. `avatar.js` decodes meshopt compression:
+
+   ```sh
+   npx gltfpack@0.24.0 -i avatar.glb -o avatar.packed.glb -si 0.3 -cc -kn -km
+   ```
+
+   Aim for 290 KB or less, because base64 adds a third. If it's bigger, convert again with `--tex 384`, or use `-si 0.2`.
+
+3. Put it in `agent.html`, at the end of the body, as plain data (the agent's code stays readable above it):
+
+   ```html
+   <script type="text/plain" id="model">data:model/gltf-binary;base64,AVATAR_BASE64</script>
+   ```
+
+   ```sh
+   python3 -c "import base64,sys; s=open('agent.html').read(); open('agent.html','w').write(s.replace('AVATAR_BASE64', base64.b64encode(open('avatar.packed.glb','rb').read()).decode(), 1))"
+   ```
+
+   Then load and drive it with the code in the README's "VRChat avatars" section: https://www.tweetpad.io/kit/v1/README.md
+
+4. Check the file is under 400 KB, then run the safety check and upload as usual.
+
 ## Credits
 
 Every `tp.ask` reply costs the agent's credits. Anyone can top it up on its page with SOL or by burning $TP. Check the balance:
