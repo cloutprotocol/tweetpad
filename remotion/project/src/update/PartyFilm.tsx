@@ -24,15 +24,15 @@ import { loadFonts } from "../brand/fonts";
 import { FONTS } from "../brand/tokens";
 
 /* ---------- Launch Party's pump.fun world (launchparty-film src/pump4/world.tsx) ---------- */
-const W = { white: "#fbfdfb", ink: "#0b0d10", dim: "#5d6660", faint: "rgba(11,13,16,0.07)", green: "#22c55e", deep: "#15803d", pill: "#5eeb9b", gold: "#f5c451", blue: "#1d9bf0" };
-const inter = '"Inter", system-ui, sans-serif', mono = '"JetBrains Mono", ui-monospace, Menlo, monospace';
-const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
-const ease = Easing.bezier(0.16, 1, 0.3, 1);
+export const W = { white: "#fbfdfb", ink: "#0b0d10", dim: "#5d6660", faint: "rgba(11,13,16,0.07)", green: "#22c55e", deep: "#15803d", pill: "#5eeb9b", gold: "#f5c451", blue: "#1d9bf0" };
+export const inter = '"Inter", system-ui, sans-serif', mono = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+export const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+export const ease = Easing.bezier(0.16, 1, 0.3, 1);
 const settle = Easing.bezier(0.16, 1, 0.3, 1);
-const ramp = (f: number, at: number, d = 16) => interpolate(f, [at, at + d], [0, 1], { ...clamp, easing: ease });
-const hand = (frame: number, seed = 0, amp = 0.35) => Math.sin((frame + seed * 37) / 47) * amp + Math.sin((frame + seed * 11) / 23) * amp * 0.35;
+export const ramp = (f: number, at: number, d = 16) => interpolate(f, [at, at + d], [0, 1], { ...clamp, easing: ease });
+export const hand = (frame: number, seed = 0, amp = 0.35) => Math.sin((frame + seed * 37) / 47) * amp + Math.sin((frame + seed * 11) / 23) * amp * 0.35;
 
-const Canvas: React.FC<{ glow?: number }> = ({ glow = 1 }) => (
+export const Canvas: React.FC<{ glow?: number }> = ({ glow = 1 }) => (
   <AbsoluteFill style={{ background: W.white }}>
     <AbsoluteFill style={{ backgroundImage: "radial-gradient(rgba(11,13,16,0.06) 1.3px, transparent 1.4px)", backgroundSize: "30px 30px",
       maskImage: "radial-gradient(ellipse 75% 70% at 50% 45%, black, transparent 90%)" }} />
@@ -40,7 +40,7 @@ const Canvas: React.FC<{ glow?: number }> = ({ glow = 1 }) => (
   </AbsoluteFill>
 );
 /* a line that resolves word by word out of a blur, and leaves at `to` */
-const Words: React.FC<{ text: string; at: number; to?: number; size: number; color?: string; weight?: number }> = ({ text, at, to, size, color = W.ink, weight = 800 }) => {
+export const Words: React.FC<{ text: string; at: number; to?: number; size: number; color?: string; weight?: number }> = ({ text, at, to, size, color = W.ink, weight = 800 }) => {
   const f = useCurrentFrame(), out = to === undefined ? 1 : interpolate(f, [to - 10, to], [1, 0], clamp);
   return (
     <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", columnGap: size * 0.26, rowGap: size * 0.05, opacity: out,
@@ -53,15 +53,15 @@ const Words: React.FC<{ text: string; at: number; to?: number; size: number; col
   );
 };
 /* a green chip (Launch Party's); a dot where their film draws pump.fun's pill: text only here */
-const Chip: React.FC<{ children: React.ReactNode; size: number; dot?: boolean; o?: number }> = ({ children, size, dot = false, o = 1 }) => (
+export const Chip: React.FC<{ children: React.ReactNode; size: number; dot?: boolean; o?: number }> = ({ children, size, dot = false, o = 1 }) => (
   <span style={{ display: "inline-flex", alignItems: "center", gap: size * 0.4, padding: `${size * 0.32}px ${size * 0.7}px`, borderRadius: 999, opacity: o,
     fontFamily: inter, fontWeight: 800, fontSize: size, letterSpacing: "-0.02em", color: W.ink,
     background: `linear-gradient(180deg, #a6f7c6, ${W.pill})`, boxShadow: `0 ${size * 0.4}px ${size}px -${size * 0.4}px rgba(21,128,61,0.55), inset 0 2px 0 rgba(255,255,255,0.7)` }}>
     {dot && <i style={{ width: size * 0.45, height: size * 0.45, borderRadius: "50%", background: W.deep }} />}{children}
   </span>
 );
-const CREW = ["miladyfren", "noun_enjoyer", "gm_kai", "wagmi_jo", "pillpopper", "curvecat", "degen_ava", "frenly", "sendooor", "onepricemax"];
-const Pfp: React.FC<{ i: number; size: number; ring?: string }> = ({ i, size, ring = "#ffffff" }) => (
+export const CREW = ["miladyfren", "noun_enjoyer", "gm_kai", "wagmi_jo", "pillpopper", "curvecat", "degen_ava", "frenly", "sendooor", "onepricemax"];
+export const Pfp: React.FC<{ i: number; size: number; ring?: string }> = ({ i, size, ring = "#ffffff" }) => (
   <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0, boxShadow: `0 0 0 ${Math.max(3, size * 0.05)}px ${ring}, 0 ${size * 0.12}px ${size * 0.3}px -${size * 0.1}px rgba(11,13,16,0.35)` }}>
     <Img src={staticFile(`party/noun-${i}.svg`)} style={{ width: "100%", height: "100%", imageRendering: "pixelated" }} />
   </div>

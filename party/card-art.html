@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- the share image for Launch Party's links (assets/party-card.png, 1080×1080): open at 1080×1080 and capture. The crew's ring around
+     tweetpad, the name, the line, live on Solana. Uses party.css's ring, so it matches tweetpad.io/party. -->
+<title>Launch Party card</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Inter:wght@500;600&family=Inter+Tight:wght@700;800&display=swap">
+<link rel="stylesheet" href="/assets/party.css">
+<style>
+  html, body { width: 1080px; height: 1080px; overflow: hidden; }
+  body { display: grid; place-items: center; background: radial-gradient(60% 45% at 50% 30%, rgba(63, 224, 160, .16), transparent 70%), radial-gradient(70% 60% at 50% 0%, rgba(29, 155, 240, .22), transparent 70%), #0a0d12; }
+  body::before { display: none; }
+  .art { display: flex; flex-direction: column; align-items: center; gap: 0; margin-top: -20px; }
+  .ring { width: 560px; --r: 230px; --s: 108px; } .ring-coin { inset: calc(50% - 128px); } .ring-coin img { width: 132px; height: 132px; }
+  .ring-seats img { box-shadow: 0 0 0 6px #10151c, 0 0 0 9px rgba(63, 224, 160, .55), 0 14px 30px rgba(0, 0, 0, .5); }
+  .ring-seats, .ring-seats img, .ring-glow { animation: none; }
+  h1 { margin: 26px 0 0; font: 800 112px/1 "Inter Tight", sans-serif; letter-spacing: -.045em; color: #f3f5f8; }
+  .line { margin: 18px 0 0; font: 700 38px/1.2 "Inter Tight", sans-serif; letter-spacing: -.02em; color: #f3f5f8; } .line b { color: #3fe0a0; font-weight: 700; }
+  .live { display: inline-flex; align-items: center; gap: 12px; margin-top: 30px; padding: 14px 24px; border-radius: 99px; background: rgba(63, 224, 160, .14); font: 600 26px/1 Inter, sans-serif; color: #c9f5e2; }
+  .live i { width: 13px; height: 13px; border-radius: 50%; background: #3fe0a0; box-shadow: 0 0 0 6px rgba(63, 224, 160, .2); }
+</style>
+</head>
+<body>
+<div class="art">
+  <div class="ring" aria-hidden="true">
+    <div class="ring-glow"></div><div class="ring-track"></div>
+    <div class="ring-seats"><i style="--i:0"><img src="/assets/party/noun-0.svg" alt=""></i><i style="--i:1"><img src="/assets/party/noun-1.svg" alt=""></i><i style="--i:2"><img src="/assets/party/noun-2.svg" alt=""></i><i style="--i:3"><img src="/assets/party/noun-3.svg" alt=""></i><i style="--i:4"><img src="/assets/party/noun-4.svg" alt=""></i><i style="--i:5"><img src="/assets/party/noun-5.svg" alt=""></i><i style="--i:6"><img src="/assets/party/noun-6.svg" alt=""></i><i style="--i:7"><img src="/assets/party/noun-7.svg" alt=""></i><i style="--i:8"><img src="/assets/party/noun-8.svg" alt=""></i><i style="--i:9"><img src="/assets/party/noun-9.svg" alt=""></i></div>
+    <div class="ring-coin"><img src="/assets/brand/tweetpad-hash-180.png" alt=""></div>
+  </div>
+  <h1>Launch Party</h1>
+  <p class="line">Bundle a coin with a crew on <b>pump.fun</b></p>
+  <span class="live"><i></i>Live on Solana · tweetpad.io/party</span>
+</div>
+</body>
+</html>

@@ -27,6 +27,7 @@ import { AGENTS_LAUNCH_TOTAL, TweetpadAgentsLaunch } from "./update/AgentsLaunch
 import { AGENTS_CODE_TOTAL, TweetpadAgentsCode } from "./update/AgentsCode";
 import { VRCHAT_TOTAL, TweetpadVRChat } from "./update/VRChatFilm";
 import { PARTY_TOTAL, TweetpadParty } from "./update/PartyFilm";
+import { PARTY_HOWTO_TOTAL, TweetpadPartyHowTo } from "./update/PartyHowTo";
 
 export const Root: React.FC = () => (
   <>
@@ -90,5 +91,6 @@ export const Root: React.FC = () => (
     <Composition id="TweetpadAgentsCode" component={TweetpadAgentsCode} durationInFrames={AGENTS_CODE_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
     <Composition id="TweetpadVRChat" component={TweetpadVRChat} durationInFrames={VRCHAT_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
     <Composition id="TweetpadParty" component={TweetpadParty} durationInFrames={PARTY_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
+    <Composition id="TweetpadPartyHowTo" component={TweetpadPartyHowTo} durationInFrames={PARTY_HOWTO_TOTAL} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
   </>
 );

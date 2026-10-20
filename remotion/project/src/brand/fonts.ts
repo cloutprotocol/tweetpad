@@ -4,6 +4,8 @@ import { staticFile } from "remotion";
 /** Loads every face the film uses. Remotion waits for these before rendering a frame. */
 const faces: { family: string; file: string; weight?: string }[] = [
   { family: "Inter", file: "fonts/Inter-Variable.ttf", weight: "100 900" },
+  /* the launch-party films: the party pages' sharp display face (OFL, Google Fonts) */
+  { family: "Inter Tight", file: "fonts/InterTight-Variable.ttf", weight: "100 900" },
   { family: "Fredoka", file: "fonts/Fredoka-Variable.ttf", weight: "300 700" },
   { family: "Gelasio", file: "fonts/Gelasio-Variable.ttf", weight: "400 700" },
   { family: "Pixelify Sans", file: "fonts/PixelifySans-Variable.ttf", weight: "400 700" },

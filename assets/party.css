@@ -186,7 +186,7 @@ html[data-mode="embed"] .devnote { font-size: 10.5px; margin-top: 4px; padding-t
 .hint { margin: 0; color: var(--dim); font-size: 13px; }
 
 /* X's card: full bleed, everything in 480×480 */
-html[data-mode="embed"] .room { width: 100%; height: 100vh; margin: 0; padding: 11px 14px 8px; gap: 8px; border: 0; border-radius: 0; box-shadow: none; overflow: hidden;
+html[data-mode="embed"] .room { width: 100%; height: 100vh; height: 100dvh; margin: 0; padding: 11px 14px max(8px, env(safe-area-inset-bottom)); gap: 8px; border: 0; border-radius: 0; box-shadow: none; overflow: hidden;
                                  background: transparent; backdrop-filter: none; }
 html[data-mode="embed"] .face { width: 52px; height: 52px; border-radius: 15px; font-size: 20px; }
 html[data-mode="embed"] .names h1 { font-size: 20px; }
@@ -202,6 +202,9 @@ html[data-mode="embed"] :is(.crew, .yours, .links) { display: none; } html[data-
 html[data-mode="embed"] .landed-top { display: none; } html[data-mode="embed"] .ca { padding: 6px 6px 6px 12px; border-radius: 12px; } html[data-mode="embed"] .ca small { display: none; } html[data-mode="embed"] .ca code { font-size: 12px; word-break: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-mode="embed"] .ca button { padding: 6px 10px; font-size: 11.5px; }
 html[data-mode="embed"] .act { margin-top: auto; }
+/* the card opened full-screen (X's in-app browser on a phone, with its toolbar over the bottom): taller than the 480 card, so the
+   actions follow the room instead of sitting at the bottom of the screen, under the toolbar */
+@media (min-height: 560px) { html[data-mode="embed"] .act { margin-top: 0; } html[data-mode="embed"] .room { overflow-y: auto; } }
 html[data-mode="embed"] .more { margin-top: 6px; gap: 2px 16px; } html[data-mode="embed"] .status { margin-top: 6px; min-height: 0; }
 html[data-mode="embed"] .faq-list:not(.open) { display: none; }
 html[data-mode="embed"] .faq { display: none; }   /* in the card, "How it works" sits with the other buttons and opens a sheet */
@@ -338,9 +341,10 @@ a.go { display: block; text-align: center; text-decoration: none; }
 }
 /* X's card for /party (480×480): see "X's card for /party" below for the hero; the CTA and the line sit at the bottom */
 html[data-mode="embed"] .lobby { gap: 12px; }
-html[data-mode="embed"] .hero-cta { position: absolute; left: 14px; right: 14px; bottom: 30px; margin: 0; } html[data-mode="embed"] .hero-cta .go { width: 100%; padding: 14px; }
+/* the way in sits right under the line, in the flow: never pinned to the bottom, where a phone browser's toolbar covers it */
+html[data-mode="embed"] .hero-cta { width: 100%; margin-top: 16px; } html[data-mode="embed"] .hero-cta .go { width: 100%; padding: 15px; }
 html[data-mode="embed"] :is(.steps, .fineprint) { display: none; }
-html[data-mode="embed"] .lobby .fine { position: absolute; left: 14px; right: 14px; bottom: 8px; }
+html[data-mode="embed"] .lobby .fine { margin-top: 2px; text-align: center; }
 
 /* loading: shimmering blocks in the shape of what's coming, never placeholder words */
 @keyframes shimmer { to { background-position: -200% 0; } }

@@ -21,7 +21,7 @@ const party = async () => {   // an ES module bundle; loaded as CommonJS somewhe
 module.exports = async (req, res) => {
   const room = String(req.query.room || '');
   if (!isAddress(room)) return res.status(404).send('Not a party room.');
-  const fill = { ROOM: room, URL: SITE + '/p/' + room, IMAGE: SITE + '/assets/party-card.png?v=1',
+  const fill = { ROOM: room, URL: SITE + '/p/' + room, IMAGE: SITE + '/assets/party-card.png?v=2',
     TITLE: 'A launch party on tweetpad', DESC: 'Take a seat in a coin launch on pump.fun, right in the post. Refundable until launch.' };
   try {
     const s = await party();

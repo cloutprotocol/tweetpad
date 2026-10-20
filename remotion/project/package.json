@@ -16,6 +16,8 @@
     "render:vrchat": "remotion render src/index.ts TweetpadVRChat ../out/tweetpad-vrchat.mp4 --concurrency=2 --gl=angle",
     "stills:vrchat": "REMOTION_GL=angle node scripts/stills.mjs ../out/stills 20:vr-open-a 110:vr-open 294:vr-drop 388:vr-kaito 1270:vr-miku 1438:vr-grid2 1642:vr-end --comp=TweetpadVRChat",
     "render:party": "remotion render src/index.ts TweetpadParty ../out/tweetpad-launch-parties.mp4 --concurrency=2",
+    "render:party-howto": "remotion render src/index.ts TweetpadPartyHowTo ../out/tweetpad-launch-party-howto.mp4 --concurrency=2",
+    "stills:party-howto": "node scripts/stills.mjs ../out/stills 0:ph-poster 146:ph-find 186:ph-find-click 352:ph-coin 478:ph-party 638:ph-party-gate 724:ph-open 769:ph-sign 844:ph-done 940:ph-post 1010:ph-posted 1136:ph-seats 1266:ph-full 1322:ph-launch 1412:ph-landed 1508:ph-claim 1588:ph-claimed 1724:ph-end --comp=TweetpadPartyHowTo",
     "stills:party": "node scripts/stills.mjs ../out/stills 0:pt-open0 80:pt-open80 380:pt-post-full 450:pt-gate-a 500:pt-gate-b 560:pt-gate-c 610:pt-gate-d 680:pt-gate-e 1000:pt-curve-one 1060:pt-vest-a 1120:pt-vest-b 1180:pt-vest-c 1490:pt-end --comp=TweetpadParty",
     "render:agents-code": "remotion render src/index.ts TweetpadAgentsCode ../out/tweetpad-agents-code.mp4 --concurrency=2 --gl=angle",
     "stills:agents-code": "REMOTION_GL=angle node scripts/stills.mjs ../out/stills 40:ac-intro 122:ac-copy 340:ac-paste 454:ac-swap 594:ac-swap2 766:ac-ship 904:ac-share 1024:ac-share2 1158:ac-trader 1258:ac-trader2 1392:ac-deployer 1507:ac-deployer2 1656:ac-end --comp=TweetpadAgentsCode",
