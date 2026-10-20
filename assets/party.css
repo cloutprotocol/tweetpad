@@ -339,12 +339,21 @@ a.go { display: block; text-align: center; text-decoration: none; }
   .steps { grid-template-columns: 1fr; gap: 14px; } .steps li, .steps li:first-child { padding: 0 0 0 36px; position: relative; } .steps li + li { border-left: 0; }
   .steps li::before { position: absolute; left: 0; top: 0; margin: 0; } .lseats { width: 76px; } .lmcap { width: 104px; }
 }
-/* X's card for /party (480×480): see "X's card for /party" below for the hero; the CTA and the line sit at the bottom */
+/* X's card for /party (480×480): see "X's card for /party" below for the hero; the CTA and the line sit at the bottom, full width */
 html[data-mode="embed"] .lobby { gap: 12px; }
-/* the way in sits right under the line, in the flow: never pinned to the bottom, where a phone browser's toolbar covers it */
-html[data-mode="embed"] .hero-cta { width: 100%; margin-top: 16px; } html[data-mode="embed"] .hero-cta .go { width: 100%; padding: 15px; }
+html[data-mode="embed"] .hero-cta { position: absolute; left: 14px; right: 14px; bottom: 30px; margin: 0; } html[data-mode="embed"] .hero-cta .go { width: 100%; padding: 14px; }
 html[data-mode="embed"] :is(.steps, .fineprint) { display: none; }
-html[data-mode="embed"] .lobby .fine { margin-top: 2px; text-align: center; }
+html[data-mode="embed"] .lobby .fine { position: absolute; left: 14px; right: 14px; bottom: 8px; }
+/* the card opened full-screen (X's in-app browser on a phone, its toolbar over the bottom): the hero gets room at the top and the way in
+   follows it in the flow, still full width, never under the toolbar */
+@media (min-height: 560px) {
+  html[data-mode="embed"] .lobby { gap: 18px; padding-top: max(28px, calc(env(safe-area-inset-top) + 16px)); padding-left: 20px; padding-right: 20px; }
+  html[data-mode="embed"] .lobby .hero-text { width: 100%; }
+  html[data-mode="embed"] .lobby .ring { width: 236px; --r: 100px; --s: 46px; margin-top: 0; } html[data-mode="embed"] .lobby .ring-coin { inset: calc(50% - 58px); } html[data-mode="embed"] .lobby .ring-coin img { width: 64px; height: 64px; }
+  html[data-mode="embed"] .lobby .hero h1 { font-size: 40px; } html[data-mode="embed"] .lobby .hero .tag { margin-top: 10px; font-size: 17px; }
+  html[data-mode="embed"] .hero-cta { position: static; margin-top: 26px; } html[data-mode="embed"] .hero-cta .go { padding: 16px; }
+  html[data-mode="embed"] .lobby .hero { margin-top: auto; } html[data-mode="embed"] .lobby .fine { position: static; margin-bottom: auto; text-align: center; }
+}
 
 /* loading: shimmering blocks in the shape of what's coming, never placeholder words */
 @keyframes shimmer { to { background-position: -200% 0; } }
