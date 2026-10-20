@@ -101,6 +101,22 @@
       "destination": "/pika/index.html"
     },
     {
+      "source": "/p/:room",
+      "destination": "/api/p?room=:room"
+    },
+    {
+      "source": "/party",
+      "destination": "/party/index.html"
+    },
+    {
+      "source": "/party/new",
+      "destination": "/party/new.html"
+    },
+    {
+      "source": "/m/:f",
+      "destination": "/api/m?f=:f"
+    },
+    {
       "source": "/bordrless",
       "destination": "/bordrless/index.html"
     }
@@ -304,6 +320,24 @@
       ]
     },
     {
+      "source": "/party",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://x.com https://*.x.com https://twitter.com https://*.twitter.com"
+        }
+      ]
+    },
+    {
+      "source": "/p/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://x.com https://*.x.com https://twitter.com https://*.twitter.com"
+        }
+      ]
+    },
+    {
       "source": "/agents/review",
       "headers": [
         {
@@ -349,7 +383,9 @@
     }
   ],
   "functions": {
-    "api/a.js": { "includeFiles": "a/agent.html" }
+    "api/a.js": { "includeFiles": "a/agent.html" },
+    "api/p.js": { "includeFiles": "{party/room.html,assets/vendor/party-sdk.js}" },
+    "api/parties.js": { "includeFiles": "assets/vendor/party-sdk.js" }
   },
   "crons": [
     {

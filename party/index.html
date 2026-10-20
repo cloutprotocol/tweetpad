@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Launch Party · tweetpad</title>
+<link rel="icon" href="/assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#0a0d12">
+<meta name="description" content="Launch a coin on pump.fun with your friends. Seats at one price, refundable until launch; at launch they all buy together and split the coins.">
+<!-- tweetpad.io/party: the parties open now and the ones that launched, and the way in (/party/new). Posted on X it plays in the post
+     (?embed, 480×480): the open parties and a button to throw one. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Launch Party · tweetpad">
+<meta name="twitter:description" content="Bundle a coin with a crew on pump.fun. Seats at one price, refundable until launch.">
+<meta name="twitter:player" content="https://www.tweetpad.io/party?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/party-card.png?v=1">
+<meta property="og:title" content="Launch Party · tweetpad">
+<meta property="og:description" content="Bundle a coin with a crew on pump.fun. Seats at one price, refundable until launch.">
+<meta property="og:image" content="https://www.tweetpad.io/assets/party-card.png?v=1">
+<meta property="og:url" content="https://www.tweetpad.io/party">
+<script>document.documentElement.dataset.mode = /[?&]embed\b/.test(location.search) ? 'embed' : 'page';</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/party.css">
+</head>
+<body>
+<main class="room lobby" id="lobby">
+  <div class="aura lobby-aura" aria-hidden="true"></div>
+  <header class="bar">
+    <a class="home" href="/" title="Back to tweetpad"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad</a>
+    <span class="chip live" id="live" hidden><i></i><span></span></span>
+  </header>
+
+  <section class="hero">
+    <!-- the crew around the coin: ten seats on a turning ring, tweetpad in the middle (Nouns, CC0) -->
+    <div class="ring" aria-hidden="true">
+      <div class="ring-glow"></div>
+      <div class="ring-track"></div>
+      <div class="ring-seats"><i style="--i:0"><img src="/assets/party/noun-0.svg" alt=""></i><i style="--i:1"><img src="/assets/party/noun-1.svg" alt=""></i><i style="--i:2"><img src="/assets/party/noun-2.svg" alt=""></i><i style="--i:3"><img src="/assets/party/noun-3.svg" alt=""></i><i style="--i:4"><img src="/assets/party/noun-4.svg" alt=""></i><i style="--i:5"><img src="/assets/party/noun-5.svg" alt=""></i><i style="--i:6"><img src="/assets/party/noun-6.svg" alt=""></i><i style="--i:7"><img src="/assets/party/noun-7.svg" alt=""></i><i style="--i:8"><img src="/assets/party/noun-8.svg" alt=""></i><i style="--i:9"><img src="/assets/party/noun-9.svg" alt=""></i></div>
+      <div class="ring-coin"><img src="/assets/brand/tweetpad-hash-180.png" alt=""></div>
+    </div>
+    <div class="hero-text">
+    <h1>Launch Party</h1>
+    <p class="tag">Bundle a coin with a crew on <b class="pf">pump.fun</b></p>
+    <p class="long">Launch a coin on <b class="pf">pump.fun</b> with your friends. Seats at one price, refundable until launch. At launch they all buy together and split the coins.</p>
+    <div class="hero-cta">
+      <a class="go" href="/party/new" id="host-link">Throw a party</a>
+      <button class="ghost" type="button" id="share">Share</button>
+    </div>
+    <p class="powered">Powered by the <a href="https://x.com/launchpartyV4" target="_blank" rel="noopener">@launchpartyV4</a> SDK</p>
+    </div>
+  </section>
+
+  <ol class="steps" aria-label="How a party works">
+    <li><b>Open a room</b><span>Pick the seats, the price and who can join. Post it.</span></li>
+    <li><b>Friends take seats</b><span>Right in the post. Every seat is refundable until launch.</span></li>
+    <li><b>One buy on pump.fun</b><span>Every seat buys at launch, at one price, and gets an equal share.</span></li>
+  </ol>
+
+  <section class="list" id="open" aria-label="Open parties">
+    <div class="list-head"><h2>Open now</h2><b id="open-n"></b></div>
+    <ul id="open-list"><li class="sk-row"><span class="sk sk-face"></span><span class="sk-lines"><span class="sk" style="width:46%"></span><span class="sk" style="width:72%"></span></span><span class="sk sk-end"></span></li><li class="sk-row"><span class="sk sk-face"></span><span class="sk-lines"><span class="sk" style="width:46%"></span><span class="sk" style="width:72%"></span></span><span class="sk sk-end"></span></li><li class="sk-row"><span class="sk sk-face"></span><span class="sk-lines"><span class="sk" style="width:46%"></span><span class="sk" style="width:72%"></span></span><span class="sk sk-end"></span></li></ul>
+  </section>
+
+  <section class="list" id="launched" aria-label="Launched parties">
+    <div class="list-head"><h2>Launched</h2><b id="launched-n"></b></div>
+    <ul id="launched-list"><li class="sk-row"><span class="sk sk-face"></span><span class="sk-lines"><span class="sk" style="width:46%"></span><span class="sk" style="width:72%"></span></span><span class="sk sk-end"></span></li><li class="sk-row"><span class="sk sk-face"></span><span class="sk-lines"><span class="sk" style="width:46%"></span><span class="sk" style="width:72%"></span></span><span class="sk sk-end"></span></li></ul>
+  </section>
+
+  <footer class="fine">
+    <p><span class="credit">Party SDK by <a href="https://x.com/launchpartyV4" target="_blank" rel="noopener">@launchpartyV4</a></span> · Refundable until launch · Not affiliated with pump.fun</p>
+    <details class="fineprint"><summary>Fine print</summary>
+      <p>Every launch makes a real, public pump.fun coin. The seat money sits in Launch Party’s party program until launch, and Launch Party holds the key that can update that program. pump.fun takes its own trading fee: 1.25% of every curve trade today. Parties are listed from the party program, which other apps use too. Not affiliated with pump.fun; parties launch through pump.fun’s public programs.</p>
+    </details>
+  </footer>
+</main>
+<script type="module" src="/assets/party-home.js"></script>
+</body>
+</html>

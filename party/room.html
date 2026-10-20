@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>{{TITLE}}</title>
+<link rel="icon" href="/assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#0a0d12">
+<meta name="description" content="{{DESC}}">
+<!-- a pump.fun party room on Solana mainnet (devnet for the test rooms before it): /p/<room> (api/p.js fills this in). Posted on X it plays in the post (?embed); ?popup is the window a
+     wallet signs in; ?card is the share image. Every URL must be absolute HTTPS. -->
+<meta name="twitter:card" content="player">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="{{TITLE}}">
+<meta name="twitter:description" content="{{DESC}}">
+<meta name="twitter:player" content="{{URL}}?embed">
+<meta name="twitter:player:width" content="480">
+<meta name="twitter:player:height" content="480">
+<meta name="twitter:image" content="{{IMAGE}}">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESC}}">
+<meta property="og:image" content="{{IMAGE}}">
+<meta property="og:url" content="{{URL}}">
+<script>document.documentElement.dataset.mode = /[?&]card\b/.test(location.search) ? 'card' : /[?&]embed\b/.test(location.search) ? 'embed' : /[?&]popup\b/.test(location.search) ? 'popup' : 'page'; window.ROOM = '{{ROOM}}';</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/party.css">
+</head>
+<body>
+<main class="room" id="room" aria-busy="true">
+  <div class="aura" id="aura" aria-hidden="true"></div>
+  <header class="bar">
+    <a class="home" href="/" title="Back to tweetpad"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad</a>
+    <a class="chip nav" href="/party">Parties</a>
+    <span class="chip net" id="net" hidden>Devnet · test SOL</span>
+    <span class="chip state" id="state"><i></i><span>Loading…</span></span>
+  </header>
+
+  <section class="coin">
+    <div class="face" id="face" aria-hidden="true"></div>
+    <div class="names">
+      <h1 id="name">A launch party</h1>
+      <p id="sub">on pump.fun</p>
+      <span class="pf-badge" id="pf-badge"><i></i><span>Launches on <b>pump.fun</b></span></span>
+    </div>
+  </section>
+
+  <!-- launched: when, the coin's contract address (copy), and where to see it -->
+  <section class="landed" id="landed" hidden>
+    <div class="landed-top"><span class="landed-badge"><i></i><span id="landed-what">Launched on pump.fun</span></span><span class="landed-when" id="landed-when"></span></div>
+    <div class="ca"><small>Contract address</small><code id="ca"></code><button type="button" id="ca-copy">Copy</button></div>
+    <div class="links"><a id="lk-pump" target="_blank" rel="noopener">pump.fun</a><a id="lk-dex" target="_blank" rel="noopener">DexScreener</a><a id="lk-scan" target="_blank" rel="noopener">Solscan</a></div>
+  </section>
+
+  <section class="tiles" id="tiles" aria-label="The party in numbers"><div class="tile"><small>Seat price</small><b>0.00</b><em>loading</em></div><div class="tile"><small>Seat price</small><b>0.00</b><em>loading</em></div><div class="tile"><small>Seat price</small><b>0.00</b><em>loading</em></div></section>
+
+  <!-- launched, your seats: what's yours to claim, what's unlocking, the crew fees they've earned -->
+  <section class="yours" id="yours" hidden>
+    <div class="yours-head"><span>Your seats</span><b id="yours-n"></b></div>
+    <div class="yours-amt"><b id="yours-amt"></b><span id="yours-sym"></span></div>
+    <div class="unlock" id="unlock" hidden><i><u id="unlock-bar"></u></i><small id="unlock-text"></small></div>
+    <p class="yours-sub" id="yours-sub"></p>
+  </section>
+
+  <section class="seats" aria-label="Seats">
+    <div class="seats-head"><span>Seats</span><b id="seats-count">0 of 0 taken</b></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="curve" aria-label="pump.fun bonding curve">
+    <div class="curve-head"><span><b class="pf">pump.fun</b> bonding curve</span><strong id="curve-pct">—</strong></div>
+    <div class="track"><u id="curve-ghost"></u><i id="curve-now"></i></div>
+    <div class="curve-note" id="curve-label">How far the crew's buy takes the coin along its curve</div>
+  </section>
+
+  <section class="act">
+    <button class="go" id="go" type="button" disabled>Loading…</button>
+    <div class="more" id="more"></div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- launched: the crew, seat by seat, and who has claimed -->
+  <section class="crew" id="crew" hidden aria-label="The crew">
+    <div class="seats-head"><span>The crew</span><b id="crew-n"></b></div>
+    <ul id="crew-list"></ul>
+  </section>
+
+  <section class="faq" id="faq" aria-label="How a party works">
+    <button class="faq-toggle" id="faq-toggle" type="button" aria-expanded="false" aria-controls="faq-list">How a party works <span aria-hidden="true">›</span></button>
+    <div class="faq-list" id="faq-list" hidden></div>
+  </section>
+
+  <footer class="fine">
+    <p><span class="credit">Party SDK by <a href="https://x.com/launchpartyV4" target="_blank" rel="noopener">@launchpartyV4</a></span><span id="refundable"> · Refundable until launch</span> · Not affiliated with pump.fun</p>
+    <details class="fineprint"><summary>Fine print</summary>
+      <p>The seat money sits in Launch Party’s party program until launch, and Launch Party holds the key that can update that program. pump.fun takes its own trading fee: 1.25% of every curve trade today. Not affiliated with pump.fun; parties launch through pump.fun’s public programs.</p>
+    </details>
+  </footer>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <h2 id="sheet-title">Connect a wallet</h2>
+    <div id="wallets"></div>
+    <p class="hint" id="sheet-hint" hidden>This is a devnet test party: switch your wallet to devnet (in Phantom, Settings → Developer settings → Testnet mode).</p>
+    <button class="ghost" id="sheet-close" type="button">Close</button>
+  </div>
+</div>
+<div class="sheet" id="wl-sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="wl-title">
+    <h2 id="wl-title">Whitelist</h2>
+    <p class="hint">Only you and the wallets on the list can take a seat or be sent one: the party’s program checks it. Seats already taken stay.</p>
+    <div class="field"><textarea id="wl-text" rows="6" placeholder="Friends’ Solana wallet addresses, one per line" aria-label="Wallets that may join, one per line" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea>
+      <small class="help" id="wl-count"></small></div>
+    <button class="go" id="wl-save" type="button">Save the whitelist</button>
+    <button class="ghost" id="wl-open" type="button">Let anyone join instead</button>
+    <button class="ghost" id="wl-close" type="button">Close</button>
+  </div>
+</div>
+<div class="sheet" id="close-sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="close-title">
+    <h2 id="close-title">Close your seat?</h2>
+    <p class="hint" id="close-text"></p>
+    <button class="go" id="close-yes" type="button">Close my seat</button>
+    <button class="ghost" id="close-no" type="button">Keep it</button>
+  </div>
+</div>
+<div class="sheet" id="faq-sheet" hidden>
+  <div class="panel tall" role="dialog" aria-modal="true" aria-labelledby="faq-sheet-title">
+    <h2 id="faq-sheet-title">How a party works</h2>
+    <div class="faq-list open" id="faq-sheet-list"></div>
+    <button class="ghost" id="faq-sheet-close" type="button">Close</button>
+  </div>
+</div>
+<script type="module" src="/assets/party.js"></script>
+</body>
+</html>

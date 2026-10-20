@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Launch a crew bundle · tweetpad</title>
+<link rel="icon" href="/assets/brand/tweetpad-hash-180.png">
+<meta name="theme-color" content="#0a0d12">
+<meta name="description" content="Open a room of seats for a coin launch on pump.fun. Friends take refundable seats, and when it launches every seat's money is the coin's first buy.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@tweetpad_io">
+<meta name="twitter:title" content="Launch a crew bundle · tweetpad">
+<meta name="twitter:description" content="Open a room of seats for a coin launch on pump.fun. Friends take refundable seats; at launch every seat's money is the first buy.">
+<meta name="twitter:image" content="https://www.tweetpad.io/assets/party-card.png?v=1">
+<meta property="og:image" content="https://www.tweetpad.io/assets/party-card.png?v=1">
+<script>document.documentElement.dataset.mode = /[?&]popup\b/.test(location.search) ? 'popup' : 'page';</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/party.css">
+</head>
+<body>
+<main class="room host" id="host">
+  <div class="aura" id="aura" aria-hidden="true"></div>
+  <header class="bar">
+    <a class="home" href="/" title="Back to tweetpad"><img src="/assets/brand/tweetpad-hash-180.png" alt="">tweetpad</a>
+    <a class="chip nav" href="/party">Parties</a>
+    <span class="chip net net-only" hidden>Devnet · test SOL</span>
+  </header>
+
+  <section class="intro">
+    <h1>Launch a crew bundle</h1>
+    <p class="powered">Powered by the <a href="https://x.com/launchpartyV4" target="_blank" rel="noopener">@launchpartyV4</a> SDK</p>
+    <p>Seats at one price, refundable until launch. At launch they all buy together on <b class="pf">pump.fun</b>, and split the coins.</p>
+  </section>
+
+  <form id="form" autocomplete="off" novalidate>
+    <fieldset class="block">
+      <legend>The coin</legend>
+      <div class="coin-row">
+        <label class="drop" id="drop" title="The coin's picture">
+          <input type="file" id="image" accept="image/png,image/jpeg,image/gif,image/webp">
+          <span id="drop-face">Add a picture</span>
+        </label>
+        <div class="coin-fields">
+          <label class="field"><span>Name <em id="name-left">32</em></span><input id="name" maxlength="64" placeholder="Party Coin" required></label>
+          <label class="field"><span>Ticker <em id="sym-left">10</em></span><input id="symbol" maxlength="10" placeholder="PARTY" required></label>
+        </div>
+      </div>
+      <label class="field"><span>Description <em id="desc-left">140</em></span><input id="desc" maxlength="140" placeholder="What it's about, in one line (optional)"></label>
+      <label class="field"><span>X link</span><input id="twitter" placeholder="https://x.com/… (optional)" inputmode="url"></label>
+    </fieldset>
+
+    <fieldset class="block">
+      <legend>The party</legend>
+      <!-- the two numbers that make the party: big, with their units in the field, presets right under each -->
+      <div class="pair">
+        <div class="col">
+          <label class="field" for="seats"><span>Seats</span></label>
+          <div class="num"><button type="button" class="step" data-d="-1" aria-label="One seat fewer">−</button><input id="seats" type="number" min="2" max="1000" step="1" value="10" inputmode="numeric"><em>seats</em><button type="button" class="step" data-d="1" aria-label="One seat more">+</button></div>
+          <div class="quick" id="quick-seats" aria-label="Seat presets"></div>
+        </div>
+        <div class="col">
+          <label class="field" for="price"><span>Seat price <em id="price-usd"></em></span></label>
+          <div class="num"><input id="price" type="number" min="0.01" step="0.01" value="0.05" inputmode="decimal"><em>SOL</em></div>
+          <div class="quick" id="quick-price" aria-label="Price presets"></div>
+        </div>
+      </div>
+      <p class="raise" id="raise"></p>
+
+      <div class="field"><span>Creator fees</span>
+        <div class="seg" id="fee" role="radiogroup">
+          <button type="button" role="radio" data-v="crew" aria-checked="true">The crew<small>split by the seats</small></button>
+          <button type="button" role="radio" data-v="host" aria-checked="false">Me<small>to your wallet</small></button>
+          <button type="button" role="radio" data-v="holders" aria-checked="false" id="fee-holders">Holders<small>pump.fun’s rewards</small></button>
+        </div>
+        <small class="help" id="fee-help"></small>
+      </div>
+      <div class="pair">
+        <label class="field"><span>Seats per wallet</span><select id="cap" class="as-seg"><option value="0">No limit</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option></select></label>
+        <label class="field"><span>Your seats</span><select id="mine" class="as-seg"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select></label>
+      </div>
+      <div class="field"><span>Who can join</span>
+        <div class="seg" id="who" role="radiogroup">
+          <button type="button" role="radio" data-v="anyone" aria-checked="true">Anyone<small>with the link</small></button>
+          <button type="button" role="radio" data-v="list" aria-checked="false">Whitelist<small>wallets you list</small></button>
+          <button type="button" role="radio" data-v="holders" aria-checked="false">Token holders<small>of a coin you pick</small></button>
+        </div>
+        <textarea id="allow" rows="4" hidden placeholder="Friends’ Solana wallet addresses, one per line" aria-label="Wallets that may join, one per line" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea>
+        <div class="gate" id="gate" hidden>
+          <div class="pair wide">
+            <label class="field"><span>Token (mint address)</span><input id="gate-mint" placeholder="Paste a Solana token’s mint" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
+            <label class="field"><span>Hold at least</span><input id="gate-min" type="number" min="0" step="any" value="1" inputmode="decimal"></label>
+          </div>
+          <div class="quick" id="quick-gate" aria-label="Token presets"><button type="button" data-mint="BctFsB2NaoKZcqXxhFFvDAJ4vdgxuunsg1g5m8CSEQDN">$TP holders</button></div>
+        </div>
+        <small class="help" id="who-help"></small>
+      </div>
+      <label class="field"><span>Coins unlock</span><select id="vest" class="as-seg"><option value="0" selected>At launch</option><option value="86400">Over 1 day</option><option value="259200">Over 3 days</option><option value="604800">Over 7 days</option></select></label>
+      <small class="help">There's no deadline: the party launches when the last seat fills, or when you launch it early.</small>
+    </fieldset>
+
+    <section class="curve" aria-label="pump.fun bonding curve at launch">
+      <div class="curve-head"><span><b class="pf">pump.fun</b> bonding curve at launch</span><strong id="curve-pct">—</strong></div>
+      <div class="track"><i id="curve-now"></i></div>
+      <div class="curve-note" id="curve-label">With every seat taken</div>
+    </section>
+
+    <section class="due" aria-label="Due now">
+      <h2>Due now</h2>
+      <ul id="due"></ul>
+      <p class="total"><span>Total</span><b id="due-total">—</b></p>
+    </section>
+
+    <button class="go" id="go" type="submit">Open the party</button>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+  </form>
+
+  <section class="done" id="done" hidden>
+    <div class="done-face" id="done-face"></div>
+    <span class="done-chip"><i></i>Your party is open</span>
+    <h2 id="done-name"></h2>
+    <p class="done-sub" id="done-sub"></p>
+    <div class="grid done-seats" id="done-seats" aria-label="Seats"></div>
+    <a class="go" id="tweet" target="_blank" rel="noopener">Tweet your party</a>
+    <div class="done-row"><a class="ghost" id="room-link">Open the room</a><button class="ghost" id="copy-link" type="button">Copy link</button></div>
+    <a class="done-back" href="/party">See all parties</a>
+    <p class="done-credit">Party SDK by <a href="https://x.com/launchpartyV4" target="_blank" rel="noopener">@launchpartyV4</a></p>
+  </section>
+
+  <footer class="fine">
+    <p><span class="credit">Party SDK by <a href="https://x.com/launchpartyV4" target="_blank" rel="noopener">@launchpartyV4</a></span> · Refundable until launch · Not affiliated with pump.fun</p>
+    <details class="fineprint" open><summary>Fine print</summary>
+      <p>Every launch makes a real, public pump.fun coin. The seat money sits in Launch Party’s party program until launch, and Launch Party holds the key that can update that program. pump.fun takes its own trading fee: 1.25% of every curve trade today. Not affiliated with pump.fun; parties launch through pump.fun’s public programs.</p>
+    </details>
+  </footer>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <h2 id="sheet-title">Connect a wallet</h2>
+    <div id="wallets"></div>
+    <p class="hint net-only" hidden>This is a devnet test party: switch your wallet to devnet (in Phantom, Settings → Developer settings → Testnet mode).</p>
+    <button class="ghost" id="sheet-close" type="button">Close</button>
+  </div>
+</div>
+<script type="module" src="/assets/party-new.js"></script>
+</body>
+</html>
